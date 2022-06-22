@@ -1,0 +1,7 @@
+layer 1;
+
+module Printer {
+    print(text: string) => None {
+        use text;
+    }
+}
