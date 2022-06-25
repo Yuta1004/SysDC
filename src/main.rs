@@ -1,3 +1,4 @@
-fn main() {
-    println!("Hello SysDC!");
-}
+/* Modules */
+mod sysdc;
+
+fn main() {}
