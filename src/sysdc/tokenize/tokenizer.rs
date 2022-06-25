@@ -59,7 +59,7 @@ impl<'a> Tokenizer<'a> {
                 (CharType::SymbolTwo1, CharType::SymbolTwo2) => { self.now_ref_pos += 1; break },
 
                 // Ng(panic)
-                (CharType::SymbolTwo1 | CharType::SymbolTwo2, _) => panic!(""),
+                (CharType::SymbolTwo1 | CharType::SymbolTwo2, _) => panic!("[ERROR] Discovered unregistered symbol."),
 
                 // Ok(force stop)
                 _ => break
