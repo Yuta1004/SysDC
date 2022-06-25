@@ -1,25 +1,3 @@
-enum CharType {
-    Identifier,
-    SymbolOne,
-    SymbolTwo,
-    Number,
-    Space,
-    Other
-}
-
-impl CharType {
-    pub fn from(c: char) -> CharType {
-        match c {
-            'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
-            '=' | ':' | '.' | ',' | ';' | '{' | '}' | '(' | ')' => CharType::SymbolOne,
-            '-' | '>' => CharType::SymbolTwo,
-            '0'..='9' => CharType::Number,
-            ' ' | '\t' | '\n' => CharType::Space,
-            _ => CharType::Other
-        }
-    }
-}
-
 pub struct Tokenizer<'a> {
     text: &'a String,
     now_ref_pos: usize
@@ -33,7 +11,7 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    fn next(&mut self) -> (Option<String>, Option<i32>){
+    fn next(&mut self) -> (Option<String>, Option<i32>) {
         self.skip_space();
 
         let lead_ref_pos = self.now_ref_pos;
@@ -94,6 +72,28 @@ impl<'a> Tokenizer<'a> {
                 _ => break
             }
             self.now_ref_pos += 1;
+        }
+    }
+}
+
+enum CharType {
+    Identifier,
+    SymbolOne,
+    SymbolTwo,
+    Number,
+    Space,
+    Other
+}
+
+impl CharType {
+    pub fn from(c: char) -> CharType {
+        match c {
+            'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
+            '=' | ':' | '.' | ',' | ';' | '{' | '}' | '(' | ')' => CharType::SymbolOne,
+            '-' | '>' => CharType::SymbolTwo,
+            '0'..='9' => CharType::Number,
+            ' ' | '\t' | '\n' => CharType::Space,
+            _ => CharType::Other
         }
     }
 }
