@@ -20,27 +20,25 @@ impl<'a> Tokenizer<'a> {
     }
 
     pub fn expect_kind(&mut self, kind: TokenKind) -> Option<Token> {
-        let token = if self.hold_token.is_none() {
-            match self.tokenize() {
-                (Some(orig), _) => Token::from_string(orig),
-                (_, Some(orig)) => Token::from_i32(orig),
-                _ => panic!("[ERROR] Reading pointer reached end of text")
+        if let Some(token) = self.tokenize() {
+            if token.kind == kind {
+                self.hold_token = None;
+                Some(token)
+            } else {
+                self.hold_token = Some(token);
+                None
             }
         } else {
-            self.hold_token.clone().unwrap()
-        };
-
-        if token.kind == kind {
-            Some(token)
-        } else {
-            self.hold_token = Some(token);
             None
         }
     }
 
-    fn tokenize(&mut self) -> (Option<String>, Option<i32>) {
+    fn tokenize(&mut self) -> Option<Token> {
+        if !self.hold_token.is_none() {
+            return self.hold_token.clone();
+        }
         if !self.has_token() {
-            return (None, None);
+            return None;
         }
 
         self.skip_space();
@@ -87,10 +85,11 @@ impl<'a> Tokenizer<'a> {
             self.text[word_begin..].to_string()
         };
 
-        match lead_type {
-            CharType::Number => (None, Some(discovered_word.parse::<i32>().unwrap())),
-            _ => (Some(discovered_word), None)
-        }
+        let token = match lead_type {
+            CharType::Number => Token::from_i32(discovered_word.parse::<i32>().unwrap()),
+            _ => Token::from_string(discovered_word)
+        };
+        Some(token)
     }
 
     fn skip_space(&mut self) {
@@ -138,42 +137,8 @@ mod test {
     }
 
     #[test]
-    pub fn tokenize_text_identifier_and_symbol() {
-        let text = "data User { id: int32, name: string } module UserModule binds User as this { greet(text: string) -> None { use = this.text; } }".to_string();
-        let correct_tokens = [
-            "data", "User", "{", "id", ":", "int32", ",", "name", ":", "string", "}",
-            "module", "UserModule", "binds", "User", "as", "this", "{", "greet", "(", "text", ":", "string", ")", "->", "None", 
-            "{", "use", "=", "this", ".", "text", ";", "}", "}"
-        ];
-
-        let mut tokenizer = Tokenizer::new(&text);
-        for token in correct_tokens {
-            assert_eq!(tokenizer.tokenize(), (Some(token.to_string()), None));
-        }
-    }
-
-    #[test]
-    pub fn tokenize_number() {
-        let text = "0 1 2 3 410 1204".to_string();
-        let correct_numbers = [0, 1, 2, 3, 410, 1204];
-
-        let mut tokenizer = Tokenizer::new(&text);
-        for number in correct_numbers {
-            assert_eq!(tokenizer.tokenize(), (None, Some(number)));
-        }
-    }
-
-    #[test]
-    #[should_panic]
-    pub fn tokenize_unregisterd_charactor() {
-        let text = "aaaaaaa#".to_string();
-        let mut tokenizer = Tokenizer::new(&text);
-        assert_eq!(tokenizer.tokenize(), (None, None));
-    }
-
-    #[test]
     pub fn expect_kind_all_ok() {
-        let text = "data User { id: int32, name: String }".to_string();
+        let text = "data User { id: int32, name: String } layer 0; layer 410; layer 1204;".to_string();
         let correct_token_kinds = [
             TokenKind::Data,
             TokenKind::Identifier,
@@ -185,7 +150,16 @@ mod test {
             TokenKind::Identifier,
             TokenKind::Mapping,
             TokenKind::Identifier,
-            TokenKind::BracketEnd
+            TokenKind::BracketEnd,
+            TokenKind::Layer,
+            TokenKind::Number,
+            TokenKind::Semicolon,
+            TokenKind::Layer,
+            TokenKind::Number,
+            TokenKind::Semicolon,
+            TokenKind::Layer,
+            TokenKind::Number,
+            TokenKind::Semicolon
         ];
 
         let mut tokenizer = Tokenizer::new(&text);
@@ -205,8 +179,8 @@ mod test {
         let mut tokenizer = Tokenizer::new(&text);
         for token_kind in [TokenKind::Layer, TokenKind::Ref, TokenKind::Data] {
             match tokenizer.expect_kind(token_kind.clone()) {
-                Some(_) => assert!(token_kind == TokenKind::Data),
-                None => assert!(token_kind != TokenKind::Data)
+                Some(_) => assert_eq!(token_kind, TokenKind::Data),
+                None => assert_ne!(token_kind, TokenKind::Data)
             }
         }
         assert!(!tokenizer.has_token());
