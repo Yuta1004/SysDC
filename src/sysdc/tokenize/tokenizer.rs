@@ -1,17 +1,48 @@
+use super::token::{ Token, TokenKind };
+
 pub struct Tokenizer<'a> {
     text: &'a String,
-    now_ref_pos: usize
+    now_ref_pos: usize,
+    hold_token: Option<Token>
 }
 
 impl<'a> Tokenizer<'a> {
     pub fn new(text: &'a String) -> Tokenizer<'a> {
         Tokenizer {
             text,
-            now_ref_pos: 0
+            now_ref_pos: 0,
+            hold_token: None
         }
     }
 
-    fn next(&mut self) -> (Option<String>, Option<i32>) {
+    pub fn has_token(&self) -> bool {
+        self.now_ref_pos != self.text.len()
+    }
+
+    pub fn expect_kind(&mut self, kind: TokenKind) -> Option<Token> {
+        let token = if self.hold_token.is_none() {
+            match self.tokenize() {
+                (Some(orig), _) => Token::from_string(orig),
+                (_, Some(orig)) => Token::from_i32(orig),
+                _ => panic!("[ERROR] Reading pointer reached end of text")
+            }
+        } else {
+            self.hold_token.clone().unwrap()
+        };
+
+        if token.kind == kind {
+            Some(token)
+        } else {
+            self.hold_token = Some(token);
+            None
+        }
+    }
+
+    fn tokenize(&mut self) -> (Option<String>, Option<i32>) {
+        if !self.has_token() {
+            return (None, None);
+        }
+
         self.skip_space();
 
         let lead_ref_pos = self.now_ref_pos;
@@ -20,7 +51,7 @@ impl<'a> Tokenizer<'a> {
 
         loop {
             self.now_ref_pos += 1;
-            if self.now_ref_pos >= self.text.len() {
+            if !self.has_token() {
                 self.now_ref_pos = self.text.len();
                 break
             }
@@ -101,6 +132,7 @@ impl CharType {
 #[cfg(test)]
 mod test {
     use super::Tokenizer;
+    use super::super::token::TokenKind;
 
     #[test]
     pub fn create_tokenizer() {
@@ -119,7 +151,7 @@ mod test {
 
         let mut tokenizer = Tokenizer::new(&text);
         for token in correct_tokens {
-            assert_eq!(tokenizer.next(), (Some(token.to_string()), None));
+            assert_eq!(tokenizer.tokenize(), (Some(token.to_string()), None));
         }
     }
 
@@ -130,7 +162,7 @@ mod test {
 
         let mut tokenizer = Tokenizer::new(&text);
         for number in correct_numbers {
-            assert_eq!(tokenizer.next(), (None, Some(number)));
+            assert_eq!(tokenizer.tokenize(), (None, Some(number)));
         }
     }
 
@@ -139,6 +171,47 @@ mod test {
     pub fn tokenize_unregisterd_charactor() {
         let text = "aaaaaaa#".to_string();
         let mut tokenizer = Tokenizer::new(&text);
-        assert_eq!(tokenizer.next(), (None, None));
+        assert_eq!(tokenizer.tokenize(), (None, None));
+    }
+
+    #[test]
+    pub fn expect_kind_all_ok() {
+        let text = "data User { id: int32, name: String }".to_string();
+        let correct_token_kinds = [
+            TokenKind::Data,
+            TokenKind::Identifier,
+            TokenKind::BracketBegin,
+            TokenKind::Identifier,
+            TokenKind::Mapping,
+            TokenKind::Identifier,
+            TokenKind::Separater,
+            TokenKind::Identifier,
+            TokenKind::Mapping,
+            TokenKind::Identifier,
+            TokenKind::BracketEnd
+        ];
+
+        let mut tokenizer = Tokenizer::new(&text);
+        for token_kind in correct_token_kinds {
+            match tokenizer.expect_kind(token_kind) {
+                Some(_) => {}
+                None => assert!(false)
+            }
+        }
+        assert!(!tokenizer.has_token());
+    }
+
+    #[test]
+    pub fn expect_kind_all_ng() {
+        let text = "data".to_string();
+
+        let mut tokenizer = Tokenizer::new(&text);
+        for token_kind in [TokenKind::Layer, TokenKind::Ref, TokenKind::Data] {
+            match tokenizer.expect_kind(token_kind.clone()) {
+                Some(_) => assert!(token_kind == TokenKind::Data),
+                None => assert!(token_kind != TokenKind::Data)
+            }
+        }
+        assert!(!tokenizer.has_token());
     }
 }

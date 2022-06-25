@@ -1,5 +1,4 @@
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     /* Reserved */
     Layer,              // layer
@@ -30,7 +29,7 @@ pub enum TokenKind {
     Number
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
     orig_id: Option<String>,
