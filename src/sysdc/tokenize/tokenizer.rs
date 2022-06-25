@@ -71,14 +71,7 @@ impl<'a> Tokenizer<'a> {
             self.now_ref_pos += 1;
         }
 
-        let (word_begin, _) = self.text.char_indices().nth(lead_ref_pos).unwrap();
-        let discovered_word = if self.now_ref_pos != self.text.len() {
-            let (word_end, _) = self.text.char_indices().nth(self.now_ref_pos).unwrap();
-            self.text[word_begin..word_end].to_string()
-        } else {
-            self.text[word_begin..].to_string()
-        };
-
+        let discovered_word = self.clip_text(lead_ref_pos, self.now_ref_pos);
         let token = match lead_type {
             CharType::Number => Token::from_i32(discovered_word.parse::<i32>().unwrap()),
             _ => Token::from_string(discovered_word)
@@ -93,6 +86,16 @@ impl<'a> Tokenizer<'a> {
                 _ => break
             }
             self.now_ref_pos += 1;
+        }
+    }
+
+    fn clip_text(&self, begin: usize, end: usize) -> String {
+        let (begin_idx, _) = self.text.char_indices().nth(begin).unwrap();
+        if end != self.text.len() {
+            let (end_idx, _) = self.text.char_indices().nth(end).unwrap();
+            self.text[begin_idx..end_idx].to_string()
+        } else {
+            self.text[begin_idx..].to_string()
         }
     }
 }
