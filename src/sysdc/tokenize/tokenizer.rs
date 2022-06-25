@@ -44,14 +44,11 @@ impl<'a> Tokenizer<'a> {
         self.skip_space();
 
         let lead_ref_pos = self.now_ref_pos;
-        let lead_c = self.text.chars().nth(lead_ref_pos).unwrap();
-        let lead_type = CharType::from(lead_c);
+        let lead_type = CharType::from(self.get_char_at(lead_ref_pos));
         self.now_ref_pos += 1;
 
         while self.has_token() {
-            let now_c = self.text.chars().nth(self.now_ref_pos).unwrap();
-            let now_type = CharType::from(now_c);
-
+            let now_type = CharType::from(self.get_char_at(self.now_ref_pos));
             match (&lead_type, now_type) {
                 // Ok(continue)
                 (CharType::Identifier, CharType::Identifier | CharType::Number) => {},
@@ -81,12 +78,15 @@ impl<'a> Tokenizer<'a> {
 
     fn skip_space(&mut self) {
         loop {
-            match self.text.chars().nth(self.now_ref_pos).unwrap() {
-                ' ' | '\t' | '\n' => {},
+            match CharType::from(self.get_char_at(self.now_ref_pos)) {
+                CharType::Space => self.now_ref_pos += 1,
                 _ => break
             }
-            self.now_ref_pos += 1;
         }
+    }
+
+    fn get_char_at(&self, pos: usize) -> char {
+        self.text.chars().nth(pos).unwrap()
     }
 
     fn clip_text(&self, begin: usize, end: usize) -> String {
