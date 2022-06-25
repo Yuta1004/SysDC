@@ -48,14 +48,9 @@ impl<'a> Tokenizer<'a> {
         let lead_ref_pos = self.now_ref_pos;
         let lead_c = self.text.chars().nth(lead_ref_pos).unwrap();
         let lead_type = CharType::from(lead_c);
+        self.now_ref_pos += 1;
 
-        loop {
-            self.now_ref_pos += 1;
-            if !self.has_token() {
-                self.now_ref_pos = self.text.len();
-                break
-            }
-
+        while self.has_token() {
             let c = self.text.chars().nth(self.now_ref_pos).unwrap();
             match CharType::from(c) {
                 CharType::Identifier => {
@@ -80,6 +75,8 @@ impl<'a> Tokenizer<'a> {
                 CharType::Space => break,
                 CharType::Other => panic!("[ERROR] Dicover unregistered charactor.")
             };
+
+            self.now_ref_pos += 1;
         }
 
         let (word_begin, _) = self.text.char_indices().nth(lead_ref_pos).unwrap();
