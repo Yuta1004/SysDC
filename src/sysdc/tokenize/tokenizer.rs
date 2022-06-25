@@ -49,29 +49,24 @@ impl<'a> Tokenizer<'a> {
         self.now_ref_pos += 1;
 
         while self.has_token() {
-            let c = self.text.chars().nth(self.now_ref_pos).unwrap();
-            match CharType::from(c) {
-                CharType::Identifier => {
-                    match lead_type {
-                        CharType::Identifier => {},
-                        _ => break
-                    }
-                },
-                CharType::Symbol => {
-                    match lead_type {
-                        CharType::Symbol => {},
-                        _ => break
-                    }
-                },
-                CharType::Number => {
-                    match lead_type {
-                        CharType::Identifier | CharType::Number => {},
-                        _ => break
-                    }
-                },
-                CharType::Space => break,
-                CharType::Other => panic!("[ERROR] Dicover unregistered charactor.")
-            };
+            let now_c = self.text.chars().nth(self.now_ref_pos).unwrap();
+            let now_type = CharType::from(now_c);
+
+            match (&lead_type, now_type) {
+                // Ok(continue)
+                (CharType::Identifier, CharType::Identifier | CharType::Number) => {},
+                (CharType::Number, CharType::Number) => {},
+                
+                // Ok(force stop)
+                (CharType::SymbolOne, _) => break,
+                (CharType::SymbolTwo1, CharType::SymbolTwo2) => { self.now_ref_pos += 1; break },
+
+                // Ng(panic)
+                (CharType::SymbolTwo1 | CharType::SymbolTwo2, _) => panic!(""),
+
+                // Ok(force stop)
+                _ => break
+            }
 
             self.now_ref_pos += 1;
         }
@@ -105,7 +100,9 @@ impl<'a> Tokenizer<'a> {
 enum CharType {
     Number,
     Identifier,
-    Symbol,
+    SymbolOne,
+    SymbolTwo1,
+    SymbolTwo2,
     Space,
     Other
 }
@@ -115,7 +112,9 @@ impl CharType {
         match c {
             '0'..='9' => CharType::Number,
             'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
-            '=' | ':' | '.' | ',' | ';' | '{' | '}' | '(' | ')' | '-' | '>' => CharType::Symbol,
+            '=' | ':' | '.' | ',' | ';' | '{' | '}' | '(' | ')' => CharType::SymbolOne,
+            '-' => CharType::SymbolTwo1,
+            '>' => CharType::SymbolTwo2,
             ' ' | '\t' | '\n' => CharType::Space,
             _ => CharType::Other
         }
@@ -175,9 +174,9 @@ mod test {
 
         let mut tokenizer = Tokenizer::new(&text);
         for token_kind in correct_token_kinds {
-            match tokenizer.expect_kind(token_kind) {
+            match tokenizer.expect_kind(token_kind.clone()) {
                 Some(_) => {}
-                None => assert!(false)
+                None => assert!(false, "{:?}", token_kind)
             }
         }
         assert!(!tokenizer.has_token());
