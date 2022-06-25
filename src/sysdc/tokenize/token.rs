@@ -1,23 +1,27 @@
 pub enum TokenKind {
     /* Reserved */
-    Layer,          // layer
-    Ref,            // ref
-    Data,           // data
-    Module,         // module
-    Use,            // use
-    Modify,         // modify
-    Link,           // link
-    Branch,         // branch
-    Chain,          // chain
+    Layer,              // layer
+    Ref,                // ref
+    Data,               // data
+    Module,             // module
+    Use,                // use
+    Modify,             // modify
+    Link,               // link
+    Branch,             // branch
+    Chain,              // chain
 
     /* Symbol */
-    Allow,          // =>
-    Mapping,        // :
-    Equal,          // =
-    Accessor,       // .
-    PAccessor,      // :: 
-    Begin,          // {
-    End,            // }
+    Allow,              // ->
+    Mapping,            // :
+    Equal,              // =
+    Accessor,           // .
+    PAccessor,          // ::
+    Separater,          // ,
+    Semicolon,          // ;
+    ParenthesisBegin,   // (
+    ParenthesisEnd,     // )
+    BracketBegin,       // {
+    BracketEnd,         // }
 
     /* Others */
     Identifier,
