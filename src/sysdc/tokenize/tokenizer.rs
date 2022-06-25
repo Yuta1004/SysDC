@@ -33,20 +33,6 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    pub fn expect_id(&mut self, id: String) -> Option<Token> {
-        if let Some(token) = self.tokenize() {
-            if token.kind == TokenKind::Identifier && token.get_id() == id {
-                self.hold_token = None;
-                Some(token)
-            } else {
-                self.hold_token = Some(token);
-                None
-            }
-        } else {
-            None
-        }
-    }
-
     fn tokenize(&mut self) -> Option<Token> {
         if !self.hold_token.is_none() {
             return self.hold_token.clone();
@@ -212,19 +198,5 @@ mod test {
             }
         }
         assert!(!tokenizer.has_token());
-    }
-
-    #[test]
-    pub fn expect_id_all_ok() {
-        let text = "cocoa cocoa_410 cocoa410 __cocoa c4o1c0o".to_string();
-        let correct_ids = ["cocoa", "cocoa_410", "cocoa410", "__cocoa", "c4o1c0o"];
-
-        let mut tokenizer = Tokenizer::new(&text);
-        for id in correct_ids {
-            match tokenizer.expect_id(id.to_string()) {
-                Some(_) => {},
-                None => assert!(false)
-            }
-        }
     }
 }
