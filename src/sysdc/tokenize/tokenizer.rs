@@ -57,10 +57,9 @@ impl<'a> Tokenizer<'a> {
                         _ => break
                     }
                 },
-                CharType::SymbolOne => break,
-                CharType::SymbolTwo => {
+                CharType::Symbol => {
                     match lead_type {
-                        CharType::SymbolTwo => { self.now_ref_pos += 1; break },
+                        CharType::Symbol => {},
                         _ => break
                     }
                 },
@@ -104,10 +103,9 @@ impl<'a> Tokenizer<'a> {
 }
 
 enum CharType {
-    Identifier,
-    SymbolOne,
-    SymbolTwo,
     Number,
+    Identifier,
+    Symbol,
     Space,
     Other
 }
@@ -115,10 +113,9 @@ enum CharType {
 impl CharType {
     pub fn from(c: char) -> CharType {
         match c {
-            'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
-            '=' | ':' | '.' | ',' | ';' | '{' | '}' | '(' | ')' => CharType::SymbolOne,
-            '-' | '>' => CharType::SymbolTwo,
             '0'..='9' => CharType::Number,
+            'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
+            '=' | ':' | '.' | ',' | ';' | '{' | '}' | '(' | ')' | '-' | '>' => CharType::Symbol,
             ' ' | '\t' | '\n' => CharType::Space,
             _ => CharType::Other
         }
