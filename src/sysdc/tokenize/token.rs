@@ -5,6 +5,8 @@ pub enum TokenKind {
     Ref,                // ref
     Data,               // data
     Module,             // module
+    Binds,              // binds
+    As,                 // as
     Use,                // use
     Modify,             // modify
     Link,               // link
@@ -43,6 +45,8 @@ impl Token {
             "ref"       => TokenKind::Ref,
             "data"      => TokenKind::Data,
             "module"    => TokenKind::Module,
+            "binds"     => TokenKind::Binds,
+            "as"        => TokenKind::As,
             "use"       => TokenKind::Use,
             "modify"    => TokenKind::Modify,
             "link"      => TokenKind::Link,
@@ -103,6 +107,8 @@ mod test {
             ("ref",     TokenKind::Ref),
             ("data",    TokenKind::Data),
             ("module",  TokenKind::Module),
+            ("binds",   TokenKind::Binds),
+            ("as",      TokenKind::As),
             ("use",     TokenKind::Use),
             ("modify",  TokenKind::Modify),
             ("link",    TokenKind::Link),

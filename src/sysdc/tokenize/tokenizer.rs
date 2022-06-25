@@ -152,8 +152,11 @@ mod test {
 
     #[test]
     pub fn expect_kind_all_ok() {
-        let text = "data User { id: int32, name: String } layer 0; layer 410; layer 1204;".to_string();
+        let text = "layer 0; data User { id: int32, name: String } module UserModule binds User as this { greet() -> None { use = this.name } }".to_string();
         let correct_token_kinds = [
+            TokenKind::Layer,
+            TokenKind::Number,
+            TokenKind::Semicolon,
             TokenKind::Data,
             TokenKind::Identifier,
             TokenKind::BracketBegin,
@@ -165,15 +168,26 @@ mod test {
             TokenKind::Mapping,
             TokenKind::Identifier,
             TokenKind::BracketEnd,
-            TokenKind::Layer,
-            TokenKind::Number,
-            TokenKind::Semicolon,
-            TokenKind::Layer,
-            TokenKind::Number,
-            TokenKind::Semicolon,
-            TokenKind::Layer,
-            TokenKind::Number,
-            TokenKind::Semicolon
+            TokenKind::Module,
+            TokenKind::Identifier,
+            TokenKind::Binds,
+            TokenKind::Identifier,
+            TokenKind::As,
+            TokenKind::Identifier,
+            TokenKind::BracketBegin,
+            TokenKind::Identifier,
+            TokenKind::ParenthesisBegin,
+            TokenKind::ParenthesisEnd,
+            TokenKind::Allow,
+            TokenKind::Identifier,
+            TokenKind::BracketBegin,
+            TokenKind::Use,
+            TokenKind::Equal,
+            TokenKind::Identifier,
+            TokenKind::Accessor,
+            TokenKind::Identifier,
+            TokenKind::BracketEnd,
+            TokenKind::BracketEnd
         ];
 
         let mut tokenizer = Tokenizer::new(&text);
