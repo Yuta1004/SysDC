@@ -81,14 +81,14 @@ impl Token {
     pub fn get_id(&self) -> String {
         match &self.orig_id {
             Some(id) => id.clone(),
-            None => panic!("")
+            None => panic!("[ERROR] get_id called for token {:?}", self.kind)
         }
     }
 
     pub fn get_number(&self) -> i32 {
         match &self.orig_number {
             Some(number) => *number,
-            None => panic!("")
+            None => panic!("[ERROR] get_number called for token {:?}", self.kind)
         }
     }
 }
