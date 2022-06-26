@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use std::fmt::{ Debug, Formatter, Result };
+use std::fmt::{ Debug, Formatter };
 
 use super::name::Name;
 
@@ -9,7 +9,7 @@ pub trait SysDCType {
 }
 
 impl Debug for dyn SysDCType {
-    fn fmt(&self, f: &mut Formatter) -> Result {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", self.get_full_name())
     }
 }
