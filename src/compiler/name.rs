@@ -10,14 +10,14 @@ impl Name {
     pub fn new(base: &Name, name: &String) -> Name {
         Name {
             name: name.clone(),
-            namespace: base.get_full_name() + "."
+            namespace: base.get_full_name()
         }
     }
 
     pub fn new_root() -> Name {
         Name {
             name: "0".to_string(),
-            namespace: ".".to_string()
+            namespace: "".to_string()
         }
     }
 
@@ -26,7 +26,7 @@ impl Name {
     }
 
     pub fn get_full_name(&self) -> String {
-        self.namespace.clone() + &self.name
+        self.namespace.clone() + "." + &self.name
     }
 }
 
