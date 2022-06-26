@@ -15,7 +15,7 @@ impl SysDCType for SysDCDefaultType {
     }
 
     fn get_full_name(&self) -> String {
-        ".global.".to_string() + &self.name
+        ".0.global.".to_string() + &self.name
     }
 }
 
