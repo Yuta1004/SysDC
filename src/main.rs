@@ -1,4 +1,3 @@
-/* Modules */
-mod sysdc;
+pub mod compiler;
 
 fn main() {}
