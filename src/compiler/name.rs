@@ -1,4 +1,6 @@
-#[derive(Debug, Clone)]
+use std::fmt::{ Debug, Formatter };
+
+#[derive(Clone)]
 pub struct Name {
     name: String,
     namespace: String
@@ -25,6 +27,12 @@ impl Name {
 
     pub fn get_full_name(&self) -> String {
         self.namespace.clone() + &self.name
+    }
+}
+
+impl Debug for Name {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "\"{}\"", self.get_full_name())
     }
 }
 
