@@ -1,27 +1,31 @@
 use std::rc::Rc;
 
+use super::name::Name;
+
 pub trait SysDCType {
     fn get_name(&self) -> String;
     fn get_full_name(&self) -> String;
 }
 
 pub struct SysDCDefaultType {
-    name: String
+    name: Name
 }
 
 impl SysDCType for SysDCDefaultType {
     fn get_name(&self) -> String {
-        self.name.clone()
+        self.name.get_name()
     }
 
     fn get_full_name(&self) -> String {
-        ".0.global.".to_string() + &self.name
+        self.name.get_full_name()
     }
 }
 
 impl SysDCDefaultType {
     fn new(name: &str) -> SysDCDefaultType {
-        SysDCDefaultType { name: name.to_string() }
+        SysDCDefaultType {
+            name: Name::new(Name::new(Name::new_root(), "global".to_string()), name.to_string())
+        }
     }
 
     pub fn get_all() -> Vec<Rc<dyn SysDCType>> {
