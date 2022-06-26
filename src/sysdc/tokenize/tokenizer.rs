@@ -141,7 +141,20 @@ mod test {
 
     #[test]
     pub fn expect_kind_all_ok() {
-        let text = "layer 0; data User { id: int32, name: String } module UserModule binds User as this { greet() -> None { use = this.name } }".to_string();
+        let text = "
+            layer 0;
+            data User {
+                id: int32,
+                name: String
+            }
+            module UserModule binds User as this {
+                greet() -> None {
+                    use = this.name;
+                    link = chain {
+                        Printer::print(text: string)
+                    }
+                }
+            }".to_string();
         let correct_token_kinds = [
             TokenKind::Layer,
             TokenKind::Number,
@@ -175,6 +188,20 @@ mod test {
             TokenKind::Identifier,
             TokenKind::Accessor,
             TokenKind::Identifier,
+            TokenKind::Semicolon,
+            TokenKind::Link,
+            TokenKind::Equal,
+            TokenKind::Chain,
+            TokenKind::BracketBegin,
+            TokenKind::Identifier,
+            TokenKind::PAccessor,
+            TokenKind::Identifier,
+            TokenKind::ParenthesisBegin,
+            TokenKind::Identifier,
+            TokenKind::Mapping,
+            TokenKind::Identifier,
+            TokenKind::ParenthesisEnd,
+            TokenKind::BracketEnd,
             TokenKind::BracketEnd,
             TokenKind::BracketEnd
         ];
