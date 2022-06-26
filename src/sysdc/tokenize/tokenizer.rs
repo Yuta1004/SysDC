@@ -55,11 +55,13 @@ impl<'a> Tokenizer<'a> {
                 (CharType::Number, CharType::Number) => {},
                 
                 // Ok(force stop)
-                (CharType::SymbolOne, _) => break,
-                (CharType::SymbolTwo1, CharType::SymbolTwo2) => { self.now_ref_pos += 1; break },
+                (CharType::Symbol, _) => break,
+                (CharType::SymbolAccessor, CharType::SymbolAccessor) => { self.now_ref_pos += 1; break },
+                (CharType::SymbolAccessor, _) => break,
+                (CharType::SymbolAllow1, CharType::SymbolAllow2) => { self.now_ref_pos += 1; break },
 
                 // Ng(panic)
-                (CharType::SymbolTwo1 | CharType::SymbolTwo2, _) => panic!("[ERROR] Discovered unregistered symbol."),
+                (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) => panic!("[ERROR] Discovered unregistered symbol."),
 
                 // Ok(force stop)
                 _ => break
@@ -103,9 +105,10 @@ impl<'a> Tokenizer<'a> {
 enum CharType {
     Number,
     Identifier,
-    SymbolOne,
-    SymbolTwo1,
-    SymbolTwo2,
+    Symbol,
+    SymbolAllow1,
+    SymbolAllow2,
+    SymbolAccessor,
     Space,
     Other
 }
@@ -115,9 +118,10 @@ impl CharType {
         match c {
             '0'..='9' => CharType::Number,
             'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
-            '=' | ':' | '.' | ',' | ';' | '{' | '}' | '(' | ')' => CharType::SymbolOne,
-            '-' => CharType::SymbolTwo1,
-            '>' => CharType::SymbolTwo2,
+            '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' => CharType::Symbol,
+            '-' => CharType::SymbolAllow1,
+            '>' => CharType::SymbolAllow2,
+            ':' => CharType::SymbolAccessor,
             ' ' | '\t' | '\n' => CharType::Space,
             _ => CharType::Other
         }
@@ -137,7 +141,20 @@ mod test {
 
     #[test]
     pub fn expect_kind_all_ok() {
-        let text = "layer 0; data User { id: int32, name: String } module UserModule binds User as this { greet() -> None { use = this.name } }".to_string();
+        let text = "
+            layer 0;
+            data User {
+                id: int32,
+                name: String
+            }
+            module UserModule binds User as this {
+                greet() -> None {
+                    use = this.name;
+                    link = chain {
+                        Printer::print(text: string)
+                    }
+                }
+            }".to_string();
         let correct_token_kinds = [
             TokenKind::Layer,
             TokenKind::Number,
@@ -171,6 +188,20 @@ mod test {
             TokenKind::Identifier,
             TokenKind::Accessor,
             TokenKind::Identifier,
+            TokenKind::Semicolon,
+            TokenKind::Link,
+            TokenKind::Equal,
+            TokenKind::Chain,
+            TokenKind::BracketBegin,
+            TokenKind::Identifier,
+            TokenKind::PAccessor,
+            TokenKind::Identifier,
+            TokenKind::ParenthesisBegin,
+            TokenKind::Identifier,
+            TokenKind::Mapping,
+            TokenKind::Identifier,
+            TokenKind::ParenthesisEnd,
+            TokenKind::BracketEnd,
             TokenKind::BracketEnd,
             TokenKind::BracketEnd
         ];
