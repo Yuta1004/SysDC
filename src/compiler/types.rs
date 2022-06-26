@@ -19,16 +19,6 @@ pub struct SysDCDefaultType {
     name: Name
 }
 
-impl SysDCType for SysDCDefaultType {
-    fn get_name(&self) -> String {
-        self.name.get_name()
-    }
-
-    fn get_full_name(&self) -> String {
-        self.name.get_full_name()
-    }
-}
-
 impl SysDCDefaultType {
     fn new(name: &str) -> SysDCDefaultType {
         SysDCDefaultType {
@@ -43,5 +33,15 @@ impl SysDCDefaultType {
             Rc::new(SysDCDefaultType::new("string")),
             Rc::new(SysDCDefaultType::new("none")),
         )
+    }
+}
+
+impl SysDCType for SysDCDefaultType {
+    fn get_name(&self) -> String {
+        self.name.get_name()
+    }
+
+    fn get_full_name(&self) -> String {
+        self.name.get_full_name()
     }
 }
