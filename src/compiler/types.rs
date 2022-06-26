@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::fmt::{ Debug, Formatter, Result };
 
 use super::name::Name;
 
@@ -7,6 +8,13 @@ pub trait SysDCType {
     fn get_full_name(&self) -> String;
 }
 
+impl Debug for dyn SysDCType {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "{}", self.get_full_name())
+    }
+}
+
+#[derive(Debug)]
 pub struct SysDCDefaultType {
     name: Name
 }
