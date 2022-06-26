@@ -10,7 +10,7 @@ pub trait SysDCType {
 
 impl Debug for dyn SysDCType {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.get_full_name())
+        write!(f, "\"{}\"", self.get_full_name())
     }
 }
 
