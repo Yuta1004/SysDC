@@ -55,11 +55,11 @@ impl<'a> Tokenizer<'a> {
                 (CharType::Number, CharType::Number) => {},
                 
                 // Ok(force stop)
-                (CharType::SymbolOne, _) => break,
-                (CharType::SymbolTwo1, CharType::SymbolTwo2) => { self.now_ref_pos += 1; break },
+                (CharType::Symbol, _) => break,
+                (CharType::SymbolAllow1, CharType::SymbolAllow2) => { self.now_ref_pos += 1; break },
 
                 // Ng(panic)
-                (CharType::SymbolTwo1 | CharType::SymbolTwo2, _) => panic!("[ERROR] Discovered unregistered symbol."),
+                (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) => panic!("[ERROR] Discovered unregistered symbol."),
 
                 // Ok(force stop)
                 _ => break
@@ -103,9 +103,9 @@ impl<'a> Tokenizer<'a> {
 enum CharType {
     Number,
     Identifier,
-    SymbolOne,
-    SymbolTwo1,
-    SymbolTwo2,
+    Symbol,
+    SymbolAllow1,
+    SymbolAllow2,
     Space,
     Other
 }
@@ -115,9 +115,9 @@ impl CharType {
         match c {
             '0'..='9' => CharType::Number,
             'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
-            '=' | ':' | '.' | ',' | ';' | '{' | '}' | '(' | ')' => CharType::SymbolOne,
-            '-' => CharType::SymbolTwo1,
-            '>' => CharType::SymbolTwo2,
+            '=' | ':' | '.' | ',' | ';' | '{' | '}' | '(' | ')' => CharType::Symbol,
+            '-' => CharType::SymbolAllow1,
+            '>' => CharType::SymbolAllow2,
             ' ' | '\t' | '\n' => CharType::Space,
             _ => CharType::Other
         }
