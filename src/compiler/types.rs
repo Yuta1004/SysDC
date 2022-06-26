@@ -24,7 +24,7 @@ impl SysDCType for SysDCDefaultType {
 impl SysDCDefaultType {
     fn new(name: &str) -> SysDCDefaultType {
         SysDCDefaultType {
-            name: Name::new(Name::new(Name::new_root(), "global".to_string()), name.to_string())
+            name: Name::new(&Name::new(&Name::new_root(), &"global".to_string()), &name.to_string())
         }
     }
 

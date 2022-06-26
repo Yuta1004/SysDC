@@ -1,12 +1,13 @@
+#[derive(Debug, Clone)]
 pub struct Name {
     name: String,
     namespace: String
 }
 
 impl Name {
-    pub fn new(base: Name, name: String) -> Name {
+    pub fn new(base: &Name, name: &String) -> Name {
         Name {
-            name,
+            name: name.clone(),
             namespace: base.get_full_name() + "."
         }
     }
@@ -33,7 +34,8 @@ mod test {
 
     #[test]
     fn create_name() {
-        let name = Name::new(Name::new_root(), "aaa".to_string());
+        let root = Name::new_root();
+        let name = Name::new(&root, &"aaa".to_string());
         assert_eq!(name.get_name(), "aaa".to_string());
         assert_eq!(name.get_full_name(), ".0.aaa".to_string());
 
