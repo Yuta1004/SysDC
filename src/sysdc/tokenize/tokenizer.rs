@@ -56,6 +56,8 @@ impl<'a> Tokenizer<'a> {
                 
                 // Ok(force stop)
                 (CharType::Symbol, _) => break,
+                (CharType::SymbolAccessor, CharType::SymbolAccessor) => { self.now_ref_pos += 1; break },
+                (CharType::SymbolAccessor, _) => break,
                 (CharType::SymbolAllow1, CharType::SymbolAllow2) => { self.now_ref_pos += 1; break },
 
                 // Ng(panic)
@@ -106,6 +108,7 @@ enum CharType {
     Symbol,
     SymbolAllow1,
     SymbolAllow2,
+    SymbolAccessor,
     Space,
     Other
 }
@@ -115,9 +118,10 @@ impl CharType {
         match c {
             '0'..='9' => CharType::Number,
             'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
-            '=' | ':' | '.' | ',' | ';' | '{' | '}' | '(' | ')' => CharType::Symbol,
+            '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' => CharType::Symbol,
             '-' => CharType::SymbolAllow1,
             '>' => CharType::SymbolAllow2,
+            ':' => CharType::SymbolAccessor,
             ' ' | '\t' | '\n' => CharType::Space,
             _ => CharType::Other
         }
