@@ -19,12 +19,19 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /**
+     * <root> ::= {<sentence>}
+     * <sentence> ::= <layer> | <ref> | <data> | <module>
+     */
     pub fn parse(&mut self) -> SysDCUnit {
         let layer = self.parse_layer(&self.namespace.clone());
         let mut unit = SysDCUnit::new(&layer.name, &self.unit_name);
         unit
     }
 
+    /**
+     * <layer> :: = layer <num> ;
+     */
     fn parse_layer(&mut self, namespace: &Name) -> SysDCLayer {
         self.expect(TokenKind::Layer);
         let num_token = self.expect(TokenKind::Number);
