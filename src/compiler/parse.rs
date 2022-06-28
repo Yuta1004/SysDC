@@ -3,8 +3,8 @@ use std::cell::RefCell;
 
 use super::name::Name;
 use super::types::SysDCType;
-use super::token::{ Token, TokenKind, Tokenizer };
-use super::structure::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
+use super::token::{ TokenKind, Tokenizer };
+use super::structure::{ SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
 
 pub struct Parser<'a> {
     pub namespace: Name,
@@ -202,7 +202,6 @@ impl<'a> Parser<'a> {
             }
         }
         SysDCVariable::new(namespace, discovered_name_elems.last().unwrap(), SysDCType::from_allow_unsolved(&namespace, &discovered_name_elems.join(".")))
-        // => Connector will resolves "Name", "Type" after parse process
     }
 
     /**
@@ -238,7 +237,7 @@ mod test {
     use super::Name;
     use super::SysDCType;
     use super::{ Tokenizer, Parser };
-    use super::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
+    use super::{ SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
 
     #[test]
     fn parse_simple_unit() {
