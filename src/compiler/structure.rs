@@ -200,11 +200,11 @@ pub struct SysDCLink {
 }
 
 impl SysDCLink {
-    pub fn new_branch(namespace: &Name) -> Rc<RefCell<SysDCLink>> {
+    pub fn new_branch(namespace: &Name, name: &String) -> Rc<RefCell<SysDCLink>> {
         Rc::new(
             RefCell::new(
                 SysDCLink {
-                    name: Name::new(namespace, &"".to_string()),
+                    name: Name::new(namespace, name),
                     link_type: SysDCLinkType::Branch,
                     links: Some(vec!()),
                     procedure: None,
@@ -214,11 +214,11 @@ impl SysDCLink {
         )
     }
 
-    pub fn new_chain(namespace: &Name) -> Rc<RefCell<SysDCLink>> {
+    pub fn new_chain(namespace: &Name, name: &String) -> Rc<RefCell<SysDCLink>> {
         Rc::new(
             RefCell::new(
                 SysDCLink {
-                    name: Name::new(namespace, &"".to_string()),
+                    name: Name::new(namespace, name),
                     link_type: SysDCLinkType::Chain,
                     links: Some(vec!()),
                     procedure: None,
@@ -228,11 +228,11 @@ impl SysDCLink {
         )
     }
 
-    pub fn new_instance_of_procedure(namespace: &Name) -> Rc<RefCell<SysDCLink>> {
+    pub fn new_instance_of_procedure(namespace: &Name, name: &String) -> Rc<RefCell<SysDCLink>> {
         Rc::new(
             RefCell::new(
                 SysDCLink {
-                    name: Name::new(namespace, &"".to_string()),
+                    name: Name::new(namespace, name),
                     link_type: SysDCLinkType::InstanceOfProcedure,
                     links: None,
                     procedure: None,
