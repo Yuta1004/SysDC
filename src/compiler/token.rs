@@ -105,11 +105,13 @@ pub struct Tokenizer<'a> {
 
 impl<'a> Tokenizer<'a> {
     pub fn new(text: &'a String) -> Tokenizer<'a> {
-        Tokenizer {
+        let mut tokenizer = Tokenizer {
             text,
             now_ref_pos: 0,
             hold_token: None
-        }
+        };
+        tokenizer.skip_space();
+        tokenizer
     }
 
     pub fn has_token(&self) -> bool {
@@ -137,8 +139,6 @@ impl<'a> Tokenizer<'a> {
         if !self.has_token() {
             return None;
         }
-
-        self.skip_space();
 
         let lead_ref_pos = self.now_ref_pos;
         let lead_type = CharType::from(self.get_char_at(lead_ref_pos));
@@ -172,11 +172,15 @@ impl<'a> Tokenizer<'a> {
             CharType::Number => Token::from_i32(discovered_word.parse::<i32>().unwrap()),
             _ => Token::from_string(discovered_word)
         };
+        self.skip_space();
         Some(token)
     }
 
     fn skip_space(&mut self) {
         loop {
+            if !self.has_token() {
+                break;
+            }
             match CharType::from(self.get_char_at(self.now_ref_pos)) {
                 CharType::Space => self.now_ref_pos += 1,
                 _ => break
