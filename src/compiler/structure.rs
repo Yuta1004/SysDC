@@ -263,7 +263,7 @@ impl SysDCLink {
 
     pub fn push_arg_mapping(&mut self, procedure_arg_name: Name, variable: Rc<RefCell<SysDCVariable>>) {
         if self.link_type == SysDCLinkType::InstanceOfProcedure {
-            self.arg_mapping.as_mut().unwrap().insert(procedure_arg_name.get_full_name(), variable);
+            self.arg_mapping.as_mut().unwrap().insert(procedure_arg_name.get_global_name(), variable);
         } else {
             panic!("[ERROR] SysDCLink.link_type is Branch/Chain, but push_arg_mapping called")
         }

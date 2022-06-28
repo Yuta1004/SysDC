@@ -286,9 +286,9 @@ mod test {
         let procedure = SysDCProcedure::new(&module.borrow().name, &"greet".to_string());
         let arg_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), SysDCType::StringType);
         let arg_message = SysDCVariable::new(&procedure.borrow().name, &"message".to_string(), SysDCType::StringType);
-        let use_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), SysDCType::Unsolved(procedure.borrow().name.clone(), "name".to_string()));
-        let use_message = SysDCVariable::new(&procedure.borrow().name, &"message".to_string(), SysDCType::Unsolved(procedure.borrow().name.clone(), "message".to_string()));
-        let modify_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), SysDCType::Unsolved(procedure.borrow().name.clone(), "name".to_string()));
+        let use_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), SysDCType::from_allow_unsolved(&procedure.borrow().name, &"name".to_string()));
+        let use_message = SysDCVariable::new(&procedure.borrow().name, &"message".to_string(), SysDCType::from_allow_unsolved(&procedure.borrow().name, &"message".to_string()));
+        let modify_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), SysDCType::from_allow_unsolved(&procedure.borrow().name, &"name".to_string()));
         procedure.borrow_mut().set_return_type(SysDCType::NoneType);
         procedure.borrow_mut().push_arg(arg_name);
         procedure.borrow_mut().push_arg(arg_message);
