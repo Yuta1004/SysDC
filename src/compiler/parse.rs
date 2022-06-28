@@ -51,14 +51,18 @@ impl<'a> Parser<'a> {
      */
     pub fn parse(&mut self) -> SysDCUnit {
         let layer = self.parse_layer(&self.namespace.clone());
+
         let mut unit = SysDCUnit::new(&layer.name, &self.unit_name);
         while self.tokenizer.has_token() {
             if let Some(data) = self.parse_data(&unit.name) {
                 unit.push_data(data);
+                continue;
             }
             if let Some(module) = self.parse_module(&unit.name) {
                 unit.push_module(module);
+                continue;
             }
+            panic!("[ERROR] Data/Module not found, but tokens remain");
         }
         unit
     }
@@ -316,6 +320,37 @@ mod test {
         unit.push_module(module);
 
         compare_unit(program, unit);
+    }
+
+    #[test]
+    #[should_panic]
+    fn parse_syntax_error_1() {
+        parse("aaa");
+    }
+
+    #[test]
+    #[should_panic]
+    fn parse_syntax_error_2() {
+        parse("
+            layer 0;
+            data User {
+                id: int32,
+                age,
+                name: string
+            }
+        ");
+    }
+
+    #[test]
+    #[should_panic]
+    fn parse_syntax_error_3() {
+        parse("
+            layer 0;
+            module {
+                greet() {
+                }
+            }
+        ");
     }
 
     fn compare_unit(program: &str, unit: SysDCUnit) {
