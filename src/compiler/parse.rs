@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use super::name::Name;
 use super::types::SysDCType;
 use super::token::{ TokenKind, Tokenizer };
-use super::structure::{ SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
+use super::structure::{ SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure, SysDCLink };
 
 pub struct Parser<'a> {
     pub namespace: Name,
@@ -114,12 +114,15 @@ impl<'a> Parser<'a> {
         procedure.borrow_mut().set_return_type(SysDCType::from_allow_unsolved(&namespace, &types));
 
         self.tokenizer.request(TokenKind::BracketBegin);
-        let (uses_variables, modifies_variables) = self.parse_annotation(&procedure.borrow().name);
+        let (uses_variables, modifies_variables, link) = self.parse_annotation(&procedure.borrow().name);
         for variable in uses_variables {
             procedure.borrow_mut().push_using_variable(variable);
         }
         for variable in modifies_variables {
             procedure.borrow_mut().push_modifying_variable(variable);
+        }
+        if let Some(link) = link {
+            procedure.borrow_mut().set_link(link);
         }
         self.tokenizer.request(TokenKind::BracketEnd);
 
@@ -127,9 +130,9 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * <annotation> ::= {<use> | <modify>}
+     * <annotation> ::= {<use> | <modify>} (link \= <link> ;)
      */
-    fn parse_annotation(&mut self, namespace: &Name) -> (Vec<Rc<RefCell<SysDCVariable>>>, Vec<Rc<RefCell<SysDCVariable>>>) {
+    fn parse_annotation(&mut self, namespace: &Name) -> (Vec<Rc<RefCell<SysDCVariable>>>, Vec<Rc<RefCell<SysDCVariable>>>, Option<Rc<RefCell<SysDCLink>>>) {
         let (mut uses_variables, mut modifies_variables) = (vec!(), vec!());
         loop {
             if let Some(variables) = self.parse_use(namespace) {
@@ -142,7 +145,14 @@ impl<'a> Parser<'a> {
             }
             break;
         }
-        (uses_variables, modifies_variables)
+
+        let mut link: Option<Rc<RefCell<SysDCLink>>> = None;
+        if self.tokenizer.expect(TokenKind::Link).is_some() {
+            self.tokenizer.request(TokenKind::Equal);
+            link = Some(self.parse_link(namespace));
+        }
+
+        (uses_variables, modifies_variables, link)
     }
 
     /**
@@ -171,6 +181,70 @@ impl<'a> Parser<'a> {
         let modifies_variables = self.parse_var_list(namespace, TokenKind::ListBegin, TokenKind::ListEnd);
         self.tokenizer.request(TokenKind::Semicolon);
         Some(modifies_variables)
+    }
+    
+    /**
+     * <link> ::= (chain | branch) <link_list, begin="{", end="}"> | <instance_of_procedure>
+     */
+    fn parse_link(&mut self, namespace: &Name) -> Rc<RefCell<SysDCLink>> {
+        if self.tokenizer.expect(TokenKind::Chain).is_some() {
+            let chain = SysDCLink::new_chain(namespace, &"link".to_string());
+            let link_list = self.parse_link_list(&chain.borrow().name, TokenKind::BracketBegin, TokenKind::BracketEnd);
+            for link in link_list {
+                chain.borrow_mut().push_link(link);
+            }
+            return chain;
+        }
+
+        if self.tokenizer.expect(TokenKind::Branch).is_some() {
+            let branch = SysDCLink::new_branch(namespace, &"link".to_string());
+            let link_list = self.parse_link_list(&branch.borrow().name, TokenKind::BracketBegin, TokenKind::BracketEnd);
+            for link in link_list {
+                branch.borrow_mut().push_link(link);
+            }
+            return branch;
+        }
+
+        self.parse_instance_of_procedure(namespace)
+    }
+
+    /**
+     * <link_list> ::= <begin> {<link>} <end>
+     */
+    fn parse_link_list(&mut self, namespace: &Name, begin: TokenKind, end: TokenKind) -> Vec<Rc<RefCell<SysDCLink>>> {
+        self.tokenizer.request(begin);
+        let mut link_list = vec!();
+        loop {
+            link_list.push(self.parse_link(namespace));
+            if self.tokenizer.expect(end.clone()).is_some() {
+                break;
+            } else {
+                self.tokenizer.request(TokenKind::Separater);
+            }
+        }
+        link_list
+    }
+
+    /**
+     * <instance_of_procedure> ::= {<id>::} <id> <var_list, begin="(", end=")"> 
+     */
+    fn parse_instance_of_procedure(&mut self, namespace: &Name) -> Rc<RefCell<SysDCLink>> {
+        let instance_of_procedure = SysDCLink::new_instance_of_procedure(namespace, &"link".to_string());
+
+        let mut discovered_name_elems = vec!();
+        loop {
+            discovered_name_elems.push(self.tokenizer.request(TokenKind::Identifier).get_id());
+            if self.tokenizer.expect(TokenKind::PAccessor).is_none() {
+                break;
+            }
+        }
+
+        let args = self.parse_var_list(&instance_of_procedure.borrow().name, TokenKind::ParenthesisBegin, TokenKind::ParenthesisEnd);
+        for arg in args {
+            instance_of_procedure.borrow_mut().push_arg(arg);
+        }
+
+        instance_of_procedure
     }
 
     /**
@@ -201,7 +275,7 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-        SysDCVariable::new(namespace, discovered_name_elems.last().unwrap(), SysDCType::from_allow_unsolved(&namespace, &discovered_name_elems.join(".")))
+        SysDCVariable::new(namespace, &discovered_name_elems.join("."), SysDCType::from_allow_unsolved(&namespace, &discovered_name_elems.join(".")))
     }
 
     /**
@@ -237,7 +311,7 @@ mod test {
     use super::Name;
     use super::SysDCType;
     use super::{ Tokenizer, Parser };
-    use super::{ SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
+    use super::{ SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure, SysDCLink };
 
     #[test]
     fn parse_simple_unit() {
@@ -301,6 +375,114 @@ mod test {
     }
 
     #[test]
+    fn parse_module_with_link_chain_first() {
+        let program = "
+            layer 0;
+            module UserModule {
+                greet(message: string) -> none {
+                    link = chain {
+                        branch {
+                            Printer::print(this.age),
+                            Printer::print(this.name)
+                        },
+                        chain {
+                            Printer::print(this.id),
+                            Printer::print(message)
+                        }
+                    }
+                }
+            }
+        ";
+
+        let mut unit = generate_test_unit(0);
+        let module = SysDCModule::new(&unit.name, &"UserModule".to_string());
+        let procedure = SysDCProcedure::new(&module.borrow().name, &"greet".to_string());
+        let arg_message = SysDCVariable::new(&procedure.borrow().name, &"message".to_string(), SysDCType::StringType);
+        let chain_link = SysDCLink::new_chain(&procedure.borrow().name, &"link".to_string());
+        let branch_link2 = SysDCLink::new_branch(&chain_link.borrow().name, &"link".to_string());
+        let iop_age_link3 = SysDCLink::new_instance_of_procedure(&branch_link2.borrow().name, &"link".to_string());
+        let arg_age_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, &"this.age".to_string(), SysDCType::from_allow_unsolved(&iop_age_link3.borrow().name, &"this.age".to_string()));
+        let iop_name_link3 = SysDCLink::new_instance_of_procedure(&branch_link2.borrow().name, &"link".to_string());
+        let arg_name_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, &"this.name".to_string(), SysDCType::from_allow_unsolved(&iop_age_link3.borrow().name, &"this.name".to_string()));
+        let chain_link2 = SysDCLink::new_chain(&chain_link.borrow().name, &"link".to_string());
+        let iop_id_link3 = SysDCLink::new_instance_of_procedure(&chain_link2.borrow().name, &"link".to_string());
+        let arg_id_link3 = SysDCVariable::new(&iop_id_link3.borrow().name, &"this.id".to_string(), SysDCType::from_allow_unsolved(&iop_id_link3.borrow().name, &"this.id".to_string()));
+        let iop_message_link3 = SysDCLink::new_instance_of_procedure(&chain_link2.borrow().name, &"link".to_string());
+        let arg_message_link3 = SysDCVariable::new(&iop_message_link3.borrow().name, &"message".to_string(), SysDCType::from_allow_unsolved(&iop_message_link3.borrow().name, &"message".to_string()));
+        iop_age_link3.borrow_mut().push_arg(arg_age_link3);
+        iop_name_link3.borrow_mut().push_arg(arg_name_link3);
+        branch_link2.borrow_mut().push_link(iop_age_link3);
+        branch_link2.borrow_mut().push_link(iop_name_link3);
+        iop_id_link3.borrow_mut().push_arg(arg_id_link3);
+        iop_message_link3.borrow_mut().push_arg(arg_message_link3);
+        chain_link2.borrow_mut().push_link(iop_id_link3);
+        chain_link2.borrow_mut().push_link(iop_message_link3);
+        chain_link.borrow_mut().push_link(branch_link2);
+        chain_link.borrow_mut().push_link(chain_link2);
+        procedure.borrow_mut().set_link(chain_link);
+        procedure.borrow_mut().set_return_type(SysDCType::NoneType);
+        procedure.borrow_mut().push_arg(arg_message);
+        module.borrow_mut().push_procedure(procedure);
+        unit.push_module(module);
+
+        compare_unit(program, unit);
+    }
+
+    #[test]
+    fn parse_module_with_link_branch_first() {
+        let program = "
+            layer 0;
+            module UserModule {
+                greet(message: string) -> none {
+                    link = branch {
+                        branch {
+                            Printer::print(this.age),
+                            Printer::print(this.name)
+                        },
+                        chain {
+                            Printer::print(this.id),
+                            Printer::print(message)
+                        }
+                    }
+                }
+            }
+        ";
+
+        let mut unit = generate_test_unit(0);
+        let module = SysDCModule::new(&unit.name, &"UserModule".to_string());
+        let procedure = SysDCProcedure::new(&module.borrow().name, &"greet".to_string());
+        let arg_message = SysDCVariable::new(&procedure.borrow().name, &"message".to_string(), SysDCType::StringType);
+        let branch_link = SysDCLink::new_branch(&procedure.borrow().name, &"link".to_string());
+        let branch_link2 = SysDCLink::new_branch(&branch_link.borrow().name, &"link".to_string());
+        let iop_age_link3 = SysDCLink::new_instance_of_procedure(&branch_link2.borrow().name, &"link".to_string());
+        let arg_age_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, &"this.age".to_string(), SysDCType::from_allow_unsolved(&iop_age_link3.borrow().name, &"this.age".to_string()));
+        let iop_name_link3 = SysDCLink::new_instance_of_procedure(&branch_link2.borrow().name, &"link".to_string());
+        let arg_name_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, &"this.name".to_string(), SysDCType::from_allow_unsolved(&iop_age_link3.borrow().name, &"this.name".to_string()));
+        let chain_link2 = SysDCLink::new_chain(&branch_link.borrow().name, &"link".to_string());
+        let iop_id_link3 = SysDCLink::new_instance_of_procedure(&chain_link2.borrow().name, &"link".to_string());
+        let arg_id_link3 = SysDCVariable::new(&iop_id_link3.borrow().name, &"this.id".to_string(), SysDCType::from_allow_unsolved(&iop_id_link3.borrow().name, &"this.id".to_string()));
+        let iop_message_link3 = SysDCLink::new_instance_of_procedure(&chain_link2.borrow().name, &"link".to_string());
+        let arg_message_link3 = SysDCVariable::new(&iop_message_link3.borrow().name, &"message".to_string(), SysDCType::from_allow_unsolved(&iop_message_link3.borrow().name, &"message".to_string()));
+        iop_age_link3.borrow_mut().push_arg(arg_age_link3);
+        iop_name_link3.borrow_mut().push_arg(arg_name_link3);
+        branch_link2.borrow_mut().push_link(iop_age_link3);
+        branch_link2.borrow_mut().push_link(iop_name_link3);
+        iop_id_link3.borrow_mut().push_arg(arg_id_link3);
+        iop_message_link3.borrow_mut().push_arg(arg_message_link3);
+        chain_link2.borrow_mut().push_link(iop_id_link3);
+        chain_link2.borrow_mut().push_link(iop_message_link3);
+        branch_link.borrow_mut().push_link(branch_link2);
+        branch_link.borrow_mut().push_link(chain_link2);
+        procedure.borrow_mut().set_link(branch_link);
+        procedure.borrow_mut().set_return_type(SysDCType::NoneType);
+        procedure.borrow_mut().push_arg(arg_message);
+        module.borrow_mut().push_procedure(procedure);
+        unit.push_module(module);
+
+        compare_unit(program, unit);
+    }
+
+    #[test]
     #[should_panic]
     fn parse_syntax_error_1() {
         parse("aaa");
@@ -326,6 +508,32 @@ mod test {
             layer 0;
             module {
                 greet() {
+                }
+            }
+        ");
+    }
+
+    #[test]
+    #[should_panic]
+    fn parse_syntax_error_4() {
+        parse("
+            layer 0;
+            module UserModule {
+                greet() -> none {
+                    link = chain { }
+                }
+            }
+        ");
+    }
+
+    #[test]
+    #[should_panic]
+    fn parse_syntax_error_5() {
+        parse("
+            layer 0;
+            module UserModule {
+                greet() -> noen {
+                    link = 
                 }
             }
         ");
