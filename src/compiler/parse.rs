@@ -254,11 +254,16 @@ impl<'a> Parser<'a> {
         self.tokenizer.request(begin);
         let mut var_list = vec!();
         loop {
-            var_list.push(self.parse_var(namespace));
-            if self.tokenizer.expect(end.clone()).is_some() {
-                break;
+            if let Some(var) = self.parse_var(namespace) {
+                var_list.push(var);
+                if self.tokenizer.expect(end.clone()).is_some() {
+                    break;
+                } else {
+                    self.tokenizer.request(TokenKind::Separater);
+                }
             } else {
-                self.tokenizer.request(TokenKind::Separater);
+                self.tokenizer.request(end.clone());
+                break;
             }
         }
         var_list
@@ -267,15 +272,20 @@ impl<'a> Parser<'a> {
     /**
      * <var> ::= {<id>.} <id>
      */
-    fn parse_var(&mut self, namespace: &Name) -> Rc<RefCell<SysDCVariable>> {
+    fn parse_var(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCVariable>>> {
         let mut discovered_name_elems = vec!();
-        loop {
-            discovered_name_elems.push(self.tokenizer.request(TokenKind::Identifier).get_id());
-            if self.tokenizer.expect(TokenKind::Accessor).is_none() {
-                break;
+        if let Some(mut token_id) = self.tokenizer.expect(TokenKind::Identifier) {
+            loop {
+                discovered_name_elems.push(token_id.get_id());
+                if self.tokenizer.expect(TokenKind::Accessor).is_none() {
+                    break;
+                }
+                token_id = self.tokenizer.request(TokenKind::Identifier);
             }
+        } else {
+            return None;
         }
-        SysDCVariable::new(namespace, &discovered_name_elems.join("."), SysDCType::from_allow_unsolved(&namespace, &discovered_name_elems.join(".")))   // TODO: Connector
+        Some(SysDCVariable::new(namespace, &discovered_name_elems.join("."), SysDCType::from_allow_unsolved(&namespace, &discovered_name_elems.join(".")))) // TODO: Connector
     }
 
     /**
@@ -285,11 +295,16 @@ impl<'a> Parser<'a> {
         self.tokenizer.request(begin);
         let mut var_list = vec!();
         loop {
-            var_list.push(self.parse_id_type_mapping_var(namespace));
-            if self.tokenizer.expect(end.clone()).is_some() {
-                break;
+            if let Some(var) = self.parse_id_type_mapping_var(namespace) {
+                var_list.push(var);
+                if self.tokenizer.expect(end.clone()).is_some() {
+                    break;
+                } else {
+                    self.tokenizer.request(TokenKind::Separater);
+                }
             } else {
-                self.tokenizer.request(TokenKind::Separater);
+                self.tokenizer.request(end.clone());
+                break;
             }
         }
         var_list
@@ -298,11 +313,15 @@ impl<'a> Parser<'a> {
     /**
      * <id_type_mapping_var> ::= <id> : <type> 
      */
-    fn parse_id_type_mapping_var(&mut self, namespace: &Name) -> Rc<RefCell<SysDCVariable>> {
-        let id = self.tokenizer.request(TokenKind::Identifier).get_id();
-        self.tokenizer.request(TokenKind::Mapping);
-        let types = self.tokenizer.request(TokenKind::Identifier).get_id();
-        SysDCVariable::new(namespace, &id, SysDCType::from_allow_unsolved(&namespace, &types))  // TODO: Connector
+    fn parse_id_type_mapping_var(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCVariable>>> {
+        if let Some(token_id) = self.tokenizer.expect(TokenKind::Identifier) {
+            let id = token_id.get_id();
+            self.tokenizer.request(TokenKind::Mapping);
+            let types = self.tokenizer.request(TokenKind::Identifier).get_id();
+            Some(SysDCVariable::new(namespace, &id, SysDCType::from_allow_unsolved(&namespace, &types)))    // TODO: Connector
+        } else {
+            None
+        }
     }
 }
 
@@ -343,7 +362,30 @@ mod test {
     }
 
     #[test]
-    fn parse_module() {
+    fn parse_module_procedure_has_not_args() {
+        let program = "
+            layer 0;
+            module UserModule {
+                greet() -> none {
+                    link = Printer::print()
+                }
+            }
+        ";
+
+        let mut unit = generate_test_unit(0);
+        let module = SysDCModule::new(&unit.name, &"UserModule".to_string());
+        let procedure = SysDCProcedure::new(&module.borrow().name, &"greet".to_string());
+        let iop_printer = SysDCLink::new_instance_of_procedure(&procedure.borrow().name, &"link".to_string());
+        procedure.borrow_mut().set_link(iop_printer);
+        procedure.borrow_mut().set_return_type(SysDCType::NoneType);
+        module.borrow_mut().push_procedure(procedure);
+        unit.push_module(module);
+
+        compare_unit(program, unit);
+    }
+
+    #[test]
+    fn parse_module_procedure_has_args() {
         let program = "
             layer 0;
             module UserModule {
