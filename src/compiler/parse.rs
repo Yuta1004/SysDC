@@ -65,9 +65,9 @@ impl<'a> Parser<'a> {
      * <layer> :: = layer <num> ;
      */
     fn parse_layer(&mut self, namespace: &Name) -> SysDCLayer {
-        self.expect(TokenKind::Layer);
-        let num_token = self.expect(TokenKind::Number);
-        self.expect(TokenKind::Semicolon);
+        self.tokenizer.request(TokenKind::Layer);
+        let num_token = self.tokenizer.request(TokenKind::Number);
+        self.tokenizer.request(TokenKind::Semicolon);
         SysDCLayer::new(&namespace, num_token.get_number())
     }
 
@@ -75,20 +75,20 @@ impl<'a> Parser<'a> {
      * <data> ::= data \{ {<id_type_mapping_var>} \} 
      */
     fn parse_data(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCData>>> {
-        if self.tokenizer.expect_kind(TokenKind::Data).is_none() {
+        if self.tokenizer.expect(TokenKind::Data).is_none() {
             return None;
         }
 
-        let data = SysDCData::new(namespace, &self.expect(TokenKind::Identifier).get_id());
-        self.expect(TokenKind::BracketBegin);
+        let data = SysDCData::new(namespace, &self.tokenizer.request(TokenKind::Identifier).get_id());
+        self.tokenizer.request(TokenKind::BracketBegin);
         loop {
             let var = self.parse_id_type_mapping_var(&data.borrow().name);
             data.borrow_mut().push_variable(var);
 
-            if self.tokenizer.expect_kind(TokenKind::BracketEnd).is_some() {
+            if self.tokenizer.expect(TokenKind::BracketEnd).is_some() {
                 break;
             } else {
-                self.expect(TokenKind::Separater);
+                self.tokenizer.request(TokenKind::Separater);
             }
         }
         Some(data)
@@ -98,17 +98,10 @@ impl<'a> Parser<'a> {
      * <id_type_mapping_var> ::= <id> : <type> 
      */
     fn parse_id_type_mapping_var(&mut self, namespace: &Name) -> Rc<RefCell<SysDCVariable>> {
-        let id = self.expect(TokenKind::Identifier).get_id();
-        self.expect(TokenKind::Mapping);
-        let types = self.expect(TokenKind::Identifier).get_id();
+        let id = self.tokenizer.request(TokenKind::Identifier).get_id();
+        self.tokenizer.request(TokenKind::Mapping);
+        let types = self.tokenizer.request(TokenKind::Identifier).get_id();
         SysDCVariable::new(namespace, &id, TmpType::new(&types))
-    }
-
-    fn expect(&mut self, kind: TokenKind) -> Token {
-        match self.tokenizer.expect_kind(kind.clone()) {
-            Some(token) => token,
-            None => panic!("[ERROR] Token {:?} is expected, but not found.", kind)
-        }
     }
 }
 

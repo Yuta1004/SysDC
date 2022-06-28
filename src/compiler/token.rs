@@ -118,7 +118,7 @@ impl<'a> Tokenizer<'a> {
         self.now_ref_pos != self.text.len()
     }
 
-    pub fn expect_kind(&mut self, kind: TokenKind) -> Option<Token> {
+    pub fn expect(&mut self, kind: TokenKind) -> Option<Token> {
         if let Some(token) = self.tokenize() {
             if token.kind == kind {
                 self.hold_token = None;
@@ -129,6 +129,13 @@ impl<'a> Tokenizer<'a> {
             }
         } else {
             None
+        }
+    }
+
+    pub fn request(&mut self, kind: TokenKind) -> Token {
+        match self.expect(kind.clone()) {
+            Some(token) => token,
+            None => panic!("[ERROR] Token \"{:?}\" is requested, but not found.", kind)
         }
     }
 
@@ -313,7 +320,7 @@ mod test {
         }
 
         #[test]
-        pub fn expect_kind_all_ok() {
+        fn expect_all_ok() {
             let text = "
                 layer 0;
                 data User {
@@ -381,7 +388,7 @@ mod test {
 
             let mut tokenizer = Tokenizer::new(&text);
             for token_kind in correct_token_kinds {
-                match tokenizer.expect_kind(token_kind.clone()) {
+                match tokenizer.expect(token_kind.clone()) {
                     Some(_) => {}
                     None => assert!(false, "{:?}", token_kind)
                 }
@@ -390,17 +397,43 @@ mod test {
         }
 
         #[test]
-        pub fn expect_kind_all_ng() {
+        fn expect_all_ng() {
             let text = "data".to_string();
 
             let mut tokenizer = Tokenizer::new(&text);
             for token_kind in [TokenKind::Layer, TokenKind::Ref, TokenKind::Data] {
-                match tokenizer.expect_kind(token_kind.clone()) {
+                match tokenizer.expect(token_kind.clone()) {
                     Some(_) => assert_eq!(token_kind, TokenKind::Data),
                     None => assert_ne!(token_kind, TokenKind::Data)
                 }
             }
             assert!(!tokenizer.has_token());
+        }
+
+        #[test]
+        fn request_all_ok() {
+            let text = "data module cocoa 410".to_string();
+            let correct_token_kinds = [
+                TokenKind::Data,
+                TokenKind::Module,
+                TokenKind::Identifier,
+                TokenKind::Number
+            ];
+
+            let mut tokenizer = Tokenizer::new(&text);
+            for token_kind in correct_token_kinds {
+                let token = tokenizer.request(token_kind.clone());
+                assert_eq!(token.kind, token_kind);
+            }
+            assert!(!tokenizer.has_token());
+        }
+
+        #[test]
+        #[should_panic]
+        fn request_ng() {
+            let text = "data".to_string();
+            let mut tokenizer = Tokenizer::new(&text);
+            tokenizer.request(TokenKind::Number);
         }
     }
 }
