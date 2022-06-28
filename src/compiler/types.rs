@@ -53,3 +53,24 @@ impl Debug for SysDCType {
         write!(f, "\"{}\"", self.get_name().get_global_name())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::Name;
+    use super::SysDCType;
+
+    #[test]
+    fn from_all_ok() {
+        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), &"int32".to_string()), SysDCType::Int32);
+        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), &"float32".to_string()), SysDCType::Float32);
+        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), &"string".to_string()), SysDCType::StringType);
+        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), &"none".to_string()), SysDCType::NoneType);
+        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), &"cocoa".to_string()), SysDCType::Unsolved(Name::new(&Name::new_root(), &"cocoa".to_string())));
+    }
+
+    #[test]
+    #[should_panic]
+    fn from_ng() {
+        assert_eq!(SysDCType::from(&Name::new_root(), &"cocoa".to_string()), SysDCType::Unsolved(Name::new(&Name::new_root(), &"cocoa".to_string())));
+    }
+}
