@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use super::name::Name;
 use super::types::SysDCType;
 use super::token::{ Token, TokenKind, Tokenizer };
-use super::structure::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable };
+use super::structure::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
 
 struct TmpType {
     name: String
@@ -56,7 +56,9 @@ impl<'a> Parser<'a> {
             if let Some(data) = self.parse_data(&unit.name) {
                 unit.push_data(data);
             }
-            println!("{}", self.tokenizer.has_token());
+            if let Some(module) = self.parse_module(&unit.name) {
+                unit.push_module(module);
+            }
         }
         unit
     }
@@ -88,39 +90,137 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * <module> ::= module <id> \{ {<procedure>} \}
+     * <module> ::= module <id> \{ <procedures> \}
      */
 
-    fn parse_module(&mut self, namespace: &Name) {
+    fn parse_module(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCModule>>> {
+        if self.tokenizer.expect(TokenKind::Module).is_none() {
+            return None;
+        }
 
+        let module = SysDCModule::new(namespace, &self.tokenizer.request(TokenKind::Identifier).get_id());
+        self.tokenizer.request(TokenKind::BracketBegin);
+        loop {
+            let procedure = self.parse_procedure(&module.borrow().name);
+            match procedure {
+                Some(procedure) => module.borrow_mut().push_procedure(procedure),
+                None => break
+            }
+        }
+        self.tokenizer.request(TokenKind::BracketEnd);
+        Some(module)
     }
 
     /**
      * <procedure> ::= <id> <id_type_mapping_var_list, begin="(", end=")"> -> <type> \{ {<annotation>} \}
      */
-    fn parse_procedure(&mut self, namespace: &Name) {
+    fn parse_procedure(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCProcedure>>> {
+        let name_token = self.tokenizer.expect(TokenKind::Identifier);
+        if name_token.is_none() {
+            return None;
+        }
 
+        let procedure = SysDCProcedure::new(namespace, &name_token.unwrap().get_id());
+
+        let args = self.parse_id_type_mapping_var_list(&procedure.borrow().name, TokenKind::ParenthesisBegin, TokenKind::ParenthesisEnd);
+        for arg in args {
+            procedure.borrow_mut().push_arg(arg);
+        }
+
+        self.tokenizer.request(TokenKind::Allow);
+        let types = self.tokenizer.request(TokenKind::Identifier).get_id();
+        procedure.borrow_mut().set_return_type(TmpType::new(&types));
+
+        self.tokenizer.request(TokenKind::BracketBegin);
+        let (uses_variables, modifies_variables) = self.parse_annotation(&procedure.borrow().name);
+        for variable in uses_variables {
+            procedure.borrow_mut().push_using_variable(variable);
+        }
+        for variable in modifies_variables {
+            procedure.borrow_mut().push_modifying_variable(variable);
+        }
+        self.tokenizer.request(TokenKind::BracketEnd);
+
+        Some(procedure)
     }
 
     /**
      * <annotation> ::= {<use> | <modify>}
      */
-    fn parse_annotation(&mut self, namespace: &Name) {
-
+    fn parse_annotation(&mut self, namespace: &Name) -> (Vec<Rc<RefCell<SysDCVariable>>>, Vec<Rc<RefCell<SysDCVariable>>>) {
+        let (mut uses_variables, mut modifies_variables) = (vec!(), vec!());
+        loop {
+            if let Some(variables) = self.parse_use(namespace) {
+                uses_variables.extend(variables);
+                continue;
+            }
+            if let Some(variables) = self.parse_modify(namespace) {
+                modifies_variables.extend(variables);
+                continue;
+            }
+            break;
+        }
+        (uses_variables, modifies_variables)
     }
 
     /**
      * <use> ::= use \= <var_list, begin="[", end="]"> ;
      */
-    fn parse_use(&mut self, namespace: &Name) {
+    fn parse_use(&mut self, namespace: &Name) -> Option<Vec<Rc<RefCell<SysDCVariable>>>> {
+        if self.tokenizer.expect(TokenKind::Use).is_none() {
+            return None;
+        }
 
+        self.tokenizer.request(TokenKind::Equal);
+        let uses_variables = self.parse_var_list(namespace, TokenKind::ListBegin, TokenKind::ListEnd);
+        self.tokenizer.request(TokenKind::Semicolon);
+        Some(uses_variables)
     }
 
     /**
      * <modify> ::= modify \= <var_list, begin="[", end="]"> ;
      */
-    fn parse_modify(&mut self, namespace: &Name) {
+    fn parse_modify(&mut self, namespace: &Name) -> Option<Vec<Rc<RefCell<SysDCVariable>>>> {
+        if self.tokenizer.expect(TokenKind::Modify).is_none() {
+            return None;
+        }
 
+        self.tokenizer.request(TokenKind::Equal);
+        let modifies_variables = self.parse_var_list(namespace, TokenKind::ListBegin, TokenKind::ListEnd);
+        self.tokenizer.request(TokenKind::Semicolon);
+        Some(modifies_variables)
+    }
+
+    /**
+     * <var_list> ::= <begin> {<var>} <end>
+     */
+    fn parse_var_list(&mut self, namespace: &Name, begin: TokenKind, end: TokenKind) -> Vec<Rc<RefCell<SysDCVariable>>> {
+        self.tokenizer.request(begin);
+        let mut var_list = vec!();
+        loop {
+            var_list.push(self.parse_var(namespace));
+            if self.tokenizer.expect(end.clone()).is_some() {
+                break;
+            } else {
+                self.tokenizer.request(TokenKind::Separater);
+            }
+        }
+        var_list
+    }
+
+    /**
+     * <var> ::= {<id>.} <id>
+     */
+    fn parse_var(&mut self, namespace: &Name) -> Rc<RefCell<SysDCVariable>> {
+        let mut discovered_name_elems = vec!();
+        loop {
+            discovered_name_elems.push(self.tokenizer.request(TokenKind::Identifier).get_id());
+            if self.tokenizer.expect(TokenKind::Accessor).is_none() {
+                break;
+            }
+        }
+        SysDCVariable::new(namespace, &discovered_name_elems.join("."), TmpType::new(&"tmp".to_string()))
+        // => Connector will resolves "Name", "Type" after parse process
     }
 
     /**
@@ -155,7 +255,7 @@ impl<'a> Parser<'a> {
 mod test {
     use super::Name;
     use super::{ TmpType, Tokenizer, Parser };
-    use super::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable };
+    use super::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
 
     #[test]
     fn parse_simple_unit() {
@@ -182,6 +282,38 @@ mod test {
         data.borrow_mut().push_variable(age);
         data.borrow_mut().push_variable(name);
         unit.push_data(data);
+
+        compare_unit(program, unit);
+    }
+
+    #[test]
+    fn parse_module() {
+        let program = "
+            layer 0;
+            module UserModule {
+                greet(name: string, message: string) -> none {
+                    use = [name, message];
+                    modify = [name];
+                }
+            }
+        ";
+
+        let mut unit = generate_test_unit(0);
+        let module = SysDCModule::new(&unit.name, &"UserModule".to_string());
+        let procedure = SysDCProcedure::new(&module.borrow().name, &"greet".to_string());
+        let arg_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), TmpType::new(&"string".to_string()));
+        let arg_message = SysDCVariable::new(&procedure.borrow().name, &"message".to_string(), TmpType::new(&"string".to_string()));
+        let use_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), TmpType::new(&"tmp".to_string()));
+        let use_message = SysDCVariable::new(&procedure.borrow().name, &"message".to_string(), TmpType::new(&"tmp".to_string()));
+        let modify_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), TmpType::new(&"tmp".to_string()));
+        procedure.borrow_mut().set_return_type(TmpType::new(&"none".to_string()));
+        procedure.borrow_mut().push_arg(arg_name);
+        procedure.borrow_mut().push_arg(arg_message);
+        procedure.borrow_mut().push_using_variable(use_name);
+        procedure.borrow_mut().push_using_variable(use_message);
+        procedure.borrow_mut().push_modifying_variable(modify_name);
+        module.borrow_mut().push_procedure(procedure);
+        unit.push_module(module);
 
         compare_unit(program, unit);
     }
