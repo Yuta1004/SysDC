@@ -47,7 +47,7 @@ impl<'a> Parser<'a> {
 
     /**
      * <root> ::= {<sentence>}
-     * <sentence> ::= <layer> <ref> {<data> | <module>}
+     * <sentence> ::= <layer> {<data> | <module>}
      */
     pub fn parse(&mut self) -> SysDCUnit {
         let layer = self.parse_layer(&self.namespace.clone());
