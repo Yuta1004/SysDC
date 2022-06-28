@@ -194,9 +194,9 @@ pub enum SysDCLinkType {
 pub struct SysDCLink {
     pub name: Name,
     pub link_type: SysDCLinkType,
-    pub links: Option<Vec<Rc<RefCell<SysDCLink>>>>,                         // Valid for link_type is Branch/Chain
-    pub procedure: Option<Rc<RefCell<SysDCProcedure>>>,                     // Valid for link_type is InstanceOfProcedure
-    pub arg_mapping: Option<HashMap<String, Rc<RefCell<SysDCVariable>>>>    // Valid for link_type is InstanceOfProcedure
+    pub links: Option<Vec<Rc<RefCell<SysDCLink>>>>,         // Valid for link_type is Branch/Chain
+    pub procedure: Option<Rc<RefCell<SysDCProcedure>>>,     // Valid for link_type is InstanceOfProcedure
+    pub args: Option<Vec<Rc<RefCell<SysDCVariable>>>>       // Valid for link_type is InstanceOfProcedure
 }
 
 impl SysDCLink {
@@ -208,7 +208,7 @@ impl SysDCLink {
                     link_type: SysDCLinkType::Branch,
                     links: Some(vec!()),
                     procedure: None,
-                    arg_mapping: None
+                    args: None
                 }
             )
         )
@@ -222,7 +222,7 @@ impl SysDCLink {
                     link_type: SysDCLinkType::Chain,
                     links: Some(vec!()),
                     procedure: None,
-                    arg_mapping: None
+                    args: None
                 }
             )
         )
@@ -236,7 +236,7 @@ impl SysDCLink {
                     link_type: SysDCLinkType::InstanceOfProcedure,
                     links: None,
                     procedure: None,
-                    arg_mapping: Some(HashMap::new())
+                    args: Some(vec!())
                 }
             )
         )
@@ -261,9 +261,9 @@ impl SysDCLink {
         }
     }
 
-    pub fn push_arg_mapping(&mut self, procedure_arg_name: Name, variable: Rc<RefCell<SysDCVariable>>) {
+    pub fn push_arg(&mut self, variable: Rc<RefCell<SysDCVariable>>) {
         if self.link_type == SysDCLinkType::InstanceOfProcedure {
-            self.arg_mapping.as_mut().unwrap().insert(procedure_arg_name.get_global_name(), variable);
+            self.args.as_mut().unwrap().push(variable);
         } else {
             panic!("[ERROR] SysDCLink.link_type is Branch/Chain, but push_arg_mapping called")
         }
