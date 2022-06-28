@@ -113,11 +113,7 @@ mod test {
 
     #[test]
     fn parse_simple_unit() {
-        let program = "layer 0;";
-
-        let unit = generate_test_unit(0);
-
-        compare_unit(parse(program), unit);
+        compare_unit("layer 0;", generate_test_unit(0));
     }
 
     #[test]
@@ -141,11 +137,11 @@ mod test {
         data.borrow_mut().push_variable(name);
         unit.push_data(data);
 
-        compare_unit(parse(program), unit);
+        compare_unit(program, unit);
     }
 
-    fn compare_unit(a: SysDCUnit, b: SysDCUnit) {
-        assert_eq!(format!("{:?}", a), format!("{:?}", b));
+    fn compare_unit(program: &str, unit: SysDCUnit) {
+        assert_eq!(format!("{:?}", parse(program)), format!("{:?}", unit));
     }
 
     fn generate_test_unit(layer_num: i32) -> SysDCUnit {
