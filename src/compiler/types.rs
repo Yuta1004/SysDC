@@ -37,10 +37,10 @@ impl SysDCType {
 
     pub fn get_name(&self) -> Name {
         match self {
-            SysDCType::Int32 => Name::new(&Name::new(&Name::new_root(), &"global".to_string()), &"int32".to_string()),
-            SysDCType::Float32 => Name::new(&Name::new(&Name::new_root(), &"global".to_string()), &"int32".to_string()),
-            SysDCType::StringType => Name::new(&Name::new(&Name::new_root(), &"global".to_string()), &"int32".to_string()),
-            SysDCType::NoneType => Name::new(&Name::new(&Name::new_root(), &"global".to_string()), &"int32".to_string()),
+            SysDCType::Int32 => Name::new_on_global_namespace(&"int32".to_string()),
+            SysDCType::Float32 => Name::new_on_global_namespace(&"float32".to_string()),
+            SysDCType::StringType => Name::new_on_global_namespace(&"string".to_string()),
+            SysDCType::NoneType => Name::new_on_global_namespace(&"none".to_string()),
             SysDCType::Solved(name) => name.clone(),
             SysDCType::Unsolved(name) => name.clone()
         }

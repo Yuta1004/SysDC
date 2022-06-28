@@ -21,6 +21,10 @@ impl Name {
         }
     }
 
+    pub fn new_on_global_namespace(name: &String) -> Name {
+        Name::new(&Name::new(&Name::new_root(), &"global".to_string()), name)
+    }
+
     pub fn get_local_name(&self) -> String {
         self.name.clone()
     }
