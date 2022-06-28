@@ -25,6 +25,8 @@ pub enum TokenKind {
     ParenthesisEnd,     // )
     BracketBegin,       // {
     BracketEnd,         // }
+    ListBegin,          // [
+    ListEnd,            // ]
 
     /* Others */
     Identifier,
@@ -63,6 +65,8 @@ impl Token {
             ")"         => TokenKind::ParenthesisEnd,
             "{"         => TokenKind::BracketBegin,
             "}"         => TokenKind::BracketEnd,
+            "["         => TokenKind::ListBegin,
+            "]"         => TokenKind::ListEnd,
             _           => TokenKind::Identifier
         };
         let orig_id = match kind {
@@ -227,7 +231,7 @@ impl CharType {
         match c {
             '0'..='9' => CharType::Number,
             'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
-            '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' => CharType::Symbol,
+            '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' | '[' | ']' => CharType::Symbol,
             '-' => CharType::SymbolAllow1,
             '>' => CharType::SymbolAllow2,
             ':' => CharType::SymbolAccessor,
@@ -267,6 +271,8 @@ mod test {
                 (")",       TokenKind::ParenthesisEnd),
                 ("{",       TokenKind::BracketBegin),
                 ("}",       TokenKind::BracketEnd),
+                ("[",       TokenKind::ListBegin),
+                ("]",       TokenKind::ListEnd)
             ];
             for (_str, kind) in str_kind_mapping {
                 assert_eq!(Token::from_string(_str.to_string()).kind, kind);
@@ -329,7 +335,7 @@ mod test {
                 }
                 module UserModule binds User as this {
                     greet() -> None {
-                        use = this.name;
+                        use = [this.name];
                         link = chain {
                             Printer::print(text: string)
                         }
@@ -365,9 +371,11 @@ mod test {
                 TokenKind::BracketBegin,
                 TokenKind::Use,
                 TokenKind::Equal,
+                TokenKind::ListBegin,
                 TokenKind::Identifier,
                 TokenKind::Accessor,
                 TokenKind::Identifier,
+                TokenKind::ListEnd,
                 TokenKind::Semicolon,
                 TokenKind::Link,
                 TokenKind::Equal,
