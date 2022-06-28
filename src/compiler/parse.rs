@@ -72,7 +72,7 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * <data> ::= data <id_type_mapping_var_list>
+     * <data> ::= data <id_type_mapping_var_list, begin="{", end="}">
      */
     fn parse_data(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCData>>> {
         if self.tokenizer.expect(TokenKind::Data).is_none() {
@@ -85,6 +85,42 @@ impl<'a> Parser<'a> {
             data.borrow_mut().push_variable(var);
         }
         Some(data)
+    }
+
+    /**
+     * <module> ::= module <id> \{ {<procedure>} \}
+     */
+
+    fn parse_module(&mut self, namespace: &Name) {
+
+    }
+
+    /**
+     * <procedure> ::= <id> <id_type_mapping_var_list, begin="(", end=")"> -> <type> \{ {<annotation>} \}
+     */
+    fn parse_procedure(&mut self, namespace: &Name) {
+
+    }
+
+    /**
+     * <annotation> ::= {<use> | <modify>}
+     */
+    fn parse_annotation(&mut self, namespace: &Name) {
+
+    }
+
+    /**
+     * <use> ::= use \= <var_list, begin="[", end="]"> ;
+     */
+    fn parse_use(&mut self, namespace: &Name) {
+
+    }
+
+    /**
+     * <modify> ::= modify \= <var_list, begin="[", end="]"> ;
+     */
+    fn parse_modify(&mut self, namespace: &Name) {
+
     }
 
     /**
