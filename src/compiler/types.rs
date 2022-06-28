@@ -2,6 +2,7 @@ use std::fmt::{ Debug, Formatter };
 
 use super::name::Name;
 
+#[derive(PartialEq)]
 pub enum SysDCType {
     /* Default */
     Int32,
