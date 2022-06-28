@@ -72,26 +72,18 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * <data> ::= data \{ {<id_map>} \} 
+     * <data> ::= data \{ {<id_type_mapping_var>} \} 
      */
     fn parse_data(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCData>>> {
         if self.tokenizer.expect_kind(TokenKind::Data).is_none() {
             return None;
         }
 
-        let name = self.expect(TokenKind::Identifier).get_id();
-        let data = SysDCData::new(namespace, &name);
-
+        let data = SysDCData::new(namespace, &self.expect(TokenKind::Identifier).get_id());
         self.expect(TokenKind::BracketBegin);
         loop {
-            let (var_name, var_type) = self.parse_id_map();
-            data.borrow_mut().push_variable(
-                SysDCVariable::new(
-                    &Name::new(namespace, &name),
-                    &var_name,
-                    TmpType::new(&var_type)
-                )
-            );
+            let var = self.parse_id_type_mapping_var(&data.borrow().name);
+            data.borrow_mut().push_variable(var);
 
             if self.tokenizer.expect_kind(TokenKind::BracketEnd).is_some() {
                 break;
@@ -99,18 +91,17 @@ impl<'a> Parser<'a> {
                 self.expect(TokenKind::Separater);
             }
         }
-
         Some(data)
     }
 
     /**
-     * <id_map> ::= <id> : <id> 
+     * <id_type_mapping_var> ::= <id> : <type> 
      */
-    fn parse_id_map(&mut self) -> (String, String) {
-        let token_1 = self.expect(TokenKind::Identifier).get_id();
+    fn parse_id_type_mapping_var(&mut self, namespace: &Name) -> Rc<RefCell<SysDCVariable>> {
+        let id = self.expect(TokenKind::Identifier).get_id();
         self.expect(TokenKind::Mapping);
-        let token_2 = self.expect(TokenKind::Identifier).get_id();
-        (token_1, token_2)
+        let types = self.expect(TokenKind::Identifier).get_id();
+        SysDCVariable::new(namespace, &id, TmpType::new(&types))
     }
 
     fn expect(&mut self, kind: TokenKind) -> Token {
