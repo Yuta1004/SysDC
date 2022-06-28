@@ -1,6 +1,32 @@
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use super::name::Name;
+use super::types::SysDCType;
 use super::token::{ Token, TokenKind, Tokenizer };
-use super::structure::{ SysDCSystem, SysDCLayer, SysDCUnit };
+use super::structure::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable };
+
+struct TmpType {
+    name: String
+}
+
+impl TmpType {
+    pub fn new(name: &String) -> Rc<TmpType> {
+        Rc::new(
+            TmpType { name: name.to_string() }
+        )
+    }
+}
+
+impl SysDCType for TmpType {
+    fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_full_name(&self) -> String {
+        self.name.clone()
+    }
+}
 
 pub struct Parser<'a> {
     pub namespace: Name,
@@ -21,11 +47,17 @@ impl<'a> Parser<'a> {
 
     /**
      * <root> ::= {<sentence>}
-     * <sentence> ::= <layer> | <ref> | <data> | <module>
+     * <sentence> ::= <layer> <ref> {<data> | <module>}
      */
     pub fn parse(&mut self) -> SysDCUnit {
         let layer = self.parse_layer(&self.namespace.clone());
         let mut unit = SysDCUnit::new(&layer.name, &self.unit_name);
+        while self.tokenizer.has_token() {
+            if let Some(data) = self.parse_data(&unit.name) {
+                unit.push_data(data);
+            }
+            println!("{}", self.tokenizer.has_token());
+        }
         unit
     }
 
@@ -39,6 +71,48 @@ impl<'a> Parser<'a> {
         SysDCLayer::new(&namespace, num_token.get_number())
     }
 
+    /**
+     * <data> ::= data \{ {<id_map>} \} 
+     */
+    fn parse_data(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCData>>> {
+        if self.tokenizer.expect_kind(TokenKind::Data).is_none() {
+            return None;
+        }
+
+        let name = self.expect(TokenKind::Identifier).get_id();
+        let data = SysDCData::new(namespace, &name);
+
+        self.expect(TokenKind::BracketBegin);
+        loop {
+            let (var_name, var_type) = self.parse_id_map();
+            data.borrow_mut().push_variable(
+                SysDCVariable::new(
+                    &Name::new(namespace, &name),
+                    &var_name,
+                    TmpType::new(&var_type)
+                )
+            );
+
+            if self.tokenizer.expect_kind(TokenKind::BracketEnd).is_some() {
+                break;
+            } else {
+                self.expect(TokenKind::Separater);
+            }
+        }
+
+        Some(data)
+    }
+
+    /**
+     * <id_map> ::= <id> : <id> 
+     */
+    fn parse_id_map(&mut self) -> (String, String) {
+        let token_1 = self.expect(TokenKind::Identifier).get_id();
+        self.expect(TokenKind::Mapping);
+        let token_2 = self.expect(TokenKind::Identifier).get_id();
+        (token_1, token_2)
+    }
+
     fn expect(&mut self, kind: TokenKind) -> Token {
         match self.tokenizer.expect_kind(kind.clone()) {
             Some(token) => token,
@@ -50,14 +124,38 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod test {
     use super::Name;
-    use super::{ Tokenizer, Parser };
-    use super::{ SysDCSystem, SysDCLayer, SysDCUnit };
+    use super::{ TmpType, Tokenizer, Parser };
+    use super::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable };
 
     #[test]
     fn parse_simple_unit() {
         let program = "layer 0;";
 
         let unit = generate_test_unit(0);
+
+        compare_unit(parse(program), unit);
+    }
+
+    #[test]
+    fn parse_data() {
+        let program = "
+            layer 0;
+            data User {
+                id: int32,
+                age: int32,
+                name: string
+            }
+        ";
+
+        let mut unit = generate_test_unit(0);
+        let data = SysDCData::new(&unit.name, &"User".to_string());
+        let id = SysDCVariable::new(&data.borrow().name, &"id".to_string(), TmpType::new(&"int32".to_string()));
+        let age = SysDCVariable::new(&data.borrow().name, &"age".to_string(), TmpType::new(&"int32".to_string()));
+        let name = SysDCVariable::new(&data.borrow().name, &"name".to_string(), TmpType::new(&"string".to_string()));
+        data.borrow_mut().push_variable(id);
+        data.borrow_mut().push_variable(age);
+        data.borrow_mut().push_variable(name);
+        unit.push_data(data);
 
         compare_unit(parse(program), unit);
     }
