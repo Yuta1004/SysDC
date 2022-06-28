@@ -111,7 +111,7 @@ impl<'a> Parser<'a> {
 
         self.tokenizer.request(TokenKind::Allow);
         let types = self.tokenizer.request(TokenKind::Identifier).get_id();
-        procedure.borrow_mut().set_return_type(SysDCType::from_allow_unsolved(&namespace, &types));
+        procedure.borrow_mut().set_return_type(SysDCType::from_allow_unsolved(&namespace, &types)); // TODO: Connector
 
         self.tokenizer.request(TokenKind::BracketBegin);
         let (uses_variables, modifies_variables, link) = self.parse_annotation(&procedure.borrow().name);
@@ -182,7 +182,7 @@ impl<'a> Parser<'a> {
         self.tokenizer.request(TokenKind::Semicolon);
         Some(modifies_variables)
     }
-    
+
     /**
      * <link> ::= (chain | branch) <link_list, begin="{", end="}"> | <instance_of_procedure>
      */
@@ -237,7 +237,7 @@ impl<'a> Parser<'a> {
             if self.tokenizer.expect(TokenKind::PAccessor).is_none() {
                 break;
             }
-        }
+        }   // TODO: Connector
 
         let args = self.parse_var_list(&instance_of_procedure.borrow().name, TokenKind::ParenthesisBegin, TokenKind::ParenthesisEnd);
         for arg in args {
@@ -275,7 +275,7 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-        SysDCVariable::new(namespace, &discovered_name_elems.join("."), SysDCType::from_allow_unsolved(&namespace, &discovered_name_elems.join(".")))
+        SysDCVariable::new(namespace, &discovered_name_elems.join("."), SysDCType::from_allow_unsolved(&namespace, &discovered_name_elems.join(".")))   // TODO: Connector
     }
 
     /**
@@ -302,7 +302,7 @@ impl<'a> Parser<'a> {
         let id = self.tokenizer.request(TokenKind::Identifier).get_id();
         self.tokenizer.request(TokenKind::Mapping);
         let types = self.tokenizer.request(TokenKind::Identifier).get_id();
-        SysDCVariable::new(namespace, &id, SysDCType::from_allow_unsolved(&namespace, &types))
+        SysDCVariable::new(namespace, &id, SysDCType::from_allow_unsolved(&namespace, &types))  // TODO: Connector
     }
 }
 
