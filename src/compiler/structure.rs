@@ -156,6 +156,7 @@ impl SysDCModule {
 #[derive(Debug)]
 pub struct SysDCProcedure {
     pub name: Name,
+    pub return_type: Option<Rc<dyn SysDCType>>,
     pub args: Vec<Rc<RefCell<SysDCVariable>>>,
     pub uses: Vec<Rc<RefCell<SysDCVariable>>>,
     pub modifies: Vec<Rc<RefCell<SysDCVariable>>>,
@@ -168,6 +169,7 @@ impl SysDCProcedure {
             RefCell::new(
                 SysDCProcedure {
                     name: Name::new(namespace, name),
+                    return_type: None,
                     args: vec!(),
                     uses: vec!(),
                     modifies: vec!(),
@@ -175,6 +177,13 @@ impl SysDCProcedure {
                 }
             )
         )
+    }
+
+    pub fn set_return_type(&mut self, return_type: Rc<dyn SysDCType>) {
+        match self.return_type {
+            Some(_) => panic!("[ERROR] SysDCProcedure.return_type is already setted"),
+            None => self.return_type = Some(return_type)
+        }
     }
 
     pub fn push_arg(&mut self, arg: Rc<RefCell<SysDCVariable>>) {
