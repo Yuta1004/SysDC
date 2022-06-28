@@ -1,6 +1,5 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::HashMap;
 
 use super::name::Name;
 use super::types::SysDCType;
