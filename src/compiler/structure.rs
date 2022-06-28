@@ -91,24 +91,14 @@ impl SysDCData {
     }
 }
 
-impl SysDCType for SysDCData {
-    fn get_name(&self) -> String {
-        self.name.get_name()
-    }
-
-    fn get_full_name(&self) -> String {
-        self.name.get_full_name()
-    }
-}
-
 #[derive(Debug)]
 pub struct SysDCVariable {
     pub name: Name,
-    pub var_type: Rc<dyn SysDCType>
+    pub var_type: SysDCType
 }
 
 impl SysDCVariable {
-    pub fn new(namespace: &Name, name: &String, var_type: Rc<dyn SysDCType>) -> Rc<RefCell<SysDCVariable>> {
+    pub fn new(namespace: &Name, name: &String, var_type: SysDCType) -> Rc<RefCell<SysDCVariable>> {
         Rc::new(
             RefCell::new(
                 SysDCVariable {
@@ -117,16 +107,6 @@ impl SysDCVariable {
                 }
             )
         )
-    }
-}
-
-impl SysDCType for SysDCVariable {
-    fn get_name(&self) -> String {
-        self.name.get_name()
-    }
-
-    fn get_full_name(&self) -> String {
-        self.name.get_full_name()
     }
 }
 
@@ -156,7 +136,7 @@ impl SysDCModule {
 #[derive(Debug)]
 pub struct SysDCProcedure {
     pub name: Name,
-    pub return_type: Option<Rc<dyn SysDCType>>,
+    pub return_type: SysDCType,
     pub args: Vec<Rc<RefCell<SysDCVariable>>>,
     pub uses: Vec<Rc<RefCell<SysDCVariable>>>,
     pub modifies: Vec<Rc<RefCell<SysDCVariable>>>,
@@ -169,7 +149,7 @@ impl SysDCProcedure {
             RefCell::new(
                 SysDCProcedure {
                     name: Name::new(namespace, name),
-                    return_type: None,
+                    return_type: SysDCType::NoneType,
                     args: vec!(),
                     uses: vec!(),
                     modifies: vec!(),
@@ -179,11 +159,8 @@ impl SysDCProcedure {
         )
     }
 
-    pub fn set_return_type(&mut self, return_type: Rc<dyn SysDCType>) {
-        match self.return_type {
-            Some(_) => panic!("[ERROR] SysDCProcedure.return_type is already setted"),
-            None => self.return_type = Some(return_type)
-        }
+    pub fn set_return_type(&mut self, return_type: SysDCType) {
+        self.return_type = return_type;
     }
 
     pub fn push_arg(&mut self, arg: Rc<RefCell<SysDCVariable>>) {
@@ -297,7 +274,7 @@ impl SysDCLink {
 mod test {
     use std::rc::Rc;
 
-    use super::super::types::SysDCDefaultType;
+    use super::super::types::SysDCType;
     use super::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
 
     #[test]
@@ -327,10 +304,6 @@ mod test {
             }
         */
 
-        let all_default_types = SysDCDefaultType::get_all();    // => [int32, float32, string, none]
-        let int32 = &all_default_types[0];
-        let string = &all_default_types[2];
-
         let mut system = SysDCSystem::new();
         {
             let mut layer_1 = SysDCLayer::new(&system.name, 1);
@@ -340,7 +313,7 @@ mod test {
                     let printer_module = SysDCModule::new(&printer_unit.name, &"Printer".to_string());
                     {
                         let print_procedure = SysDCProcedure::new(&printer_module.borrow().name, &"print".to_string());
-                        let print_procedure_text = SysDCVariable::new(&print_procedure.borrow().name, &"text".to_string(), Rc::clone(string));
+                        let print_procedure_text = SysDCVariable::new(&print_procedure.borrow().name, &"text".to_string(), SysDCType::Int32);
                         print_procedure.borrow_mut().push_arg(Rc::clone(&print_procedure_text));
                         print_procedure.borrow_mut().push_using_variable(Rc::clone(&print_procedure_text));
                         printer_module.borrow_mut().push_procedure(print_procedure);
@@ -357,9 +330,9 @@ mod test {
                 {
                     let user_data = SysDCData::new(&user_unit.name, &"User".to_string());
                     let user_data_name = &user_data.borrow().name.clone();
-                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, &"id".to_string(), Rc::clone(int32)));
-                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, &"age".to_string(), Rc::clone(int32)));
-                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, &"name".to_string(), Rc::clone(string)));
+                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, &"id".to_string(), SysDCType::Int32));
+                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, &"age".to_string(), SysDCType::Int32));
+                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, &"name".to_string(), SysDCType::StringType));
                     user_unit.push_data(user_data);
 
                     let user_module = SysDCModule::new(&user_unit.name, &"UserModule".to_string());

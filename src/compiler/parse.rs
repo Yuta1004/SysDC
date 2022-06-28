@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use super::name::Name;
-use super::types::TmpType;
+use super::types::SysDCType;
 use super::token::{ Token, TokenKind, Tokenizer };
 use super::structure::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
 
@@ -111,7 +111,7 @@ impl<'a> Parser<'a> {
 
         self.tokenizer.request(TokenKind::Allow);
         let types = self.tokenizer.request(TokenKind::Identifier).get_id();
-        procedure.borrow_mut().set_return_type(TmpType::new(&types));
+        procedure.borrow_mut().set_return_type(SysDCType::from_allow_unsolved(&namespace, &types));
 
         self.tokenizer.request(TokenKind::BracketBegin);
         let (uses_variables, modifies_variables) = self.parse_annotation(&procedure.borrow().name);
@@ -201,7 +201,7 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-        SysDCVariable::new(namespace, &discovered_name_elems.join("."), TmpType::new(&"tmp".to_string()))
+        SysDCVariable::new(namespace, discovered_name_elems.last().unwrap(), SysDCType::from_allow_unsolved(&namespace, &discovered_name_elems.join(".")))
         // => Connector will resolves "Name", "Type" after parse process
     }
 
@@ -229,14 +229,15 @@ impl<'a> Parser<'a> {
         let id = self.tokenizer.request(TokenKind::Identifier).get_id();
         self.tokenizer.request(TokenKind::Mapping);
         let types = self.tokenizer.request(TokenKind::Identifier).get_id();
-        SysDCVariable::new(namespace, &id, TmpType::new(&types))
+        SysDCVariable::new(namespace, &id, SysDCType::from_allow_unsolved(&namespace, &types))
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::Name;
-    use super::{ TmpType, Tokenizer, Parser };
+    use super::SysDCType;
+    use super::{ Tokenizer, Parser };
     use super::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
 
     #[test]
@@ -257,9 +258,9 @@ mod test {
 
         let mut unit = generate_test_unit(0);
         let data = SysDCData::new(&unit.name, &"User".to_string());
-        let id = SysDCVariable::new(&data.borrow().name, &"id".to_string(), TmpType::new(&"int32".to_string()));
-        let age = SysDCVariable::new(&data.borrow().name, &"age".to_string(), TmpType::new(&"int32".to_string()));
-        let name = SysDCVariable::new(&data.borrow().name, &"name".to_string(), TmpType::new(&"string".to_string()));
+        let id = SysDCVariable::new(&data.borrow().name, &"id".to_string(), SysDCType::Int32);
+        let age = SysDCVariable::new(&data.borrow().name, &"age".to_string(), SysDCType::Int32);
+        let name = SysDCVariable::new(&data.borrow().name, &"name".to_string(), SysDCType::StringType);
         data.borrow_mut().push_variable(id);
         data.borrow_mut().push_variable(age);
         data.borrow_mut().push_variable(name);
@@ -283,12 +284,12 @@ mod test {
         let mut unit = generate_test_unit(0);
         let module = SysDCModule::new(&unit.name, &"UserModule".to_string());
         let procedure = SysDCProcedure::new(&module.borrow().name, &"greet".to_string());
-        let arg_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), TmpType::new(&"string".to_string()));
-        let arg_message = SysDCVariable::new(&procedure.borrow().name, &"message".to_string(), TmpType::new(&"string".to_string()));
-        let use_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), TmpType::new(&"tmp".to_string()));
-        let use_message = SysDCVariable::new(&procedure.borrow().name, &"message".to_string(), TmpType::new(&"tmp".to_string()));
-        let modify_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), TmpType::new(&"tmp".to_string()));
-        procedure.borrow_mut().set_return_type(TmpType::new(&"none".to_string()));
+        let arg_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), SysDCType::StringType);
+        let arg_message = SysDCVariable::new(&procedure.borrow().name, &"message".to_string(), SysDCType::StringType);
+        let use_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), SysDCType::Unsolved(procedure.borrow().name.clone(), "name".to_string()));
+        let use_message = SysDCVariable::new(&procedure.borrow().name, &"message".to_string(), SysDCType::Unsolved(procedure.borrow().name.clone(), "message".to_string()));
+        let modify_name = SysDCVariable::new(&procedure.borrow().name, &"name".to_string(), SysDCType::Unsolved(procedure.borrow().name.clone(), "name".to_string()));
+        procedure.borrow_mut().set_return_type(SysDCType::NoneType);
         procedure.borrow_mut().push_arg(arg_name);
         procedure.borrow_mut().push_arg(arg_message);
         procedure.borrow_mut().push_using_variable(use_name);
