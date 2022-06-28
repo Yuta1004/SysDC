@@ -2,31 +2,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use super::name::Name;
-use super::types::SysDCType;
+use super::types::TmpType;
 use super::token::{ Token, TokenKind, Tokenizer };
 use super::structure::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
-
-struct TmpType {
-    name: String
-}
-
-impl TmpType {
-    pub fn new(name: &String) -> Rc<TmpType> {
-        Rc::new(
-            TmpType { name: name.to_string() }
-        )
-    }
-}
-
-impl SysDCType for TmpType {
-    fn get_name(&self) -> String {
-        self.name.clone()
-    }
-
-    fn get_full_name(&self) -> String {
-        self.name.clone()
-    }
-}
 
 pub struct Parser<'a> {
     pub namespace: Name,

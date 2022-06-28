@@ -45,3 +45,26 @@ impl SysDCType for SysDCDefaultType {
         self.name.get_full_name()
     }
 }
+
+#[derive(Debug)]
+pub struct TmpType {
+    name: String
+}
+
+impl TmpType {
+    pub fn new(name: &String) -> Rc<TmpType> {
+        Rc::new(
+            TmpType { name: name.to_string() }
+        )
+    }
+}
+
+impl SysDCType for TmpType {
+    fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_full_name(&self) -> String {
+        self.name.clone()
+    }
+}
