@@ -72,7 +72,7 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * <data> ::= data \{ {<id_type_mapping_var>} \} 
+     * <data> ::= data <id_type_mapping_var_list>
      */
     fn parse_data(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCData>>> {
         if self.tokenizer.expect(TokenKind::Data).is_none() {
@@ -80,18 +80,28 @@ impl<'a> Parser<'a> {
         }
 
         let data = SysDCData::new(namespace, &self.tokenizer.request(TokenKind::Identifier).get_id());
-        self.tokenizer.request(TokenKind::BracketBegin);
-        loop {
-            let var = self.parse_id_type_mapping_var(&data.borrow().name);
+        let var_list = self.parse_id_type_mapping_var_list(&data.borrow().name, TokenKind::BracketBegin, TokenKind::BracketEnd);
+        for var in var_list {
             data.borrow_mut().push_variable(var);
+        }
+        Some(data)
+    }
 
-            if self.tokenizer.expect(TokenKind::BracketEnd).is_some() {
+    /**
+     * <id_type_mapping_var_list> = <begin> {<id_type_mapping_var>} <end>
+     */
+    fn parse_id_type_mapping_var_list(&mut self, namespace: &Name, begin: TokenKind, end: TokenKind) -> Vec<Rc<RefCell<SysDCVariable>>> {
+        self.tokenizer.request(begin);
+        let mut var_list = vec!();
+        loop {
+            var_list.push(self.parse_id_type_mapping_var(namespace));
+            if self.tokenizer.expect(end.clone()).is_some() {
                 break;
             } else {
                 self.tokenizer.request(TokenKind::Separater);
             }
         }
-        Some(data)
+        var_list
     }
 
     /**
