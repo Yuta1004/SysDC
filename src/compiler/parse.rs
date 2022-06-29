@@ -27,8 +27,8 @@ impl<'a> Parser<'a> {
      * <root> ::= {<sentence>}
      * <sentence> ::= <layer> {<data> | <module>}
      */
-    pub fn parse(&mut self) -> SysDCUnit {
-        let layer = self.parse_layer(&self.namespace.clone());
+    pub fn parse(&mut self) -> (i32, SysDCUnit) {
+        let (layer_num, layer) = self.parse_layer(&self.namespace.clone());
         self.parse_ref(&self.namespace.clone()); 
 
         let mut unit = SysDCUnit::new(&layer.name, &self.unit_name);
@@ -43,17 +43,17 @@ impl<'a> Parser<'a> {
             }
             panic!("[ERROR] Data/Module not found, but tokens remain");
         }
-        unit
+        (layer_num, unit)
     }
 
     /**
      * <layer> ::= layer <num> ;
      */
-    fn parse_layer(&mut self, namespace: &Name) -> SysDCLayer {
+    fn parse_layer(&mut self, namespace: &Name) -> (i32, SysDCLayer) {
         self.tokenizer.request(TokenKind::Layer);
-        let num_token = self.tokenizer.request(TokenKind::Number);
+        let layer_num = self.tokenizer.request(TokenKind::Number).get_number();
         self.tokenizer.request(TokenKind::Semicolon);
-        SysDCLayer::new(&namespace, num_token.get_number())
+        (layer_num, SysDCLayer::new(&namespace, layer_num))
     }
 
     /**
@@ -634,6 +634,7 @@ mod test {
         let program = program.to_string();
         let tokenizer = Tokenizer::new(&program);
         let mut parser = Parser::new(&Name::new_root(), &"test".to_string(), tokenizer);
-        parser.parse()
+        let (_, unit) = parser.parse();
+        unit
     }
 }
