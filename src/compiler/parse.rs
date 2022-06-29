@@ -91,7 +91,7 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * <module> ::= module <id> \{ <procedures> \}
+     * <module> ::= module <id> binds <id> as <id> \{ <procedures> \}
      */
 
     fn parse_module(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCModule>>> {
@@ -100,6 +100,17 @@ impl<'a> Parser<'a> {
         }
 
         let module = SysDCModule::new(namespace, &self.tokenizer.request(TokenKind::Identifier).get_id());
+
+        if self.tokenizer.expect(TokenKind::Binds).is_some() {
+            let binds_target = self.tokenizer.request(TokenKind::Identifier).get_id();
+            if self.tokenizer.expect(TokenKind::As).is_some() {
+                let as_name = self.tokenizer.request(TokenKind::Identifier).get_id();
+                println!("[WARNING] Unimplemented Syntax => {:?}, {:?}, binds \"{}\" as \"{}\"", &namespace, &module.borrow().name.get_local_name(), binds_target, as_name);
+            } else {
+                println!("[WARNING] Unimplemented Syntax => {:?}, {:?}, binds \"{}\"", &namespace, &module.borrow().name.get_local_name(), binds_target);
+            }
+        }   // TODO: Connector
+
         self.tokenizer.request(TokenKind::BracketBegin);
         loop {
             let procedure = self.parse_procedure(&module.borrow().name);
@@ -415,7 +426,7 @@ mod test {
     fn parse_module_procedure_has_args() {
         let program = "
             layer 0;
-            module UserModule {
+            module UserModule binds User {
                 greet(name: string, message: string) -> none {
                     use = [name, message];
                     modify = [name];
@@ -447,7 +458,7 @@ mod test {
     fn parse_module_with_link_chain_first() {
         let program = "
             layer 0;
-            module UserModule {
+            module UserModule binds User as this {
                 greet(message: string) -> none {
                     link = chain {
                         branch {
