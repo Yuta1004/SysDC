@@ -16,6 +16,10 @@ impl InputPlugin for DebugPlugin {
     fn get_name(&self) -> &str {
         "debug"
     }
+
+    fn init(&mut self, _: Vec<String>) {
+        self.iter_cnt = 0;
+    }
 }
 
 impl Iterator for DebugPlugin {

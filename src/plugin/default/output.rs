@@ -14,7 +14,7 @@ impl OutputPlugin for DebugPlugin {
         "debug"
     }
 
-    fn run(&self, system: &SysDCSystem) {
+    fn run(&self, _: Vec<String>, system: &SysDCSystem) {
         println!("{:?}", system);
     }
 }

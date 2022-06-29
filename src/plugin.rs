@@ -5,11 +5,12 @@ use crate::compiler::structure::SysDCSystem;
 
 pub trait InputPlugin: Iterator<Item=(String, String)> {
     fn get_name(&self) -> &str;
+    fn init(&mut self, args: Vec<String>);
 }
 
 pub trait OutputPlugin {
     fn get_name(&self) -> &str;
-    fn run(&self, system: &SysDCSystem);
+    fn run(&self, args: Vec<String>, system: &SysDCSystem);
 }
 
 pub struct PluginManager {
