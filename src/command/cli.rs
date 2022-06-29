@@ -1,6 +1,7 @@
 use std::io;
 use std::io::Write;
 
+use crate::compiler::Compiler;
 use crate::compiler::structure::SysDCSystem;
 use crate::plugin::PluginManager;
 
@@ -9,7 +10,7 @@ pub struct CliCmd;
 
 impl CliCmd {
     pub fn run(&self) {
-        let system = SysDCSystem::new();
+        let mut system = SysDCSystem::new();
         let plugin_manager = PluginManager::new();
 
         loop {
@@ -35,8 +36,16 @@ impl CliCmd {
             };
 
             match cmd.as_str() {
-                "in" => CliCmd::run_mode_in(&plugin_manager, name, args),
-                "out" => CliCmd::run_mode_out(&plugin_manager, name, args, &system),
+                "in" => {
+                    if let Some(_system) = CliCmd::run_mode_in(&plugin_manager, name, args) {
+                        system = _system;
+                        println!("OK\n");
+                    }
+                },
+                "out" => {
+                    CliCmd::run_mode_out(&plugin_manager, name, args, &system);
+                    println!("OK\n");
+                },
                 _ => {
                     println!("SyntaxError: Usage => in/out {} <args>\n", cmd);
                     continue;
@@ -46,17 +55,20 @@ impl CliCmd {
         println!("Bye...");
     }
  
-    fn run_mode_in(plugin_manager: &PluginManager, name: String, args: Vec<String>) {
+    fn run_mode_in(plugin_manager: &PluginManager, name: String, args: Vec<String>) -> Option<SysDCSystem> {
         let plugin = match plugin_manager.get_type_in(&name) {
             Some(plugin) => plugin,
             None => {
                 println!("PluginError: {} not found\n", name);
-                return;
+                return None;
             }
         };
+
+        let mut compiler = Compiler::new();
         for (unit_name, program) in plugin.run(args) {
-            println!("{}, {}", unit_name, program);
+            compiler.add_unit(&unit_name, &program);
         }
+        Some(compiler.generate_system())
     }
 
     fn run_mode_out(plugin_manager: &PluginManager, name: String, args: Vec<String>, system: &SysDCSystem) {
