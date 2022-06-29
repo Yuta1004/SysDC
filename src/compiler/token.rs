@@ -25,6 +25,8 @@ pub enum TokenKind {
     ParenthesisEnd,     // )
     BracketBegin,       // {
     BracketEnd,         // }
+    ListBegin,          // [
+    ListEnd,            // ]
 
     /* Others */
     Identifier,
@@ -63,6 +65,8 @@ impl Token {
             ")"         => TokenKind::ParenthesisEnd,
             "{"         => TokenKind::BracketBegin,
             "}"         => TokenKind::BracketEnd,
+            "["         => TokenKind::ListBegin,
+            "]"         => TokenKind::ListEnd,
             _           => TokenKind::Identifier
         };
         let orig_id = match kind {
@@ -105,18 +109,20 @@ pub struct Tokenizer<'a> {
 
 impl<'a> Tokenizer<'a> {
     pub fn new(text: &'a String) -> Tokenizer<'a> {
-        Tokenizer {
+        let mut tokenizer = Tokenizer {
             text,
             now_ref_pos: 0,
             hold_token: None
-        }
+        };
+        tokenizer.skip_space();
+        tokenizer
     }
 
     pub fn has_token(&self) -> bool {
         self.now_ref_pos != self.text.len()
     }
 
-    pub fn expect_kind(&mut self, kind: TokenKind) -> Option<Token> {
+    pub fn expect(&mut self, kind: TokenKind) -> Option<Token> {
         if let Some(token) = self.tokenize() {
             if token.kind == kind {
                 self.hold_token = None;
@@ -130,6 +136,13 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
+    pub fn request(&mut self, kind: TokenKind) -> Token {
+        match self.expect(kind.clone()) {
+            Some(token) => token,
+            None => panic!("[ERROR] Token \"{:?}\" is requested, but not found.", kind)
+        }
+    }
+
     fn tokenize(&mut self) -> Option<Token> {
         if !self.hold_token.is_none() {
             return self.hold_token.clone();
@@ -137,8 +150,6 @@ impl<'a> Tokenizer<'a> {
         if !self.has_token() {
             return None;
         }
-
-        self.skip_space();
 
         let lead_ref_pos = self.now_ref_pos;
         let lead_type = CharType::from(self.get_char_at(lead_ref_pos));
@@ -172,11 +183,15 @@ impl<'a> Tokenizer<'a> {
             CharType::Number => Token::from_i32(discovered_word.parse::<i32>().unwrap()),
             _ => Token::from_string(discovered_word)
         };
+        self.skip_space();
         Some(token)
     }
 
     fn skip_space(&mut self) {
         loop {
+            if !self.has_token() {
+                break;
+            }
             match CharType::from(self.get_char_at(self.now_ref_pos)) {
                 CharType::Space => self.now_ref_pos += 1,
                 _ => break
@@ -216,7 +231,7 @@ impl CharType {
         match c {
             '0'..='9' => CharType::Number,
             'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
-            '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' => CharType::Symbol,
+            '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' | '[' | ']' => CharType::Symbol,
             '-' => CharType::SymbolAllow1,
             '>' => CharType::SymbolAllow2,
             ':' => CharType::SymbolAccessor,
@@ -256,6 +271,8 @@ mod test {
                 (")",       TokenKind::ParenthesisEnd),
                 ("{",       TokenKind::BracketBegin),
                 ("}",       TokenKind::BracketEnd),
+                ("[",       TokenKind::ListBegin),
+                ("]",       TokenKind::ListEnd)
             ];
             for (_str, kind) in str_kind_mapping {
                 assert_eq!(Token::from_string(_str.to_string()).kind, kind);
@@ -309,7 +326,7 @@ mod test {
         }
 
         #[test]
-        pub fn expect_kind_all_ok() {
+        fn expect_all_ok() {
             let text = "
                 layer 0;
                 data User {
@@ -318,7 +335,7 @@ mod test {
                 }
                 module UserModule binds User as this {
                     greet() -> None {
-                        use = this.name;
+                        use = [this.name];
                         link = chain {
                             Printer::print(text: string)
                         }
@@ -354,9 +371,11 @@ mod test {
                 TokenKind::BracketBegin,
                 TokenKind::Use,
                 TokenKind::Equal,
+                TokenKind::ListBegin,
                 TokenKind::Identifier,
                 TokenKind::Accessor,
                 TokenKind::Identifier,
+                TokenKind::ListEnd,
                 TokenKind::Semicolon,
                 TokenKind::Link,
                 TokenKind::Equal,
@@ -377,7 +396,7 @@ mod test {
 
             let mut tokenizer = Tokenizer::new(&text);
             for token_kind in correct_token_kinds {
-                match tokenizer.expect_kind(token_kind.clone()) {
+                match tokenizer.expect(token_kind.clone()) {
                     Some(_) => {}
                     None => assert!(false, "{:?}", token_kind)
                 }
@@ -386,17 +405,43 @@ mod test {
         }
 
         #[test]
-        pub fn expect_kind_all_ng() {
+        fn expect_all_ng() {
             let text = "data".to_string();
 
             let mut tokenizer = Tokenizer::new(&text);
             for token_kind in [TokenKind::Layer, TokenKind::Ref, TokenKind::Data] {
-                match tokenizer.expect_kind(token_kind.clone()) {
+                match tokenizer.expect(token_kind.clone()) {
                     Some(_) => assert_eq!(token_kind, TokenKind::Data),
                     None => assert_ne!(token_kind, TokenKind::Data)
                 }
             }
             assert!(!tokenizer.has_token());
+        }
+
+        #[test]
+        fn request_all_ok() {
+            let text = "data module cocoa 410".to_string();
+            let correct_token_kinds = [
+                TokenKind::Data,
+                TokenKind::Module,
+                TokenKind::Identifier,
+                TokenKind::Number
+            ];
+
+            let mut tokenizer = Tokenizer::new(&text);
+            for token_kind in correct_token_kinds {
+                let token = tokenizer.request(token_kind.clone());
+                assert_eq!(token.kind, token_kind);
+            }
+            assert!(!tokenizer.has_token());
+        }
+
+        #[test]
+        #[should_panic]
+        fn request_ng() {
+            let text = "data".to_string();
+            let mut tokenizer = Tokenizer::new(&text);
+            tokenizer.request(TokenKind::Number);
         }
     }
 }

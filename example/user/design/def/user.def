@@ -5,23 +5,22 @@ ref printer Printer;
 data User {
     id: int32,
     name: string,
-    age: int32,
+    age: int32
 }
 
 module UserModule binds User as this {
-    inc_age() => None {
-        modify = this.age
+    inc_age() -> None {
+        modify = [this.age];
     }
 
     change_name(name: string) => None {
-        use = name;
-        modify = this.name;
+        use = [name];
+        modify = [this.name];
     }
 
     info() => None {
-        use = this.all;
-        link = \
-            chain {
+        use = [this.all];
+        link = chain {
                 branch {
                     chain {
                         Printer::print(text: this.id),
