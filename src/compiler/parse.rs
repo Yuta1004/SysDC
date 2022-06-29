@@ -507,8 +507,6 @@ mod test {
         unit.push_module(module);
 
         compare_unit(program, unit);
-
-        panic!()
     }
 
     #[test]
