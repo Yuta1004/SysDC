@@ -52,3 +52,37 @@ impl PluginManager {
         (in_plugins, out_plugins)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::SysDCSystem;
+    use super::PluginManager;
+
+    #[test]
+    fn test_in_debug() {
+        let plugin_manager = PluginManager::new();
+        let plugin = plugin_manager.get_type_in(&"debug".to_string());
+        assert!(plugin.is_some());
+        plugin.unwrap().run(vec!());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_in_debug_panic() {
+        PluginManager::new().get_type_in(&"test".to_string()).unwrap();
+    }
+
+    #[test]
+    fn test_out_debug() {
+        let plugin_manager = PluginManager::new();
+        let plugin = plugin_manager.get_type_out(&"debug".to_string());
+        assert!(plugin.is_some());
+        plugin.unwrap().run(vec!(), &SysDCSystem::new());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_out_debug_panic() {
+        PluginManager::new().get_type_out(&"test".to_string()).unwrap();
+    }
+}
