@@ -50,7 +50,7 @@ impl SysDCType {
 
 impl Debug for SysDCType {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "\"{}\"", self.get_name().get_global_name())
+        write!(f, "{}", self.get_name().get_global_name())
     }
 }
 

@@ -36,7 +36,7 @@ impl Name {
 
 impl Debug for Name {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "\"{}\"", self.get_global_name())
+        write!(f, "{}", self.get_global_name())
     }
 }
 
