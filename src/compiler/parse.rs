@@ -112,6 +112,7 @@ impl<'a> Parser<'a> {
         self.tokenizer.request(TokenKind::Allow);
         let types = self.tokenizer.request(TokenKind::Identifier).get_id();
         procedure.borrow_mut().set_return_type(SysDCType::from_allow_unsolved(&namespace, &types)); // TODO: Connector
+        println!("[WARNING] Unsolved Type => {:?}, {:?}", &namespace, &types);
 
         self.tokenizer.request(TokenKind::BracketBegin);
         let (uses_variables, modifies_variables, link) = self.parse_annotation(&procedure.borrow().name);
@@ -238,6 +239,7 @@ impl<'a> Parser<'a> {
                 break;
             }
         }   // TODO: Connector
+        println!("[WARNING] Unsolved Procedure => {:?}, {:?}", &namespace, &discovered_name_elems.join("::"));
 
         let args = self.parse_var_list(&instance_of_procedure.borrow().name, TokenKind::ParenthesisBegin, TokenKind::ParenthesisEnd);
         for arg in args {
@@ -285,6 +287,7 @@ impl<'a> Parser<'a> {
         } else {
             return None;
         }
+        println!("[WARNING] Unsolved Type => {:?}, {:?}", &namespace, &discovered_name_elems.join("."));
         Some(SysDCVariable::new(namespace, &discovered_name_elems.join("."), SysDCType::from_allow_unsolved(&namespace, &discovered_name_elems.join(".")))) // TODO: Connector
     }
 
@@ -318,6 +321,7 @@ impl<'a> Parser<'a> {
             let id = token_id.get_id();
             self.tokenizer.request(TokenKind::Mapping);
             let types = self.tokenizer.request(TokenKind::Identifier).get_id();
+            println!("[WARNING] Unsolved Type => {:?}, {:?}", &namespace, &types);
             Some(SysDCVariable::new(namespace, &id, SysDCType::from_allow_unsolved(&namespace, &types)))    // TODO: Connector
         } else {
             None
@@ -522,6 +526,21 @@ mod test {
         unit.push_module(module);
 
         compare_unit(program, unit);
+    }
+
+    #[test]
+    fn parse_test() {
+        parse("
+            layer 0;
+            module UserModule {
+                greet() -> none {
+                    link = chain {
+                        Printer::print(this.id)
+                    }
+                }
+            }
+        ");
+        panic!("");
     }
 
     #[test]
