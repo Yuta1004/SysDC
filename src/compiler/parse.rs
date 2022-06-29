@@ -72,6 +72,7 @@ impl<'a> Parser<'a> {
                 break;
             }
         }   // TODO: Connector
+        self.tokenizer.request(TokenKind::Semicolon);
     }
 
     /**
