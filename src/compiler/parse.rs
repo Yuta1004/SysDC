@@ -106,9 +106,9 @@ impl<'a> Parser<'a> {
             let binds_target = self.tokenizer.request(TokenKind::Identifier).get_id();
             if self.tokenizer.expect(TokenKind::As).is_some() {
                 let as_name = self.tokenizer.request(TokenKind::Identifier).get_id();
-                println!("[WARNING] Unimplemented Syntax => {:?}, {:?}, binds \"{}\" as \"{}\"", &namespace, &module.borrow().name.get_local_name(), binds_target, as_name);
+                println!("[WARNING] Unsolved Type => {:?}, {:?}, binds \"{}\" as \"{}\"", &namespace, &module.borrow().name.get_local_name(), binds_target, as_name);
             } else {
-                println!("[WARNING] Unimplemented Syntax => {:?}, {:?}, binds \"{}\"", &namespace, &module.borrow().name.get_local_name(), binds_target);
+                println!("[WARNING] Unsolved Type => {:?}, {:?}, binds \"{}\"", &namespace, &module.borrow().name.get_local_name(), binds_target);
             }
         }   // TODO: Connector
 
