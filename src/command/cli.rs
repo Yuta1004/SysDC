@@ -22,12 +22,9 @@ impl CliCmd {
                 println!("UnknownError: {}\n", e);
                 continue;
             }
-            let text = match text.trim() {
-                "exit" => break,
-                text => text.to_string()
-            };
+            let text = text.trim().to_string();
 
-            let (cmd, name, args) = match CliCmd::parse_cli_text(text) {
+            let (cmd, subcmd, args) = match CliCmd::parse_cli_text(text) {
                 Some(result) => result,
                 None => {
                     println!("SyntaxError: Usage => in/out <name> <args>\n");
@@ -36,30 +33,33 @@ impl CliCmd {
             };
 
             match cmd.as_str() {
+                "exit" => {
+                    println!("Bye...\n");
+                    break;
+                }
                 "in" => {
-                    if let Some(_system) = CliCmd::run_mode_in(&plugin_manager, name, args) {
+                    if let Some(_system) = CliCmd::run_mode_in(&plugin_manager, subcmd, args) {
                         system = _system;
                         println!("OK\n");
                     }
                 },
                 "out" => {
-                    CliCmd::run_mode_out(&plugin_manager, name, args, &system);
+                    CliCmd::run_mode_out(&plugin_manager, subcmd, args, &system);
                     println!("OK\n");
                 },
                 _ => {
-                    println!("SyntaxError: Usage => in/out {} <args>\n", cmd);
+                    println!("CommandError: \"{}\" not found\n", cmd);
                     continue;
                 }
             }
         }
-        println!("Bye...");
     }
  
     fn run_mode_in(plugin_manager: &PluginManager, name: String, args: Vec<String>) -> Option<SysDCSystem> {
         let plugin = match plugin_manager.get_type_in(&name) {
             Some(plugin) => plugin,
             None => {
-                println!("PluginError: {} not found\n", name);
+                println!("PluginError: \"{}\" not found\n", name);
                 return None;
             }
         };
