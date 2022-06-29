@@ -10,8 +10,8 @@ impl DebugPlugin {
 }
 
 impl OutputPlugin for DebugPlugin {
-    fn get_name(&self) -> String {
-        "debug".to_string()
+    fn get_name(&self) -> &str {
+        "debug"
     }
 
     fn run(&self, system: &SysDCSystem) {

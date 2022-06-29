@@ -13,8 +13,8 @@ impl DebugPlugin {
 }
 
 impl InputPlugin for DebugPlugin {
-    fn get_name(&self) -> String {
-        "debug".to_string()
+    fn get_name(&self) -> &str {
+        "debug"
     }
 }
 
