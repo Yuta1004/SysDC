@@ -4,12 +4,12 @@ use clap::{ Parser, Subcommand };
 #[clap(name="subcommand")]
 pub struct PluginCmd {
     #[clap(subcommand)]
-    sub: Commands
+    sub: PluginCmdSub
 }
 
 #[derive(Subcommand)]
 #[allow(non_camel_case_types)]
-enum Commands {
+enum PluginCmdSub {
     /// Add a plugin
     add,
 
@@ -26,10 +26,10 @@ enum Commands {
 impl PluginCmd {
     pub fn run(&self) {
         match self.sub {
-            Commands::add => println!("Plugin add"),
-            Commands::remove => println!("Plugin remove"),
-            Commands::upgrade => println!("Plugin upgrade"),
-            Commands::info => println!("Plugin info")
+            PluginCmdSub::add => println!("Plugin add"),
+            PluginCmdSub::remove => println!("Plugin remove"),
+            PluginCmdSub::upgrade => println!("Plugin upgrade"),
+            PluginCmdSub::info => println!("Plugin info")
         }
     }
 }

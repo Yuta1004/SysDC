@@ -12,12 +12,12 @@ use plugin::PluginCmd;
 #[clap(global_settings(&[AppSettings::DisableHelpSubcommand]))]
 pub struct App {
     #[clap(subcommand)]
-    command: Commands
+    sub: AppSub
 }
 
 #[derive(Subcommand)]
 #[allow(non_camel_case_types)]
-enum Commands {
+enum AppSub {
     /// Run program
     cli(CliCmd),
 
@@ -27,9 +27,9 @@ enum Commands {
 
 impl App {
     pub fn run() {
-        match App::parse().command {
-            Commands::cli(cmd) => cmd.run(),
-            Commands::plugin(cmd) => cmd.run()
+        match App::parse().sub {
+            AppSub::cli(cmd) => cmd.run(),
+            AppSub::plugin(cmd) => cmd.run()
         }
     }
 }
