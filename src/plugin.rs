@@ -3,9 +3,9 @@ pub mod default;
 use default::{ input, output };
 use crate::compiler::structure::SysDCSystem;
 
-pub trait InputPlugin: Iterator<Item=(String, String)> {
+pub trait InputPlugin {
     fn get_name(&self) -> &str;
-    fn init(&mut self, args: Vec<String>);
+    fn run(&self, args: Vec<String>) -> Vec<(String, String)>;
 }
 
 pub trait OutputPlugin {
