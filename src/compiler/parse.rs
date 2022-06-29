@@ -29,6 +29,7 @@ impl<'a> Parser<'a> {
      */
     pub fn parse(&mut self) -> SysDCUnit {
         let layer = self.parse_layer(&self.namespace.clone());
+        self.parse_ref(&self.namespace.clone()); 
 
         let mut unit = SysDCUnit::new(&layer.name, &self.unit_name);
         while self.tokenizer.has_token() {
@@ -46,13 +47,31 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * <layer> :: = layer <num> ;
+     * <layer> ::= layer <num> ;
      */
     fn parse_layer(&mut self, namespace: &Name) -> SysDCLayer {
         self.tokenizer.request(TokenKind::Layer);
         let num_token = self.tokenizer.request(TokenKind::Number);
         self.tokenizer.request(TokenKind::Semicolon);
         SysDCLayer::new(&namespace, num_token.get_number())
+    }
+
+    /**
+     * <ref> ::= ref <id> {<id>,} <id>;
+     */
+    fn parse_ref(&mut self, namespace: &Name) {
+        if self.tokenizer.expect(TokenKind::Ref).is_none() {
+            return;
+        }
+
+        let from = self.tokenizer.request (TokenKind::Identifier).get_id();
+        loop {
+            let ref_target = self.tokenizer.request(TokenKind::Identifier).get_id();
+            println!("[WARNING] Unsolved Reference => {:?}, {:?}, {:?}", &namespace, &from, &ref_target);
+            if self.tokenizer.expect(TokenKind::Separater).is_none() {
+                break;
+            }
+        }   // TODO: Connector
     }
 
     /**
@@ -338,7 +357,11 @@ mod test {
 
     #[test]
     fn parse_simple_unit() {
-        compare_unit("layer 0;", generate_test_unit(0));
+        let program = "
+            layer 0;
+            ref printer Printer;
+        ";
+        compare_unit(program, generate_test_unit(0));
     }
 
     #[test]
@@ -526,21 +549,6 @@ mod test {
         unit.push_module(module);
 
         compare_unit(program, unit);
-    }
-
-    #[test]
-    fn parse_test() {
-        parse("
-            layer 0;
-            module UserModule {
-                greet() -> none {
-                    link = chain {
-                        Printer::print(this.id)
-                    }
-                }
-            }
-        ");
-        panic!("");
     }
 
     #[test]
