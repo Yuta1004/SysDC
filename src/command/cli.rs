@@ -11,8 +11,7 @@ use crate::plugin::PluginManager;
 #[derive(Debug)]
 enum CommandError {
     SyntaxError(String),
-    RuntimeError(String),
-    PluginError(String)
+    RuntimeError(String)
 }
 
 impl Error for CommandError {}
@@ -21,8 +20,7 @@ impl Display for CommandError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
             CommandError::SyntaxError(text) => write!(f, "{} (CommandError::SyntaxError)", text),
-            CommandError::RuntimeError(text) => write!(f, "{} (CommandError::RuntimeError)", text),
-            CommandError::PluginError(text) => write!(f, "{} (CommandError::PluginError)", text),
+            CommandError::RuntimeError(text) => write!(f, "{} (CommandError::RuntimeError)", text)
         }
     }
 }
@@ -81,7 +79,7 @@ impl CliCmd {
             Some(plugin) => plugin,
             None => {
                 return Err(Box::new(
-                    CommandError::PluginError(format!("\"{}\" not found", name))
+                    CommandError::RuntimeError(format!("\"{}\" not found", name))
                 ));
             }
         };
@@ -98,7 +96,7 @@ impl CliCmd {
             Some(plugin) => plugin,
             None => {
                 return Err(Box::new(
-                    CommandError::PluginError(format!("\"{}\" not found", name))
+                    CommandError::RuntimeError(format!("\"{}\" not found", name))
                 ));
             }
         };
