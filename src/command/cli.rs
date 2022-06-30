@@ -20,9 +20,9 @@ impl Error for CommandError {}
 impl Display for CommandError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            CommandError::SyntaxError(text) => write!(f, "SyntaxError => {}", text),
-            CommandError::RuntimeError(text) => write!(f, "RuntimeError => {}", text),
-            CommandError::PluginError(text) => write!(f, "PluginError => {}", text),
+            CommandError::SyntaxError(text) => write!(f, "{} (CommandError::SyntaxError)", text),
+            CommandError::RuntimeError(text) => write!(f, "{} (CommandError::RuntimeError)", text),
+            CommandError::PluginError(text) => write!(f, "{} (CommandError::PluginError)", text),
         }
     }
 }
@@ -45,7 +45,7 @@ impl CliCmd {
                         break
                     }
                 },
-                Err(e) => println!("{}\n", e)
+                Err(e) => println!("[ERROR] {}\n", e)
             }
         }
     }

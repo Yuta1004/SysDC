@@ -28,8 +28,8 @@ impl Error for PluginError {}
 impl Display for PluginError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            PluginError::RuntimeError(msg) => write!(f, "RuntimeError => {}", msg),
-            PluginError::UnknownError => write!(f, "UnknownError")
+            PluginError::RuntimeError(msg) => write!(f, "{} (PluginError::RuntimeError)", msg),
+            PluginError::UnknownError => write!(f, "UnknownError (PluginError::UnknownError)")
         }
     }
 }
