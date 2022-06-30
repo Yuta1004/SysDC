@@ -14,7 +14,8 @@ impl OutputPlugin for DebugPlugin {
         "debug"
     }
 
-    fn run(&self, _: Vec<String>, system: &SysDCSystem) {
+    fn run(&self, _: Vec<String>, system: &SysDCSystem) -> Result<(), Box<dyn std::error::Error>> {
         println!("{:?}", system);
+        Ok(())
     }
 }

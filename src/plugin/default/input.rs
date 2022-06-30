@@ -1,8 +1,9 @@
 use std::fs;
+use std::error::Error;
 
 use glob;
 
-use super::super::InputPlugin;
+use super::super::{ InputPlugin, PluginError };
 
 pub struct DebugPlugin;
 
@@ -17,7 +18,7 @@ impl InputPlugin for DebugPlugin {
         "debug"
     }
 
-    fn run(&self, _: Vec<String>) -> Vec<(String, String)> {
+    fn run(&self, _: Vec<String>) -> Result<Vec<(String, String)>, Box<dyn Error>> {
         let unit_name = "debug".to_string();
         let program = "
             layer 0;
@@ -38,7 +39,7 @@ impl InputPlugin for DebugPlugin {
                 }
             }
         ".to_string();
-        vec!((unit_name, program))
+        Ok(vec!((unit_name, program)))
     }
 }
 
@@ -55,28 +56,28 @@ impl InputPlugin for FilesPlugin {
         "files"
     }
 
-    fn run(&self, args: Vec<String>) -> Vec<(String, String)> {
+    fn run(&self, args: Vec<String>) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
         if args.len() == 0 {
-            return vec!();
+            return Err(Box::new(
+                PluginError::RuntimeError("Argument list is empty".to_string())
+            ));
         }
 
         let mut programs = vec!();
         for arg in args {
-            for files in glob::glob(&arg) {
-                for file in files {
-                    match file {
-                        Ok(path) => {
-                            if path.is_file() {
-                                let unit_name = path.file_name().unwrap().to_str().unwrap().to_string();
-                                let program = fs::read_to_string(&path).unwrap();
-                                programs.push((unit_name, program));
-                            }
-                        },
-                        Err(e) => println!("[ERROR] {}", e)
+            for entries in glob::glob(&arg) {
+                for entry in entries {
+                    let entry = entry?;
+                    if entry.is_file() {
+                        let unit_name = entry.file_name().ok_or(PluginError::UnknownError)?
+                                             .to_str().ok_or(PluginError::UnknownError)?
+                                             .to_string();
+                        let program = fs::read_to_string(&entry).unwrap();
+                        programs.push((unit_name, program));
                     }
                 }
             }
         }
-        programs
+        Ok(programs)
     }
 }

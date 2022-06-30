@@ -1,16 +1,41 @@
 pub mod default;
 
+use std::fmt;
+use std::fmt::{ Display, Formatter };
+use std::error::Error;
+
 use default::{ input, output };
 use crate::compiler::structure::SysDCSystem;
 
 pub trait InputPlugin {
     fn get_name(&self) -> &str;
-    fn run(&self, args: Vec<String>) -> Vec<(String, String)>;
+    fn run(&self, args: Vec<String>) -> Result<Vec<(String, String)>, Box<dyn Error>>;
 }
 
 pub trait OutputPlugin {
     fn get_name(&self) -> &str;
-    fn run(&self, args: Vec<String>, system: &SysDCSystem);
+    fn run(&self, args: Vec<String>, system: &SysDCSystem) -> Result<(), Box<dyn Error>>;
+}
+
+#[derive(Debug)]
+pub enum PluginError {
+    RuntimeError(String),
+    UnknownError
+}
+
+impl Error for PluginError {}
+
+impl Display for PluginError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let (title, text) = match self {
+            PluginError::RuntimeError(msg) => ("RuntimeError", Some(msg)),
+            PluginError::UnknownError => ("UnknownError", None)
+        };
+        match text {
+            Some(text) => write!(f, "[ERROR] {} => {}", title, text),
+            None => write!(f, "[ERROR] {}", title)
+        }
+    }
 }
 
 pub struct PluginManager {
@@ -64,7 +89,7 @@ mod test {
         let plugin_manager = PluginManager::new();
         let plugin = plugin_manager.get_type_in(&"debug".to_string());
         assert!(plugin.is_some());
-        plugin.unwrap().run(vec!());
+        plugin.unwrap().run(vec!()).unwrap();
     }
 
     #[test]
@@ -78,7 +103,7 @@ mod test {
         let plugin_manager = PluginManager::new();
         let plugin = plugin_manager.get_type_out(&"debug".to_string());
         assert!(plugin.is_some());
-        plugin.unwrap().run(vec!(), &SysDCSystem::new());
+        plugin.unwrap().run(vec!(), &SysDCSystem::new()).unwrap();
     }
 
     #[test]

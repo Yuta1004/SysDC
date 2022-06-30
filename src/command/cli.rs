@@ -65,7 +65,7 @@ impl CliCmd {
         };
 
         let mut compiler = Compiler::new();
-        for (unit_name, program) in plugin.run(args) {
+        for (unit_name, program) in plugin.run(args).unwrap() {
             compiler.add_unit(&unit_name, &program);
         }
         Some(compiler.generate_system())
