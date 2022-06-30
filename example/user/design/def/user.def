@@ -13,22 +13,22 @@ module UserModule binds User as this {
         modify = [this.age];
     }
 
-    change_name(name: string) => None {
+    change_name(name: string) -> None {
         use = [name];
         modify = [this.name];
     }
 
-    info() => None {
+    info() -> None {
         use = [this.all];
         link = chain {
                 branch {
                     chain {
-                        Printer::print(text: this.id),
-                        Printer::print(text: this.name)
+                        Printer::print(this.id),
+                        Printer::print(this.name)
                     },
-                    Printer::print(text: this.name)
+                    Printer::print(this.name)
                 },
-                Printer::print(text: this.age)
+                Printer::print(this.age)
             }
     }
 }
