@@ -112,7 +112,7 @@ impl SysDCVariable {
 #[derive(Debug)]
 pub struct SysDCModule {
     pub name: Name,
-    pub procedures: Vec<Rc<RefCell<SysDCProcedure>>>
+    pub functions: Vec<Rc<RefCell<SysDCFunction>>>
 }
 
 impl SysDCModule {
@@ -121,19 +121,19 @@ impl SysDCModule {
             RefCell::new(
                 SysDCModule {
                     name: Name::new(namespace, name),
-                    procedures: vec!()
+                    functions: vec!()
                 }
             )
         )
     }
 
-    pub fn push_procedure(&mut self, procedure: Rc<RefCell<SysDCProcedure>>) {
-        self.procedures.push(procedure);
+    pub fn push_function(&mut self, function: Rc<RefCell<SysDCFunction>>) {
+        self.functions.push(function);
     }
 }
 
 #[derive(Debug)]
-pub struct SysDCProcedure {
+pub struct SysDCFunction {
     pub name: Name,
     pub return_type: SysDCType,
     pub args: Vec<Rc<RefCell<SysDCVariable>>>,
@@ -142,11 +142,11 @@ pub struct SysDCProcedure {
     pub link: Option<Rc<RefCell<SysDCLink>>>
 }
 
-impl SysDCProcedure {
-    pub fn new(namespace: &Name, name: String) -> Rc<RefCell<SysDCProcedure>> {
+impl SysDCFunction {
+    pub fn new(namespace: &Name, name: String) -> Rc<RefCell<SysDCFunction>> {
         Rc::new(
             RefCell::new(
-                SysDCProcedure {
+                SysDCFunction {
                     name: Name::new(namespace, name),
                     return_type: SysDCType::NoneType,
                     args: vec!(),
@@ -176,7 +176,7 @@ impl SysDCProcedure {
 
     pub fn set_link(&mut self, link: Rc<RefCell<SysDCLink>>) {
         match self.link {
-            Some(_) => panic!("[ERROR] SysDCProcedure.link is already setted"),
+            Some(_) => panic!("[ERROR] SysDCFunction.link is already setted"),
             None => self.link = Some(link)
         }
     }
@@ -186,7 +186,7 @@ impl SysDCProcedure {
 pub enum SysDCLinkType {
     Branch,
     Chain,
-    InstanceOfProcedure
+    InstanceOfFunction
 }
 
 #[derive(Debug)]
@@ -194,8 +194,8 @@ pub struct SysDCLink {
     pub name: Name,
     pub link_type: SysDCLinkType,
     pub links: Option<Vec<Rc<RefCell<SysDCLink>>>>,         // Valid for link_type is Branch/Chain
-    pub procedure: Option<Rc<RefCell<SysDCProcedure>>>,     // Valid for link_type is InstanceOfProcedure
-    pub args: Option<Vec<Rc<RefCell<SysDCVariable>>>>       // Valid for link_type is InstanceOfProcedure
+    pub func: Option<Rc<RefCell<SysDCFunction>>>,     // Valid for link_type is InstanceOfFunction
+    pub args: Option<Vec<Rc<RefCell<SysDCVariable>>>>       // Valid for link_type is InstanceOfFunction
 }
 
 impl SysDCLink {
@@ -206,7 +206,7 @@ impl SysDCLink {
                     name: Name::new(namespace, name),
                     link_type: SysDCLinkType::Branch,
                     links: Some(vec!()),
-                    procedure: None,
+                    func: None,
                     args: None
                 }
             )
@@ -220,21 +220,21 @@ impl SysDCLink {
                     name: Name::new(namespace, name),
                     link_type: SysDCLinkType::Chain,
                     links: Some(vec!()),
-                    procedure: None,
+                    func: None,
                     args: None
                 }
             )
         )
     }
 
-    pub fn new_instance_of_procedure(namespace: &Name, name: String) -> Rc<RefCell<SysDCLink>> {
+    pub fn new_instance_of_function(namespace: &Name, name: String) -> Rc<RefCell<SysDCLink>> {
         Rc::new(
             RefCell::new(
                 SysDCLink {
                     name: Name::new(namespace, name),
-                    link_type: SysDCLinkType::InstanceOfProcedure,
+                    link_type: SysDCLinkType::InstanceOfFunction,
                     links: None,
-                    procedure: None,
+                    func: None,
                     args: Some(vec!())
                 }
             )
@@ -242,26 +242,26 @@ impl SysDCLink {
     }
 
     pub fn push_link(&mut self, link: Rc<RefCell<SysDCLink>>) {
-        if self.link_type != SysDCLinkType::InstanceOfProcedure {
+        if self.link_type != SysDCLinkType::InstanceOfFunction {
             self.links.as_mut().unwrap().push(link);
         } else {
-            panic!("[ERROR] SysDCLink.link_type is InstanceOfProcedure, but push_link called")
+            panic!("[ERROR] SysDCLink.link_type is InstanceOfFunction, but push_link called")
         }
     }
 
-    pub fn set_procedure(&mut self, procedure: Rc<RefCell<SysDCProcedure>>) {
-        if self.link_type == SysDCLinkType::InstanceOfProcedure {
-            match self.procedure {
-                Some(_) => panic!("[ERROR] SysDCLink.procedure is already setted"),
-                None => self.procedure = Some(procedure)
+    pub fn set_function(&mut self, function: Rc<RefCell<SysDCFunction>>) {
+        if self.link_type == SysDCLinkType::InstanceOfFunction {
+            match self.func {
+                Some(_) => panic!("[ERROR] SysDCLink.function is already setted"),
+                None => self.func = Some(function)
             }
         } else {
-            panic!("[ERROR] SysDCLink.link_type is Branch/Chain, but set_procedure called")
+            panic!("[ERROR] SysDCLink.link_type is Branch/Chain, but set_function called")
         }
     }
 
     pub fn push_arg(&mut self, variable: Rc<RefCell<SysDCVariable>>) {
-        if self.link_type == SysDCLinkType::InstanceOfProcedure {
+        if self.link_type == SysDCLinkType::InstanceOfFunction {
             self.args.as_mut().unwrap().push(variable);
         } else {
             panic!("[ERROR] SysDCLink.link_type is Branch/Chain, but push_arg_mapping called")
@@ -274,7 +274,7 @@ mod test {
     use std::rc::Rc;
 
     use super::super::types::SysDCType;
-    use super::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCProcedure };
+    use super::{ SysDCSystem, SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCFunction };
 
     #[test]
     fn create_sysdc_tree() {
@@ -311,11 +311,11 @@ mod test {
                 {
                     let printer_module = SysDCModule::new(&printer_unit.name, "Printer".to_string());
                     {
-                        let print_procedure = SysDCProcedure::new(&printer_module.borrow().name, "print".to_string());
-                        let print_procedure_text = SysDCVariable::new(&print_procedure.borrow().name, "text".to_string(), SysDCType::Int32);
-                        print_procedure.borrow_mut().push_arg(Rc::clone(&print_procedure_text));
-                        print_procedure.borrow_mut().push_using_variable(Rc::clone(&print_procedure_text));
-                        printer_module.borrow_mut().push_procedure(print_procedure);
+                        let print_function = SysDCFunction::new(&printer_module.borrow().name, "print".to_string());
+                        let print_function_text = SysDCVariable::new(&print_function.borrow().name, "text".to_string(), SysDCType::Int32);
+                        print_function.borrow_mut().push_arg(Rc::clone(&print_function_text));
+                        print_function.borrow_mut().push_using_variable(Rc::clone(&print_function_text));
+                        printer_module.borrow_mut().push_function(print_function);
                     }
                     printer_unit.push_module(printer_module);
                 }
@@ -336,10 +336,10 @@ mod test {
 
                     let user_module = SysDCModule::new(&user_unit.name, "UserModule".to_string());
                     {
-                        let greet_procedure = SysDCProcedure::new(&user_module.borrow().name, "greet".to_string());
+                        let greet_function = SysDCFunction::new(&user_module.borrow().name, "greet".to_string());
                         // New Job(Connector): use = this.age;
                         // New Job(Connector): link = chain { Printer::print(text: this.id), Printer::print(text: this.name) }
-                        user_module.borrow_mut().push_procedure(greet_procedure);
+                        user_module.borrow_mut().push_function(greet_function);
                     }
                     user_unit.push_module(user_module);
                 }
