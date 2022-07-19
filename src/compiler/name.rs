@@ -7,7 +7,7 @@ pub struct Name {
 }
 
 impl Name {
-    pub fn new(base: &Name, name: &String) -> Name {
+    pub fn new(base: &Name, name: String) -> Name {
         Name {
             name: name.clone(),
             namespace: base.get_global_name()
@@ -21,8 +21,8 @@ impl Name {
         }
     }
 
-    pub fn new_on_global_namespace(name: &String) -> Name {
-        Name::new(&Name::new(&Name::new_root(), &"global".to_string()), name)
+    pub fn new_on_global_namespace(name: String) -> Name {
+        Name::new(&Name::new(&Name::new_root(), "global".to_string()), name)
     }
 
     pub fn get_local_name(&self) -> String {
@@ -47,7 +47,7 @@ mod test {
     #[test]
     fn create_name() {
         let root = Name::new_root();
-        let name = Name::new(&root, &"aaa".to_string());
+        let name = Name::new(&root, "aaa".to_string());
         assert_eq!(name.get_local_name(), "aaa".to_string());
         assert_eq!(name.get_global_name(), ".0.aaa".to_string());
 

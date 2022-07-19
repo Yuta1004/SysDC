@@ -23,9 +23,9 @@ impl Compiler {
         }
     }
 
-    pub fn add_unit(&mut self, unit_name: &String, program: &String) {
+    pub fn add_unit(&mut self, unit_name: String, program: &String) {
         let tokenizer = Tokenizer::new(program);
-        let mut parser = Parser::new(&self.system.name, unit_name, tokenizer);
+        let mut parser = Parser::new(self.system.name.clone(), unit_name, tokenizer);
 
         let (layer_num, unit) = parser.parse();
         if !self.layers.contains_key(&layer_num) {
@@ -59,7 +59,7 @@ mod test {
             ("user5", "layer 2; data User5 {}")
         ];
         for (unit_name, program) in programs {
-            compiler.add_unit(&unit_name.to_string(), &program.to_string());
+            compiler.add_unit(unit_name.to_string(), &program.to_string());
         }
         let system = compiler.generate_system();
         assert_eq!(system.layers.len(), 3);

@@ -16,7 +16,7 @@ pub enum SysDCType {
 }
 
 impl SysDCType {
-    pub fn from(namespace: &Name, name: &String) -> SysDCType {
+    pub fn from(namespace: &Name, name: String) -> SysDCType {
         match name.as_str() {
             "int32" => SysDCType::Int32,
             "float32" => SysDCType::Float32,
@@ -26,7 +26,7 @@ impl SysDCType {
         }
     }
 
-    pub fn from_allow_unsolved(namespace: &Name, name: &String) -> SysDCType {
+    pub fn from_allow_unsolved(namespace: &Name, name: String) -> SysDCType {
         match name.as_str() {
             "int32" => SysDCType::Int32,
             "float32" => SysDCType::Float32,
@@ -38,10 +38,10 @@ impl SysDCType {
 
     pub fn get_name(&self) -> Name {
         match self {
-            SysDCType::Int32 => Name::new_on_global_namespace(&"int32".to_string()),
-            SysDCType::Float32 => Name::new_on_global_namespace(&"float32".to_string()),
-            SysDCType::StringType => Name::new_on_global_namespace(&"string".to_string()),
-            SysDCType::NoneType => Name::new_on_global_namespace(&"none".to_string()),
+            SysDCType::Int32 => Name::new_on_global_namespace("int32".to_string()),
+            SysDCType::Float32 => Name::new_on_global_namespace("float32".to_string()),
+            SysDCType::StringType => Name::new_on_global_namespace("string".to_string()),
+            SysDCType::NoneType => Name::new_on_global_namespace("none".to_string()),
             SysDCType::Solved(name) => name.clone(),
             SysDCType::Unsolved(name) => name.clone()
         }
@@ -61,16 +61,16 @@ mod test {
 
     #[test]
     fn from_all_ok() {
-        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), &"int32".to_string()), SysDCType::Int32);
-        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), &"float32".to_string()), SysDCType::Float32);
-        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), &"string".to_string()), SysDCType::StringType);
-        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), &"none".to_string()), SysDCType::NoneType);
-        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), &"cocoa".to_string()), SysDCType::Unsolved(Name::new(&Name::new_root(), &"cocoa".to_string())));
+        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), "int32".to_string()), SysDCType::Int32);
+        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), "float32".to_string()), SysDCType::Float32);
+        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), "string".to_string()), SysDCType::StringType);
+        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), "none".to_string()), SysDCType::NoneType);
+        assert_eq!(SysDCType::from_allow_unsolved(&Name::new_root(), "cocoa".to_string()), SysDCType::Unsolved(Name::new(&Name::new_root(), "cocoa".to_string())));
     }
 
     #[test]
     #[should_panic]
     fn from_ng() {
-        assert_eq!(SysDCType::from(&Name::new_root(), &"cocoa".to_string()), SysDCType::Unsolved(Name::new(&Name::new_root(), &"cocoa".to_string())));
+        assert_eq!(SysDCType::from(&Name::new_root(), "cocoa".to_string()), SysDCType::Unsolved(Name::new(&Name::new_root(), "cocoa".to_string())));
     }
 }

@@ -32,7 +32,7 @@ pub struct SysDCLayer {
 impl SysDCLayer {
     pub fn new(namespace: &Name, layer_num: i32) -> SysDCLayer {
         SysDCLayer {
-            name: Name::new(namespace, &format!("layer{}", layer_num)),
+            name: Name::new(namespace, format!("layer{}", layer_num)),
             units: vec!()
         }
     }
@@ -50,7 +50,7 @@ pub struct SysDCUnit {
 }
 
 impl SysDCUnit {
-    pub fn new(namespace: &Name, name: &String) -> SysDCUnit {
+    pub fn new(namespace: &Name, name: String) -> SysDCUnit {
         SysDCUnit {
             name: Name::new(namespace, name),
             data: vec!(),
@@ -74,7 +74,7 @@ pub struct SysDCData {
 }
 
 impl SysDCData {
-    pub fn new(namespace: &Name, name: &String) -> Rc<RefCell<SysDCData>> {
+    pub fn new(namespace: &Name, name: String) -> Rc<RefCell<SysDCData>> {
         Rc::new(
             RefCell::new(
                 SysDCData {
@@ -97,7 +97,7 @@ pub struct SysDCVariable {
 }
 
 impl SysDCVariable {
-    pub fn new(namespace: &Name, name: &String, var_type: SysDCType) -> Rc<RefCell<SysDCVariable>> {
+    pub fn new(namespace: &Name, name: String, var_type: SysDCType) -> Rc<RefCell<SysDCVariable>> {
         Rc::new(
             RefCell::new(
                 SysDCVariable {
@@ -116,7 +116,7 @@ pub struct SysDCModule {
 }
 
 impl SysDCModule {
-    pub fn new(namespace: &Name, name: &String) -> Rc<RefCell<SysDCModule>> {
+    pub fn new(namespace: &Name, name: String) -> Rc<RefCell<SysDCModule>> {
         Rc::new(
             RefCell::new(
                 SysDCModule {
@@ -143,7 +143,7 @@ pub struct SysDCProcedure {
 }
 
 impl SysDCProcedure {
-    pub fn new(namespace: &Name, name: &String) -> Rc<RefCell<SysDCProcedure>> {
+    pub fn new(namespace: &Name, name: String) -> Rc<RefCell<SysDCProcedure>> {
         Rc::new(
             RefCell::new(
                 SysDCProcedure {
@@ -199,7 +199,7 @@ pub struct SysDCLink {
 }
 
 impl SysDCLink {
-    pub fn new_branch(namespace: &Name, name: &String) -> Rc<RefCell<SysDCLink>> {
+    pub fn new_branch(namespace: &Name, name: String) -> Rc<RefCell<SysDCLink>> {
         Rc::new(
             RefCell::new(
                 SysDCLink {
@@ -213,7 +213,7 @@ impl SysDCLink {
         )
     }
 
-    pub fn new_chain(namespace: &Name, name: &String) -> Rc<RefCell<SysDCLink>> {
+    pub fn new_chain(namespace: &Name, name: String) -> Rc<RefCell<SysDCLink>> {
         Rc::new(
             RefCell::new(
                 SysDCLink {
@@ -227,7 +227,7 @@ impl SysDCLink {
         )
     }
 
-    pub fn new_instance_of_procedure(namespace: &Name, name: &String) -> Rc<RefCell<SysDCLink>> {
+    pub fn new_instance_of_procedure(namespace: &Name, name: String) -> Rc<RefCell<SysDCLink>> {
         Rc::new(
             RefCell::new(
                 SysDCLink {
@@ -307,12 +307,12 @@ mod test {
         {
             let mut layer_1 = SysDCLayer::new(&system.name, 1);
             {
-                let mut printer_unit = SysDCUnit::new(&layer_1.name, &"printer".to_string());
+                let mut printer_unit = SysDCUnit::new(&layer_1.name, "printer".to_string());
                 {
-                    let printer_module = SysDCModule::new(&printer_unit.name, &"Printer".to_string());
+                    let printer_module = SysDCModule::new(&printer_unit.name, "Printer".to_string());
                     {
-                        let print_procedure = SysDCProcedure::new(&printer_module.borrow().name, &"print".to_string());
-                        let print_procedure_text = SysDCVariable::new(&print_procedure.borrow().name, &"text".to_string(), SysDCType::Int32);
+                        let print_procedure = SysDCProcedure::new(&printer_module.borrow().name, "print".to_string());
+                        let print_procedure_text = SysDCVariable::new(&print_procedure.borrow().name, "text".to_string(), SysDCType::Int32);
                         print_procedure.borrow_mut().push_arg(Rc::clone(&print_procedure_text));
                         print_procedure.borrow_mut().push_using_variable(Rc::clone(&print_procedure_text));
                         printer_module.borrow_mut().push_procedure(print_procedure);
@@ -325,18 +325,18 @@ mod test {
 
             let mut layer_0 = SysDCLayer::new(&system.name, 0);
             {
-                let mut user_unit = SysDCUnit::new(&layer_0.name, &"user".to_string());
+                let mut user_unit = SysDCUnit::new(&layer_0.name, "user".to_string());
                 {
-                    let user_data = SysDCData::new(&user_unit.name, &"User".to_string());
+                    let user_data = SysDCData::new(&user_unit.name, "User".to_string());
                     let user_data_name = &user_data.borrow().name.clone();
-                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, &"id".to_string(), SysDCType::Int32));
-                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, &"age".to_string(), SysDCType::Int32));
-                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, &"name".to_string(), SysDCType::StringType));
+                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, "id".to_string(), SysDCType::Int32));
+                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, "age".to_string(), SysDCType::Int32));
+                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, "name".to_string(), SysDCType::StringType));
                     user_unit.push_data(user_data);
 
-                    let user_module = SysDCModule::new(&user_unit.name, &"UserModule".to_string());
+                    let user_module = SysDCModule::new(&user_unit.name, "UserModule".to_string());
                     {
-                        let greet_procedure = SysDCProcedure::new(&user_module.borrow().name, &"greet".to_string());
+                        let greet_procedure = SysDCProcedure::new(&user_module.borrow().name, "greet".to_string());
                         // New Job(Connector): use = this.age;
                         // New Job(Connector): link = chain { Printer::print(text: this.id), Printer::print(text: this.name) }
                         user_module.borrow_mut().push_procedure(greet_procedure);
