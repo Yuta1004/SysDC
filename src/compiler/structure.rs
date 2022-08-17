@@ -2,17 +2,6 @@ use super::name::Name;
 use super::types::SysDCType;
 
 #[derive(Debug)]
-pub struct SysDCSystemWrapper {
-    pub system: SysDCSystem,
-}
-
-impl SysDCSystemWrapper {
-    pub fn create(system: SysDCSystem) {
-        panic!("[ERROR] Cannot check the connections inside given SysDCSystem.")
-    }
-}
-
-#[derive(Debug)]
 pub struct SysDCSystem {
     pub units: Vec<SysDCUnit>
 }
