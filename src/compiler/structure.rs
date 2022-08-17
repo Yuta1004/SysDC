@@ -1,5 +1,5 @@
 use super::name::Name;
-use super::types::SysDCType;
+use super::types::Type;
 
 #[derive(Debug)]
 pub struct SysDCSystem {
@@ -28,11 +28,11 @@ impl SysDCUnit {
 #[derive(Debug)]
 pub struct SysDCData {
     pub name: Name,
-    pub member: Vec<(Name, SysDCType)> 
+    pub member: Vec<(Name, Type)> 
 }
 
 impl SysDCData {
-    pub fn new(name: Name, member: Vec<(Name, SysDCType)>) -> SysDCData {
+    pub fn new(name: Name, member: Vec<(Name, Type)>) -> SysDCData {
         SysDCData { name, member }
     }
 }
@@ -52,13 +52,13 @@ impl SysDCModule {
 #[derive(Debug)]
 pub struct SysDCFunction {
     pub name: Name,
-    pub args: Vec<(Name, SysDCType)>,
-    pub returns: Option<(Name, SysDCType)>,
+    pub args: Vec<(Name, Type)>,
+    pub returns: Option<(Name, Type)>,
     pub spawns: Vec<SysDCSpawn>
 }
 
 impl SysDCFunction {
-    pub fn new(name: Name, args: Vec<(Name, SysDCType)>, returns: (Name, SysDCType), spawns: Vec<SysDCSpawn>) -> SysDCFunction {
+    pub fn new(name: Name, args: Vec<(Name, Type)>, returns: (Name, Type), spawns: Vec<SysDCSpawn>) -> SysDCFunction {
         SysDCFunction { name, args, returns: Some(returns), spawns }
     }
 }
@@ -74,31 +74,31 @@ impl SysDCAnnotation {
         SysDCAnnotation::Return(name)
     }
 
-    pub fn new_spawn(result: (Name, SysDCType), detail: Vec<SysDCSpawnChild>) -> SysDCAnnotation {
+    pub fn new_spawn(result: (Name, Type), detail: Vec<SysDCSpawnChild>) -> SysDCAnnotation {
         SysDCAnnotation::Spawn(SysDCSpawn::new(result, detail))
     }
 }
 
 #[derive(Debug)]
 pub struct SysDCSpawn {
-    pub result: (Name, SysDCType),
+    pub result: (Name, Type),
     pub detail: Vec<SysDCSpawnChild>
 }
 
 impl SysDCSpawn {
-    pub fn new(result: (Name, SysDCType), detail: Vec<SysDCSpawnChild>) -> SysDCSpawn {
+    pub fn new(result: (Name, Type), detail: Vec<SysDCSpawnChild>) -> SysDCSpawn {
         SysDCSpawn { result, detail }
     }
 }
 
 #[derive(Debug)]
 pub enum SysDCSpawnChild {
-    Use { name: Name, types: SysDCType },
-    // Process { name: Name, func: Name, args: Vec<(Name, SysDCType)> }
+    Use { name: Name, types: Type },
+    // Process { name: Name, func: Name, args: Vec<(Name, Type)> }
 }
 
 impl SysDCSpawnChild {
-    pub fn new_use(name: Name, types: SysDCType) -> SysDCSpawnChild {
+    pub fn new_use(name: Name, types: Type) -> SysDCSpawnChild {
         SysDCSpawnChild::Use { name, types }
     }
 }
@@ -107,7 +107,7 @@ impl SysDCSpawnChild {
 mod test {
     use super::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
     use super::super::name::Name;
-    use super::super::types::SysDCType;
+    use super::super::types::Type;
 
     #[test]
     fn create_system() {
@@ -144,28 +144,28 @@ mod test {
         let name_spawn_use_dy = Name::new(&name_func, "dy".to_string());
         let name_spawn_ret = Name::new(&name_func, "movedBox".to_string());
 
-        let spawn_use_box_x = SysDCSpawnChild::new_use(name_spawn_use_box_x, SysDCType::Int32);
-        let spawn_use_box_y = SysDCSpawnChild::new_use(name_spawn_use_box_y, SysDCType::Int32);
-        let spawn_use_dx = SysDCSpawnChild::new_use(name_spawn_use_dx, SysDCType::Int32);
-        let spawn_use_dy = SysDCSpawnChild::new_use(name_spawn_use_dy, SysDCType::Int32);
+        let spawn_use_box_x = SysDCSpawnChild::new_use(name_spawn_use_box_x, Type::Int32);
+        let spawn_use_box_y = SysDCSpawnChild::new_use(name_spawn_use_box_y, Type::Int32);
+        let spawn_use_dx = SysDCSpawnChild::new_use(name_spawn_use_dx, Type::Int32);
+        let spawn_use_dy = SysDCSpawnChild::new_use(name_spawn_use_dy, Type::Int32);
         let spawn = SysDCSpawn::new(
-            (name_spawn_ret, SysDCType::from(&name_func, "Box".to_string())),
+            (name_spawn_ret, Type::from(&name_func, "Box".to_string())),
             vec!(spawn_use_box_x, spawn_use_box_y, spawn_use_dx, spawn_use_dy)
         );
 
         let func_args = vec!(
-            (name_func_arg_box, SysDCType::Int32),
-            (name_func_arg_dx, SysDCType::Int32),
-            (name_func_arg_dy, SysDCType::Int32)
+            (name_func_arg_box, Type::Int32),
+            (name_func_arg_dx, Type::Int32),
+            (name_func_arg_dy, Type::Int32)
         );
-        let func_returns = (name_func_ret, SysDCType::from(&name_func, "Box".to_string()));
+        let func_returns = (name_func_ret, Type::from(&name_func, "Box".to_string()));
         let func = SysDCFunction::new(name_func, func_args, func_returns, vec!(spawn));
 
         let module = SysDCModule::new(name_module, vec!(func));
 
         let data_members = vec!(
-            (name_data_x, SysDCType::Int32),
-            (name_data_y, SysDCType::Int32)
+            (name_data_x, Type::Int32),
+            (name_data_y, Type::Int32)
         );
         let data = SysDCData::new(name_data, data_members);
 

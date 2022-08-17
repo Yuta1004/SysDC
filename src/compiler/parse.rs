@@ -1,5 +1,5 @@
 use super::name::Name;
-use super::types::SysDCType;
+use super::types::Type;
 use super::token::{ TokenKind, Tokenizer };
 use super::structure::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawn, SysDCSpawnChild };
 
@@ -107,7 +107,7 @@ impl<'a> Parser<'a> {
 
         // -> <id>
         self.tokenizer.request(TokenKind::Allow);
-        let return_type = SysDCType::from(&name, self.tokenizer.request(TokenKind::Identifier).get_id());   // TODO: Checker
+        let return_type = Type::from(&name, self.tokenizer.request(TokenKind::Identifier).get_id());   // TODO: Checker
 
         // \{ <function_body> \}
         self.tokenizer.request(TokenKind::BracketBegin);
@@ -187,7 +187,7 @@ impl<'a> Parser<'a> {
     /**
      * <attribute> = \+ <id> <var_list, delimiter=','>
      */
-    fn parse_attribute(&mut self, namespace: &Name) -> Option<(String, Vec<(Name, SysDCType)>)> {
+    fn parse_attribute(&mut self, namespace: &Name) -> Option<(String, Vec<(Name, Type)>)> {
         // \+
         self.tokenizer.expect(TokenKind::Plus)?;
 
@@ -207,25 +207,25 @@ impl<'a> Parser<'a> {
     /**
      * <var> ::= <id_list, delimiter=.>
      */
-    fn parse_var(&mut self, namespace: &Name) -> Option<(Name, SysDCType)> {
+    fn parse_var(&mut self, namespace: &Name) -> Option<(Name, Type)> {
         // <id_list, delimiter=,>
         let name_elems = parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Accessor);
         let var = name_elems.iter().map(|x| x.get_id()).collect::<Vec<String>>().join(".");
         match var.len() {
             0 => None,
-            _ => Some((Name::new(namespace, var), SysDCType::UnsolvedNoHint))
+            _ => Some((Name::new(namespace, var), Type::UnsolvedNoHint))
         }
     }
 
     /**
      * <id_type_mapping_var> ::= <id> : <id> 
      */
-    fn parse_id_type_mapping_var(&mut self, namespace: &Name) -> Option<(Name, SysDCType)> {
+    fn parse_id_type_mapping_var(&mut self, namespace: &Name) -> Option<(Name, Type)> {
         // <id> : <id>
         let id1 = self.tokenizer.expect(TokenKind::Identifier)?.get_id();
         self.tokenizer.request(TokenKind::Mapping);
         let id2 = self.tokenizer.request(TokenKind::Identifier).get_id();
-        Some((Name::new(namespace, id1), SysDCType::from(namespace, id2)))
+        Some((Name::new(namespace, id1), Type::from(namespace, id2)))
     }
 }
 
@@ -233,7 +233,7 @@ impl<'a> Parser<'a> {
 mod test {
     use super::Parser;
     use super::super::name::Name;
-    use super::super::types::SysDCType;
+    use super::super::types::Type;
     use super::super::token::Tokenizer;
     use super::super::structure::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
     
@@ -281,8 +281,8 @@ mod test {
         let name_box = Name::new(&name, "Box".to_string());
 
         let member = vec!(
-            (Name::new(&name_box, "x".to_string()), SysDCType::Int32),
-            (Name::new(&name_box, "y".to_string()), SysDCType::from(&name_box, "UserDefinedData".to_string()))
+            (Name::new(&name_box, "x".to_string()), Type::Int32),
+            (Name::new(&name_box, "y".to_string()), Type::from(&name_box, "UserDefinedData".to_string()))
         );
         let data = SysDCData::new(name_box, member);
         let unit = SysDCUnit::new(name, vec!(data), vec!());
@@ -371,7 +371,7 @@ mod test {
         let name_func = Name::new(&name_module, "new".to_string());
         let name_func_ret = Name::new(&name_func, "box".to_string());
 
-        let func_returns = (name_func_ret, SysDCType::from(&name_func, "Box".to_string()));
+        let func_returns = (name_func_ret, Type::from(&name_func, "Box".to_string()));
         let func = SysDCFunction::new(name_func, vec!(), func_returns, vec!());
 
         let module = SysDCModule::new(name_module, vec!(func));
@@ -400,9 +400,9 @@ mod test {
         let name_func_ret = Name::new(&name_func, "box".to_string());
 
         let func_spawns = vec!(
-            SysDCSpawn::new((name_func_spawn_box, SysDCType::from(&name_func, "Box".to_string())), vec!())
+            SysDCSpawn::new((name_func_spawn_box, Type::from(&name_func, "Box".to_string())), vec!())
         );
-        let func_returns = (name_func_ret, SysDCType::from(&name_func, "Box".to_string()));
+        let func_returns = (name_func_ret, Type::from(&name_func, "Box".to_string()));
         let func = SysDCFunction::new(name_func, vec!(), func_returns, func_spawns);
 
         let module = SysDCModule::new(name_module, vec!(func));
@@ -440,19 +440,19 @@ mod test {
         let name_func_ret = Name::new(&name_func, "movedBox".to_string());
 
         let func_args = vec!(
-            (name_func_arg_box, SysDCType::from(&name_func, "Box".to_string())),
-            (name_func_arg_dx, SysDCType::Int32),
-            (name_func_arg_dy, SysDCType::Int32)
+            (name_func_arg_box, Type::from(&name_func, "Box".to_string())),
+            (name_func_arg_dx, Type::Int32),
+            (name_func_arg_dy, Type::Int32)
         );
         let func_spawns = vec!(
-            SysDCSpawn::new((name_func_spawn_box, SysDCType::from(&name_func, "Box".to_string())), vec!(
-                SysDCSpawnChild::new_use(name_func_spawn_use_box_x, SysDCType::UnsolvedNoHint),
-                SysDCSpawnChild::new_use(name_func_spawn_use_box_y, SysDCType::UnsolvedNoHint),
-                SysDCSpawnChild::new_use(name_func_spawn_use_dx, SysDCType::UnsolvedNoHint),
-                SysDCSpawnChild::new_use(name_func_spawn_use_dy, SysDCType::UnsolvedNoHint)
+            SysDCSpawn::new((name_func_spawn_box, Type::from(&name_func, "Box".to_string())), vec!(
+                SysDCSpawnChild::new_use(name_func_spawn_use_box_x, Type::UnsolvedNoHint),
+                SysDCSpawnChild::new_use(name_func_spawn_use_box_y, Type::UnsolvedNoHint),
+                SysDCSpawnChild::new_use(name_func_spawn_use_dx, Type::UnsolvedNoHint),
+                SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::UnsolvedNoHint)
             ))
         );
-        let func_returns = (name_func_ret, SysDCType::from(&name_func, "Box".to_string()));
+        let func_returns = (name_func_ret, Type::from(&name_func, "Box".to_string()));
         let func = SysDCFunction::new(name_func, func_args, func_returns, func_spawns);
 
         let module = SysDCModule::new(name_module, vec!(func));
@@ -536,26 +536,26 @@ mod test {
         let name_func_ret = Name::new(&name_func, "movedBox".to_string());
 
         let func_args = vec!(
-            (name_func_arg_box, SysDCType::from(&name_func, "Box".to_string())),
-            (name_func_arg_dx, SysDCType::Int32),
-            (name_func_arg_dy, SysDCType::Int32)
+            (name_func_arg_box, Type::from(&name_func, "Box".to_string())),
+            (name_func_arg_dx, Type::Int32),
+            (name_func_arg_dy, Type::Int32)
         );
         let func_spawns = vec!(
-            SysDCSpawn::new((name_func_spawn_box, SysDCType::from(&name_func, "Box".to_string())), vec!(
-                SysDCSpawnChild::new_use(name_func_spawn_use_box_x, SysDCType::UnsolvedNoHint),
-                SysDCSpawnChild::new_use(name_func_spawn_use_box_y, SysDCType::UnsolvedNoHint),
-                SysDCSpawnChild::new_use(name_func_spawn_use_dx, SysDCType::UnsolvedNoHint),
-                SysDCSpawnChild::new_use(name_func_spawn_use_dy, SysDCType::UnsolvedNoHint)
+            SysDCSpawn::new((name_func_spawn_box, Type::from(&name_func, "Box".to_string())), vec!(
+                SysDCSpawnChild::new_use(name_func_spawn_use_box_x, Type::UnsolvedNoHint),
+                SysDCSpawnChild::new_use(name_func_spawn_use_box_y, Type::UnsolvedNoHint),
+                SysDCSpawnChild::new_use(name_func_spawn_use_dx, Type::UnsolvedNoHint),
+                SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::UnsolvedNoHint)
             ))
         );
-        let func_returns = (name_func_ret, SysDCType::from(&name_func, "Box".to_string()));
+        let func_returns = (name_func_ret, Type::from(&name_func, "Box".to_string()));
         let func = SysDCFunction::new(name_func, func_args, func_returns, func_spawns);
 
         let module = SysDCModule::new(name_module, vec!(func));
 
         let data_members = vec!(
-            (name_data_x, SysDCType::Int32),
-            (name_data_y, SysDCType::Int32)
+            (name_data_x, Type::Int32),
+            (name_data_y, Type::Int32)
         );
         let data = SysDCData::new(name_data, data_members);
 
