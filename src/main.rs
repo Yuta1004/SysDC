@@ -1,5 +1,5 @@
 mod cli;
-mod plugin;
+pub mod plugin;
 pub mod compiler;
 
 fn main() {
