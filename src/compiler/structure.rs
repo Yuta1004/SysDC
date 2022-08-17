@@ -14,13 +14,25 @@ impl SysDCSystemWrapper {
 
 #[derive(Debug)]
 pub struct SysDCSystem {
+    pub units: Vec<SysDCUnit>
+}
+
+impl SysDCSystem {
+    pub fn new(units: Vec<SysDCUnit>) -> SysDCSystem {
+        SysDCSystem { units }
+    }
+}
+
+#[derive(Debug)]
+pub struct SysDCUnit {
+    pub name: Name,
     pub data: Vec<SysDCData>,
     pub modules: Vec<SysDCModule>
 }
 
-impl SysDCSystem {
-    pub fn new(data: Vec<SysDCData>, modules: Vec<SysDCModule>) -> SysDCSystem {
-        SysDCSystem { data, modules }
+impl SysDCUnit {
+    pub fn new(name: Name, data: Vec<SysDCData>, modules: Vec<SysDCModule>) -> SysDCUnit {
+        SysDCUnit { name, data, modules }
     }
 }
 
@@ -88,7 +100,7 @@ impl SysDCSpawnChild {
 
 #[cfg(test)]
 mod test {
-    use super::{ SysDCSystem, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
+    use super::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
     use super::super::name::Name;
     use super::super::types::SysDCType;
 
@@ -111,6 +123,7 @@ mod test {
         //  }
 
         let name = Name::new_root();
+        let name = Name::new(&name, "box".to_string());
         let name_data = Name::new(&name, "Box".to_string());
         let name_data_x = Name::new(&name_data, "x".to_string());
         let name_data_y = Name::new(&name_data, "y".to_string());
@@ -151,7 +164,9 @@ mod test {
         );
         let data = SysDCData::new(name_data, data_members);
 
-        let system = SysDCSystem::new(vec!(data), vec!(module));
+        let unit = SysDCUnit::new(name, vec!(data), vec!(module));
+
+        let system = SysDCSystem::new(vec!(unit));
     }
 }
 
