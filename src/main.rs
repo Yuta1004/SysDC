@@ -1,7 +1,7 @@
-mod command;
+mod cli;
 mod plugin;
 pub mod compiler;
 
 fn main() {
-    command::App::run();
+    cli::App::run();
 }
