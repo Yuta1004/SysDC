@@ -20,19 +20,17 @@ pub enum TokenKind {
     Plus,               // +
 
     /* Others */
-    Identifier,
-    Number
+    Identifier
 }
 
 #[derive(Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
-    orig_id: Option<String>,
-    orig_number: Option<i32>
+    orig_id: Option<String>
 }
 
 impl Token {
-    pub fn from_string(orig: String) -> Token {
+    pub fn from(orig: String) -> Token {
         let kind = match orig.as_str() {
             "data"      => TokenKind::Data,
             "module"    => TokenKind::Module,
@@ -56,28 +54,13 @@ impl Token {
             _ => None
         };
 
-        Token { kind, orig_id, orig_number: None }
-    }
-
-    pub fn from_i32(orig: i32) -> Token {
-        Token {
-            kind: TokenKind::Number,
-            orig_id: None,
-            orig_number: Some(orig)
-        }
+        Token { kind, orig_id }
     }
 
     pub fn get_id(&self) -> String {
         match &self.orig_id {
             Some(id) => id.clone(),
             None => panic!("[ERROR] get_id called for token {:?}", self.kind)
-        }
-    }
-
-    pub fn get_number(&self) -> i32 {
-        match &self.orig_number {
-            Some(number) => *number,
-            None => panic!("[ERROR] get_number called for token {:?}", self.kind)
         }
     }
 }
@@ -159,10 +142,7 @@ impl<'a> Tokenizer<'a> {
         }
 
         let discovered_word = self.clip_text(lead_ref_pos, self.now_ref_pos);
-        let token = match lead_type {
-            CharType::Number => Token::from_i32(discovered_word.parse::<i32>().unwrap()),
-            _ => Token::from_string(discovered_word)
-        };
+        let token = Token::from(discovered_word);
         self.skip_space();
         Some(token)
     }
@@ -225,7 +205,7 @@ mod test {
         use super::super::{ Token, TokenKind };
 
         #[test]
-        fn create_token_from_string() {
+        fn create_token_from() {
             let str_kind_mapping = [
                 ("data",    TokenKind::Data),
                 ("module",  TokenKind::Module),
@@ -244,39 +224,21 @@ mod test {
                 ("+",       TokenKind::Plus)
             ];
             for (_str, kind) in str_kind_mapping {
-                assert_eq!(Token::from_string(_str.to_string()).kind, kind);
+                assert_eq!(Token::from(_str.to_string()).kind, kind);
             }
         }
 
         #[test]
         #[should_panic]
         fn get_identifer_from_reserved_token() {
-            Token::from_string("->".to_string()).get_id();
-        }
-
-        #[test]
-        #[should_panic]
-        fn get_number_from_reserved_token() {
-            Token::from_string("->".to_string()).get_number();
+            Token::from("->".to_string()).get_id();
         }
 
         #[test]
         fn get_identifer_from_identifer_token() {
-            let id = Token::from_string("test".to_string()).get_id();
+            let id = Token::from("test".to_string()).get_id();
             assert_eq!(id, "test");
-            Token::from_string("test".to_string()).get_id();
-        }
-
-        #[test]
-        #[should_panic]
-        fn get_identifer_from_number_token() {
-            Token::from_i32(1204).get_id();
-        }
-
-        #[test]
-        fn get_number_from_number_token() {
-            let number = Token::from_i32(1204).get_number();
-            assert_eq!(number, 1204);
+            Token::from("test".to_string()).get_id();
         }
     }
 
@@ -381,12 +343,12 @@ mod test {
 
         #[test]
         fn request_all_ok() {
-            let text = "data module cocoa 410".to_string();
+            let text = "data module cocoa @".to_string();
             let correct_token_kinds = [
                 TokenKind::Data,
                 TokenKind::Module,
                 TokenKind::Identifier,
-                TokenKind::Number
+                TokenKind::AtMark
             ];
 
             let mut tokenizer = Tokenizer::new(&text);
@@ -402,7 +364,7 @@ mod test {
         fn request_ng() {
             let text = "data".to_string();
             let mut tokenizer = Tokenizer::new(&text);
-            tokenizer.request(TokenKind::Number);
+            tokenizer.request(TokenKind::AtMark);
         }
     }
 }
