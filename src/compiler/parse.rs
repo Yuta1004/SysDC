@@ -3,6 +3,33 @@ use super::types::SysDCType;
 use super::token::{ TokenKind, Tokenizer };
 use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
 
+// 複数要素を一気にパースするためのマクロ
+// - 返り値: Vec<T>
+// - 第一引数: Option<T>を返す関数呼び出し
+// - 第二引数: TokenKindで表されるデリミタ(省略可)
+macro_rules! parse_list {
+    ($self:ident$(.$generator:ident)*($args:expr)) => {{
+        let mut var_list = vec!();
+        while let Some(elem) = $self$(.$generator)*($args) {
+            var_list.push(elem);
+        }
+        var_list
+    }};
+
+    ($self:ident$(.$generator:ident)*($args:expr), $delimiter:expr) => {{
+        let mut var_list = vec!();
+        while let Some(elem) = $self$(.$generator)*($args) {
+            var_list.push(elem);
+            if $self.tokenizer.expect($delimiter).is_some() {
+                $self.tokenizer.request($delimiter);
+            } else {
+                break;
+            }
+        }
+        var_list
+    }};
+}
+
 pub struct Parser<'a> {
     tokenizer: Tokenizer<'a>
 }
@@ -43,7 +70,7 @@ impl<'a> Parser<'a> {
 
         // \{ <id_type_mapping_var_list, delimiter=,> \}
         self.tokenizer.request(TokenKind::BracketBegin);
-        let member = self.parse_list(&name, |x| self.parse_id_type_mapping_var(x), Some(TokenKind::Separater));
+        let member = parse_list!(self.parse_id_type_mapping_var(&name), TokenKind::Separater);
         self.tokenizer.request(TokenKind::BracketEnd);
 
         Some(SysDCData::new(name, member))
@@ -61,7 +88,7 @@ impl<'a> Parser<'a> {
 
         // \{ <function_list, delimiter=None> \}
         self.tokenizer.request(TokenKind::BracketBegin);
-        let functions = self.parse_list(&name, |x| self.parse_function(x), None);
+        let functions = parse_list!(self.parse_function(&name));
         self.tokenizer.request(TokenKind::BracketEnd);
 
         Some(SysDCModule::new(name, functions))
@@ -77,7 +104,7 @@ impl<'a> Parser<'a> {
 
         // <id_type_mapping_var_list, delimiter=,>
         self.tokenizer.request(TokenKind::ParenthesisBegin);
-        let args = self.parse_list(&name, |x| self.parse_id_type_mapping_var(x), Some(TokenKind::Separater));
+        let args = parse_list!(self.parse_id_type_mapping_var(&name), TokenKind::Separater);
         self.tokenizer.request(TokenKind::ParenthesisEnd);
 
         // -> <id>
@@ -95,11 +122,11 @@ impl<'a> Parser<'a> {
      */
     fn parse_var(&mut self, namespace: &Name) -> Option<(Name, SysDCType)> {
         // <id_list, delimiter=,>
-        let name_elems = self.parse_list(namespace, |_| self.tokenizer.expect(TokenKind::Identifier), Some(TokenKind::Accessor));
+        let name_elems = parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Accessor);
         let var = name_elems.iter().map(|x| x.get_id()).collect::<Vec<String>>().join(".");
         match var.len() {
             0 => None,
-            _ => Some((Name::new(namespace, var), SysDCType::from(namespace, var)))
+            _ => Some((Name::new(namespace, var.clone()), SysDCType::from(namespace, var)))
         }
     }
 
@@ -112,29 +139,6 @@ impl<'a> Parser<'a> {
         self.tokenizer.request(TokenKind::Mapping);
         let id2 = self.tokenizer.request(TokenKind::Identifier).get_id();
         Some((Name::new(namespace, id1), SysDCType::from(namespace, id2)))
-    }
-
-    /**
-     * <list> ::= { <T> <delimiter> } <T>
-     */
-    fn parse_list<F, T>(&mut self, namespace: &Name, generator: F, delimiter: Option<TokenKind>) -> Vec<T>
-        where
-            F: Fn(&Name) -> Option<T>,
-    {
-        let mut var_list = vec!();
-        while let Some(elem) = generator(namespace) {
-            var_list.push(elem);
-            match delimiter { 
-                Some(kind) =>
-                    if self.tokenizer.expect(kind).is_some() {
-                        self.tokenizer.request(kind);
-                    } else {
-                        break;
-                    },
-                None => {}
-            }
-        }
-        var_list
     }
 }
 
