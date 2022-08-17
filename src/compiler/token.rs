@@ -265,7 +265,7 @@ mod test {
         fn get_identifer_from_identifer_token() {
             let id = Token::from_string("test".to_string()).get_id();
             assert_eq!(id, "test");
-            Token::from_string("test".to_string()).get_number();
+            Token::from_string("test".to_string()).get_id();
         }
 
         #[test]
@@ -343,6 +343,7 @@ mod test {
                 TokenKind::Identifier,
                 TokenKind::Plus,
                 TokenKind::Identifier,
+                TokenKind::Identifier,
                 TokenKind::Accessor,
                 TokenKind::Identifier,
                 TokenKind::Separater,
@@ -354,6 +355,7 @@ mod test {
                 TokenKind::Separater,
                 TokenKind::Identifier,
                 TokenKind::AtMark,
+                TokenKind::Identifier,
                 TokenKind::Identifier,
                 TokenKind::Mapping,
                 TokenKind::Identifier,
