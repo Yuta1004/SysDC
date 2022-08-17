@@ -30,15 +30,15 @@ pub struct CliCmd;
 
 impl CliCmd {
     pub fn run(&self) {
-        let mut system = SysDCSystem::new();
+        let mut system: Option<SysDCSystem> = None;
         let plugin_manager = PluginManager::new();
         loop {
             match CliCmd::run_one_line(&plugin_manager, &system) {
                 Ok((do_exit, _system)) => {
-                    println!("Ok\n");
-                    if let Some(_system) = _system {
+                    if _system.is_some() {
                         system = _system;
                     }
+                    println!("Ok\n");
                     if do_exit {
                         break
                     }
@@ -48,7 +48,7 @@ impl CliCmd {
         }
     }
 
-    fn run_one_line(plugin_manager: &PluginManager, system: &SysDCSystem) -> Result<(bool, Option<SysDCSystem>), Box<dyn Error>> {
+    fn run_one_line(plugin_manager: &PluginManager, system: &Option<SysDCSystem>) -> Result<(bool, Option<SysDCSystem>), Box<dyn Error>> {
         print!("> ");
         io::stdout().flush().unwrap(); 
 
@@ -59,12 +59,19 @@ impl CliCmd {
         match cmd.as_str() {
             "exit" => Ok((true, None)),
             "in" => {
-                let _system = CliCmd::run_mode_in(&plugin_manager, subcmd, args)?;
+                let _system = CliCmd::run_mode_in(plugin_manager, subcmd, args)?;
                 Ok((false, Some(_system)))
             },
             "out" => {
-                CliCmd::run_mode_out(&plugin_manager, subcmd, args, &system)?;
-                Ok((false, None))
+                match system {
+                    Some(s) => {
+                        CliCmd::run_mode_out(plugin_manager, subcmd, args, s);
+                        Ok((false, None))
+                    },
+                    None => Err(Box::new(
+                        CommandError::RuntimeError("Must run \"in\" before run \"out\"".to_string())
+                    ))
+                }
             },
             _ => {
                 Err(Box::new(
@@ -73,7 +80,7 @@ impl CliCmd {
             }
         }
     }
- 
+
     fn run_mode_in(plugin_manager: &PluginManager, name: String, args: Vec<String>) -> Result<SysDCSystem, Box<dyn Error>> {
         let plugin = match plugin_manager.get_type_in(&name) {
             Some(plugin) => plugin,

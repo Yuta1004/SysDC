@@ -4,18 +4,12 @@ use super::token::{ TokenKind, Tokenizer };
 use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
 
 pub struct Parser<'a> {
-    pub namespace: Name,
-    pub unit_name: String,
     tokenizer: Tokenizer<'a>
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(namespace: Name, unit_name: String, tokenizer: Tokenizer<'a>) -> Parser<'a> {
-        Parser {
-            namespace: namespace,
-            unit_name: unit_name,
-            tokenizer
-        }
+    pub fn new(tokenizer: Tokenizer<'a>) -> Parser<'a> {
+        Parser { tokenizer }
     }
 
     /**
