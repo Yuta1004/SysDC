@@ -1,7 +1,0 @@
-layer 1;
-
-module Printer {
-    print(text: string) -> none {
-        use = [text];
-    }
-}

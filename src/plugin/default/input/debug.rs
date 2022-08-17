@@ -40,6 +40,14 @@ impl InputPlugin for DebugPlugin {
                     +use dx, dy
                     @spawn movedBox: Box
                 }
+
+                changeSize(box: Box, w: i32, h: i32) -> Box {
+                    @return changedBox
+
+                    +use box.w, box.h
+                    +use w, h
+                    @spawn changedBox: Box
+                }
             }
         ".to_string();
         Ok(vec!((unit_name, program)))
