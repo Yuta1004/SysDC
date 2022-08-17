@@ -26,18 +26,19 @@ impl Display for CommandError {
 }
 
 #[derive(clap::Parser)]
-pub struct InteractiveCmd;
+pub struct InteractiveCmd {
+    #[clap(skip=None)]
+    system: Option<SysDCSystem>,
+
+    #[clap(skip=PluginManager::new())]
+    plugin_manager: PluginManager
+}
 
 impl InteractiveCmd {
-    pub fn run(&self) {
-        let mut system: Option<SysDCSystem> = None;
-        let plugin_manager = PluginManager::new();
+    pub fn run(&mut self) {
         loop {
-            match InteractiveCmd::run_one_line(&plugin_manager, &system) {
-                Ok((do_exit, _system)) => {
-                    if _system.is_some() {
-                        system = _system;
-                    }
+            match self.run_one_line() {
+                Ok(do_exit) => {
                     println!("Ok\n");
                     if do_exit {
                         break
@@ -48,7 +49,7 @@ impl InteractiveCmd {
         }
     }
 
-    fn run_one_line(plugin_manager: &PluginManager, system: &Option<SysDCSystem>) -> Result<(bool, Option<SysDCSystem>), Box<dyn Error>> {
+    fn run_one_line(&mut self) -> Result<bool, Box<dyn Error>> {
         print!("> ");
         io::stdout().flush().unwrap(); 
 
@@ -57,21 +58,17 @@ impl InteractiveCmd {
         let (cmd, subcmd, args) = InteractiveCmd::parse_input(text.trim().to_string())?;
 
         match cmd.as_str() {
-            "exit" => Ok((true, None)),
+            "exit" => {
+                println!("Bye...");
+                Ok(true)
+            },
             "in" => {
-                let _system = InteractiveCmd::run_mode_in(plugin_manager, subcmd, args)?;
-                Ok((false, Some(_system)))
+                self.run_mode_in(subcmd, args)?;
+                Ok(false)
             },
             "out" => {
-                match system {
-                    Some(s) => {
-                        InteractiveCmd::run_mode_out(plugin_manager, subcmd, args, s)?;
-                        Ok((false, None))
-                    },
-                    None => Err(Box::new(
-                        CommandError::RuntimeError("Must run \"in\" before run \"out\"".to_string())
-                    ))
-                }
+                self.run_mode_out(subcmd, args)?;
+                Ok(false)
             },
             _ => {
                 Err(Box::new(
@@ -81,8 +78,8 @@ impl InteractiveCmd {
         }
     }
 
-    fn run_mode_in(plugin_manager: &PluginManager, name: String, args: Vec<String>) -> Result<SysDCSystem, Box<dyn Error>> {
-        let plugin = match plugin_manager.get_type_in(&name) {
+    fn run_mode_in(&mut self, name: String, args: Vec<String>) -> Result<(), Box<dyn Error>> {
+        let plugin = match self.plugin_manager.get_type_in(&name) {
             Some(plugin) => plugin,
             None => {
                 return Err(Box::new(
@@ -96,11 +93,12 @@ impl InteractiveCmd {
             println!("Load: {}", unit_name);
             compiler.add_unit(unit_name, &program);
         }
-        Ok(compiler.generate_system())
+        self.system = Some(compiler.generate_system());
+        Ok(())
     }
 
-    fn run_mode_out(plugin_manager: &PluginManager, name: String, args: Vec<String>, system: &SysDCSystem) -> Result<(), Box<dyn Error>> {
-        let plugin = match plugin_manager.get_type_out(&name) {
+    fn run_mode_out(&self, name: String, args: Vec<String>) -> Result<(), Box<dyn Error>> {
+        let plugin = match self.plugin_manager.get_type_out(&name) {
             Some(plugin) => plugin,
             None => {
                 return Err(Box::new(
@@ -108,7 +106,12 @@ impl InteractiveCmd {
                 ));
             }
         };
-        plugin.run(args, system)
+        match &self.system {
+            Some(s) => plugin.run(args, s),
+            None => Err(Box::new(
+                CommandError::RuntimeError("Must run \"in\" command before run \"out\" command".to_string())
+            ))
+        }
     }
 
     fn parse_input(text: String) -> Result<(String, String, Vec<String>), Box<dyn Error>> {

@@ -28,7 +28,7 @@ enum AppSub {
 impl App {
     pub fn run() {
         match App::parse().sub {
-            AppSub::interactive(cmd) => cmd.run(),
+            AppSub::interactive(mut cmd) => cmd.run(),
             AppSub::plugin(cmd) => cmd.run()
         }
     }
