@@ -75,6 +75,22 @@ impl SysDCFunction {
 }
 
 #[derive(Debug)]
+pub enum SysDCAnnotation {
+    Return(Name),
+    Spawn(SysDCSpawn)
+}
+
+impl SysDCAnnotation {
+    pub fn new_return(name: Name) -> SysDCAnnotation {
+        SysDCAnnotation::Return(name)
+    }
+
+    pub fn new_spawn(result: (Name, SysDCType), detail: Vec<SysDCSpawnChild>) -> SysDCAnnotation {
+        SysDCAnnotation::Spawn(SysDCSpawn::new(result, detail))
+    }
+}
+
+#[derive(Debug)]
 pub struct SysDCSpawn {
     pub result: (Name, SysDCType),
     pub detail: Vec<SysDCSpawnChild>
