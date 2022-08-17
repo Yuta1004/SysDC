@@ -19,7 +19,7 @@ pub struct App {
 #[allow(non_camel_case_types)]
 enum AppSub {
     /// Run interactive mode
-    intreactive(InteractiveCmd),
+    interactive(InteractiveCmd),
 
     /// Setup plugins (ex. add, remove)
     plugin(PluginCmd),
@@ -28,7 +28,7 @@ enum AppSub {
 impl App {
     pub fn run() {
         match App::parse().sub {
-            AppSub::intreactive(cmd) => cmd.run(),
+            AppSub::interactive(cmd) => cmd.run(),
             AppSub::plugin(cmd) => cmd.run()
         }
     }
