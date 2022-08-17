@@ -128,21 +128,21 @@ mod test {
         //  }
 
         let name = Name::new_root();
-        let name = Name::new(&name, "box".to_string());
-        let name_data = Name::new(&name, "Box".to_string());
-        let name_data_x = Name::new(&name_data, "x".to_string());
-        let name_data_y = Name::new(&name_data, "y".to_string());
-        let name_module = Name::new(&name, "BoxModule".to_string());
-        let name_func = Name::new(&name_module, "move".to_string());
-        let name_func_arg_box = Name::new(&name_func, "box".to_string());
-        let name_func_arg_dx = Name::new(&name_func, "dx".to_string());
-        let name_func_arg_dy = Name::new(&name_func, "dy".to_string());
-        let name_func_ret = Name::new(&name_func, "movedBox".to_string());
-        let name_spawn_use_box_x = Name::new(&name_func, "box.x".to_string());
-        let name_spawn_use_box_y = Name::new(&name_func, "box.y".to_string());
-        let name_spawn_use_dx = Name::new(&name_func, "dx".to_string());
-        let name_spawn_use_dy = Name::new(&name_func, "dy".to_string());
-        let name_spawn_ret = Name::new(&name_func, "movedBox".to_string());
+        let name = Name::from(&name, "box".to_string());
+        let name_data = Name::from(&name, "Box".to_string());
+        let name_data_x = Name::from(&name_data, "x".to_string());
+        let name_data_y = Name::from(&name_data, "y".to_string());
+        let name_module = Name::from(&name, "BoxModule".to_string());
+        let name_func = Name::from(&name_module, "move".to_string());
+        let name_func_arg_box = Name::from(&name_func, "box".to_string());
+        let name_func_arg_dx = Name::from(&name_func, "dx".to_string());
+        let name_func_arg_dy = Name::from(&name_func, "dy".to_string());
+        let name_func_ret = Name::from(&name_func, "movedBox".to_string());
+        let name_spawn_use_box_x = Name::from(&name_func, "box.x".to_string());
+        let name_spawn_use_box_y = Name::from(&name_func, "box.y".to_string());
+        let name_spawn_use_dx = Name::from(&name_func, "dx".to_string());
+        let name_spawn_use_dy = Name::from(&name_func, "dy".to_string());
+        let name_spawn_ret = Name::from(&name_func, "movedBox".to_string());
 
         let spawn_use_box_x = SysDCSpawnChild::new_use(name_spawn_use_box_x, Type::Int32);
         let spawn_use_box_y = SysDCSpawnChild::new_use(name_spawn_use_box_y, Type::Int32);

@@ -17,7 +17,7 @@ impl Type {
     pub fn from(namespace: &Name, name: String) -> Type {
         match name.as_str() {
             "i32" => Type::Int32,
-            _ => Type::Unsolved(Name::new(namespace, name))
+            _ => Type::Unsolved(Name::from(namespace, name))
         }
     }
 
@@ -45,6 +45,6 @@ mod test {
     #[test]
     fn from_all_ok() {
         assert_eq!(Type::from(&Name::new_root(), "i32".to_string()), Type::Int32);
-        assert_eq!(Type::from(&Name::new_root(), "cocoa".to_string()), Type::Unsolved(Name::new(&Name::new_root(), "cocoa".to_string())));
+        assert_eq!(Type::from(&Name::new_root(), "cocoa".to_string()), Type::Unsolved(Name::from(&Name::new_root(), "cocoa".to_string())));
     }
 }
