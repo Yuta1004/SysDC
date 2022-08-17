@@ -1,7 +1,7 @@
-pub mod compiler;
-pub mod command;
+mod cli;
 pub mod plugin;
+pub mod compiler;
 
 fn main() {
-    command::App::run();
+    cli::App::run();
 }

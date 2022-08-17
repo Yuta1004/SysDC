@@ -1,101 +1,66 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     /* Reserved */
-    Layer,              // layer
-    Ref,                // ref
     Data,               // data
     Module,             // module
-    Binds,              // binds
-    As,                 // as
-    Use,                // use
-    Modify,             // modify
-    Link,               // link
-    Branch,             // branch
-    Chain,              // chain
+    Let,                // let
 
     /* Symbol */
     Allow,              // ->
     Mapping,            // :
     Equal,              // =
     Accessor,           // .
-    PAccessor,          // ::
     Separater,          // ,
     Semicolon,          // ;
     ParenthesisBegin,   // (
     ParenthesisEnd,     // )
     BracketBegin,       // {
     BracketEnd,         // }
-    ListBegin,          // [
-    ListEnd,            // ]
+    AtMark,             // @
+    Plus,               // +
 
     /* Others */
-    Identifier,
-    Number
+    Identifier
 }
 
 #[derive(Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
-    orig_id: Option<String>,
-    orig_number: Option<i32>
+    orig_id: Option<String>
 }
 
 impl Token {
-    pub fn from_string(orig: String) -> Token {
+    pub fn from(orig: String) -> Token {
         let kind = match orig.as_str() {
-            "layer"     => TokenKind::Layer,
-            "ref"       => TokenKind::Ref,
             "data"      => TokenKind::Data,
             "module"    => TokenKind::Module,
-            "binds"     => TokenKind::Binds,
-            "as"        => TokenKind::As,
-            "use"       => TokenKind::Use,
-            "modify"    => TokenKind::Modify,
-            "link"      => TokenKind::Link,
-            "branch"    => TokenKind::Branch,
-            "chain"     => TokenKind::Chain,
+            "let"       => TokenKind::Let,
             "->"        => TokenKind::Allow,
             ":"         => TokenKind::Mapping,
             "="         => TokenKind::Equal,
             "."         => TokenKind::Accessor,
-            "::"        => TokenKind::PAccessor,
             ","         => TokenKind::Separater,
             ";"         => TokenKind::Semicolon,
             "("         => TokenKind::ParenthesisBegin,
             ")"         => TokenKind::ParenthesisEnd,
             "{"         => TokenKind::BracketBegin,
             "}"         => TokenKind::BracketEnd,
-            "["         => TokenKind::ListBegin,
-            "]"         => TokenKind::ListEnd,
-            _           => TokenKind::Identifier
+            "@"         => TokenKind::AtMark,
+            "+"         => TokenKind::Plus,
+            _           => TokenKind::Identifier,
         };
         let orig_id = match kind {
             TokenKind::Identifier => Some(orig),
             _ => None
         };
 
-        Token { kind, orig_id, orig_number: None }
-    }
-
-    pub fn from_i32(orig: i32) -> Token {
-        Token {
-            kind: TokenKind::Number,
-            orig_id: None,
-            orig_number: Some(orig)
-        }
+        Token { kind, orig_id }
     }
 
     pub fn get_id(&self) -> String {
         match &self.orig_id {
             Some(id) => id.clone(),
             None => panic!("[ERROR] get_id called for token {:?}", self.kind)
-        }
-    }
-
-    pub fn get_number(&self) -> i32 {
-        match &self.orig_number {
-            Some(number) => *number,
-            None => panic!("[ERROR] get_number called for token {:?}", self.kind)
         }
     }
 }
@@ -164,8 +129,6 @@ impl<'a> Tokenizer<'a> {
                 
                 // Ok(force stop)
                 (CharType::Symbol, _) => break,
-                (CharType::SymbolAccessor, CharType::SymbolAccessor) => { self.now_ref_pos += 1; break },
-                (CharType::SymbolAccessor, _) => break,
                 (CharType::SymbolAllow1, CharType::SymbolAllow2) => { self.now_ref_pos += 1; break },
 
                 // Ng(panic)
@@ -179,10 +142,7 @@ impl<'a> Tokenizer<'a> {
         }
 
         let discovered_word = self.clip_text(lead_ref_pos, self.now_ref_pos);
-        let token = match lead_type {
-            CharType::Number => Token::from_i32(discovered_word.parse::<i32>().unwrap()),
-            _ => Token::from_string(discovered_word)
-        };
+        let token = Token::from(discovered_word);
         self.skip_space();
         Some(token)
     }
@@ -221,7 +181,6 @@ enum CharType {
     Symbol,
     SymbolAllow1,
     SymbolAllow2,
-    SymbolAccessor,
     Space,
     Other
 }
@@ -231,10 +190,9 @@ impl CharType {
         match c {
             '0'..='9' => CharType::Number,
             'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
-            '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' | '[' | ']' => CharType::Symbol,
+            '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' | ':' => CharType::Symbol,
             '-' => CharType::SymbolAllow1,
             '>' => CharType::SymbolAllow2,
-            ':' => CharType::SymbolAccessor,
             ' ' | '\t' | '\n' => CharType::Space,
             _ => CharType::Other
         }
@@ -247,72 +205,40 @@ mod test {
         use super::super::{ Token, TokenKind };
 
         #[test]
-        fn create_token_from_string() {
+        fn create_token_from() {
             let str_kind_mapping = [
-                ("layer",   TokenKind::Layer),
-                ("ref",     TokenKind::Ref),
                 ("data",    TokenKind::Data),
                 ("module",  TokenKind::Module),
-                ("binds",   TokenKind::Binds),
-                ("as",      TokenKind::As),
-                ("use",     TokenKind::Use),
-                ("modify",  TokenKind::Modify),
-                ("link",    TokenKind::Link),
-                ("branch",  TokenKind::Branch),
-                ("chain",   TokenKind::Chain),
+                ("let",     TokenKind::Let),
                 ("->",      TokenKind::Allow),
                 (":",       TokenKind::Mapping),
                 ("=",       TokenKind::Equal),
                 (".",       TokenKind::Accessor),
-                ("::",      TokenKind::PAccessor),
                 (",",       TokenKind::Separater),
                 (";",       TokenKind::Semicolon),
                 ("(",       TokenKind::ParenthesisBegin),
                 (")",       TokenKind::ParenthesisEnd),
                 ("{",       TokenKind::BracketBegin),
                 ("}",       TokenKind::BracketEnd),
-                ("[",       TokenKind::ListBegin),
-                ("]",       TokenKind::ListEnd)
+                ("@",       TokenKind::AtMark),
+                ("+",       TokenKind::Plus)
             ];
             for (_str, kind) in str_kind_mapping {
-                assert_eq!(Token::from_string(_str.to_string()).kind, kind);
+                assert_eq!(Token::from(_str.to_string()).kind, kind);
             }
         }
 
         #[test]
         #[should_panic]
         fn get_identifer_from_reserved_token() {
-            Token::from_string("->".to_string()).get_id();
-        }
-
-        #[test]
-        #[should_panic]
-        fn get_number_from_reserved_token() {
-            Token::from_string("->".to_string()).get_number();
+            Token::from("->".to_string()).get_id();
         }
 
         #[test]
         fn get_identifer_from_identifer_token() {
-            let id = Token::from_string("test".to_string()).get_id();
+            let id = Token::from("test".to_string()).get_id();
             assert_eq!(id, "test");
-        }
-
-        #[test]
-        #[should_panic]
-        fn get_number_from_identifer_token() {
-            Token::from_string("test".to_string()).get_number();
-        }
-
-        #[test]
-        #[should_panic]
-        fn get_identifer_from_number_token() {
-            Token::from_i32(1204).get_id();
-        }
-
-        #[test]
-        fn get_number_from_number_token() {
-            let number = Token::from_i32(1204).get_number();
-            assert_eq!(number, 1204);
+            Token::from("test".to_string()).get_id();
         }
     }
 
@@ -328,23 +254,20 @@ mod test {
         #[test]
         fn expect_all_ok() {
             let text = "
-                layer 0;
-                data User {
-                    id: int32,
-                    name: String
+                data Box {
+                    x: i32,
+                    y: i32
                 }
-                module UserModule binds User as this {
-                    greet() -> None {
-                        use = [this.name];
-                        link = chain {
-                            Printer::print(text: string)
-                        }
+
+                module BoxModule {
+                    move(box: Box, dx: i32, dy: i32) -> Box {
+                        @return movedBox
+
+                        +use box.x, box.y, dx, dy
+                        @spawn movedBox: Box
                     }
                 }".to_string();
             let correct_token_kinds = [
-                TokenKind::Layer,
-                TokenKind::Number,
-                TokenKind::Semicolon,
                 TokenKind::Data,
                 TokenKind::Identifier,
                 TokenKind::BracketBegin,
@@ -358,38 +281,45 @@ mod test {
                 TokenKind::BracketEnd,
                 TokenKind::Module,
                 TokenKind::Identifier,
-                TokenKind::Binds,
-                TokenKind::Identifier,
-                TokenKind::As,
-                TokenKind::Identifier,
                 TokenKind::BracketBegin,
-                TokenKind::Identifier,
-                TokenKind::ParenthesisBegin,
-                TokenKind::ParenthesisEnd,
-                TokenKind::Allow,
-                TokenKind::Identifier,
-                TokenKind::BracketBegin,
-                TokenKind::Use,
-                TokenKind::Equal,
-                TokenKind::ListBegin,
-                TokenKind::Identifier,
-                TokenKind::Accessor,
-                TokenKind::Identifier,
-                TokenKind::ListEnd,
-                TokenKind::Semicolon,
-                TokenKind::Link,
-                TokenKind::Equal,
-                TokenKind::Chain,
-                TokenKind::BracketBegin,
-                TokenKind::Identifier,
-                TokenKind::PAccessor,
                 TokenKind::Identifier,
                 TokenKind::ParenthesisBegin,
                 TokenKind::Identifier,
                 TokenKind::Mapping,
                 TokenKind::Identifier,
+                TokenKind::Separater,
+                TokenKind::Identifier,
+                TokenKind::Mapping,
+                TokenKind::Identifier,
+                TokenKind::Separater,
+                TokenKind::Identifier,
+                TokenKind::Mapping,
+                TokenKind::Identifier,
                 TokenKind::ParenthesisEnd,
-                TokenKind::BracketEnd,
+                TokenKind::Allow,
+                TokenKind::Identifier,
+                TokenKind::BracketBegin,
+                TokenKind::AtMark,
+                TokenKind::Identifier,
+                TokenKind::Identifier,
+                TokenKind::Plus,
+                TokenKind::Identifier,
+                TokenKind::Identifier,
+                TokenKind::Accessor,
+                TokenKind::Identifier,
+                TokenKind::Separater,
+                TokenKind::Identifier,
+                TokenKind::Accessor,
+                TokenKind::Identifier,
+                TokenKind::Separater,
+                TokenKind::Identifier,
+                TokenKind::Separater,
+                TokenKind::Identifier,
+                TokenKind::AtMark,
+                TokenKind::Identifier,
+                TokenKind::Identifier,
+                TokenKind::Mapping,
+                TokenKind::Identifier,
                 TokenKind::BracketEnd,
                 TokenKind::BracketEnd
             ];
@@ -407,25 +337,18 @@ mod test {
         #[test]
         fn expect_all_ng() {
             let text = "data".to_string();
-
-            let mut tokenizer = Tokenizer::new(&text);
-            for token_kind in [TokenKind::Layer, TokenKind::Ref, TokenKind::Data] {
-                match tokenizer.expect(token_kind.clone()) {
-                    Some(_) => assert_eq!(token_kind, TokenKind::Data),
-                    None => assert_ne!(token_kind, TokenKind::Data)
-                }
-            }
-            assert!(!tokenizer.has_token());
+            let mut tokenizer =Tokenizer::new(&text);
+            assert!(tokenizer.expect(TokenKind::Allow).is_none());
         }
 
         #[test]
         fn request_all_ok() {
-            let text = "data module cocoa 410".to_string();
+            let text = "data module cocoa @".to_string();
             let correct_token_kinds = [
                 TokenKind::Data,
                 TokenKind::Module,
                 TokenKind::Identifier,
-                TokenKind::Number
+                TokenKind::AtMark
             ];
 
             let mut tokenizer = Tokenizer::new(&text);
@@ -441,7 +364,7 @@ mod test {
         fn request_ng() {
             let text = "data".to_string();
             let mut tokenizer = Tokenizer::new(&text);
-            tokenizer.request(TokenKind::Number);
+            tokenizer.request(TokenKind::AtMark);
         }
     }
 }

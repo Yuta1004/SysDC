@@ -1,9 +1,9 @@
-pub mod cli;
-pub mod plugin;
+mod interactive;
+mod plugin;
 
 use clap::{ AppSettings, Parser, Subcommand };
 
-use cli::CliCmd;
+use interactive::InteractiveCmd;
 use plugin::PluginCmd;
 
 /// SysDC: System Definition Language and Tools
@@ -18,8 +18,8 @@ pub struct App {
 #[derive(Subcommand)]
 #[allow(non_camel_case_types)]
 enum AppSub {
-    /// Run program
-    cli(CliCmd),
+    /// Run interactive mode
+    interactive(InteractiveCmd),
 
     /// Setup plugins (ex. add, remove)
     plugin(PluginCmd),
@@ -28,7 +28,7 @@ enum AppSub {
 impl App {
     pub fn run() {
         match App::parse().sub {
-            AppSub::cli(cmd) => cmd.run(),
+            AppSub::interactive(mut cmd) => cmd.run(),
             AppSub::plugin(cmd) => cmd.run()
         }
     }

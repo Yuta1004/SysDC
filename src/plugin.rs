@@ -1,4 +1,4 @@
-pub mod default;
+mod default;
 
 use std::fmt;
 use std::fmt::{ Display, Formatter };
@@ -65,11 +65,11 @@ impl PluginManager {
 
     fn load_default_plugins() -> (Vec<Box<dyn InputPlugin>>, Vec<Box<dyn OutputPlugin>>) {
         let in_plugins: Vec<Box<dyn InputPlugin>> = vec!(
-            input::DebugPlugin::new(),
-            input::FilesPlugin::new()
+            input::debug::DebugPlugin::new(),
+            input::files::FilesPlugin::new()
         );
         let out_plugins: Vec<Box<dyn OutputPlugin>> = vec!(
-            output::DebugPlugin::new()
+            output::debug::DebugPlugin::new()
         );
         (in_plugins, out_plugins)
     }
@@ -99,7 +99,7 @@ mod test {
         let plugin_manager = PluginManager::new();
         let plugin = plugin_manager.get_type_out(&"debug".to_string());
         assert!(plugin.is_some());
-        plugin.unwrap().run(vec!(), &SysDCSystem::new()).unwrap();
+        plugin.unwrap().run(vec!(), &SysDCSystem::new(vec!())).unwrap();
     }
 
     #[test]

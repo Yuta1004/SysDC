@@ -1,640 +1,582 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-
 use super::name::Name;
-use super::types::SysDCType;
+use super::types::Type;
 use super::token::{ TokenKind, Tokenizer };
-use super::structure::{ SysDCLayer, SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCFunction, SysDCLink };
+use super::structure::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawn, SysDCSpawnChild };
+
+// 複数要素を一気にパースするためのマクロ
+// - 返り値: Vec<T>
+// - 第一引数: Option<T>を返す関数呼び出し
+// - 第二引数: TokenKindで表されるデリミタ(省略可)
+macro_rules! parse_list {
+    ($self:ident$(.$generator:ident)*($args:expr)) => {{
+        let mut var_list = vec!();
+        while let Some(elem) = $self$(.$generator)*($args) {
+            var_list.push(elem);
+        }
+        var_list
+    }};
+
+    ($self:ident$(.$generator:ident)*($args:expr), $delimiter:expr) => {{
+        let mut var_list = vec!();
+        while let Some(elem) = $self$(.$generator)*($args) {
+            var_list.push(elem);
+            if $self.tokenizer.expect($delimiter).is_none() {
+                break;
+            }
+        }
+        var_list
+    }};
+}
 
 pub struct Parser<'a> {
-    pub namespace: Name,
-    pub unit_name: String,
-    pub layer_num: i32,
     tokenizer: Tokenizer<'a>
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(namespace: Name, unit_name: String, tokenizer: Tokenizer<'a>) -> Parser<'a> {
-        Parser {
-            namespace: namespace,
-            unit_name: unit_name,
-            layer_num: 0,
-            tokenizer
-        }
+    pub fn new(tokenizer: Tokenizer<'a>) -> Parser<'a> {
+        Parser { tokenizer }
     }
 
     /**
-     * <root> ::= {<sentence>}
-     * <sentence> ::= <layer> {<data> | <module>}
+     * <root> ::= { <sentence> }
+     * <sentence> ::= { <data> | <module> }
      */
-    pub fn parse(&mut self) -> (i32, SysDCUnit) {
-        let (layer_num, layer) = self.parse_layer(&self.namespace.clone());
-        self.parse_ref(&self.namespace.clone()); 
-
-        let mut unit = SysDCUnit::new(&layer.name, self.unit_name.clone());
+    pub fn parse(&mut self, namespace: &Name) -> SysDCUnit {
+        let mut data = vec!();
+        let mut modules = vec!();
         while self.tokenizer.has_token() {
-            if let Some(data) = self.parse_data(&unit.name) {
-                unit.push_data(data);
-                continue;
+            match (self.parse_data(namespace), self.parse_module(namespace)) {
+                (None, None) => panic!("[ERROR] Data/Module not found, but tokens remain"),
+                (d, m) => {
+                    if d.is_some() { data.push(d.unwrap()); }
+                    if m.is_some() { modules.push(m.unwrap()); }
+                }
             }
-            if let Some(module) = self.parse_module(&unit.name) {
-                unit.push_module(module);
-                continue;
-            }
-            panic!("[ERROR] Data/Module not found, but tokens remain");
         }
-        (layer_num, unit)
+        SysDCUnit::new(namespace.clone(), data, modules)
     }
 
     /**
-     * <layer> ::= layer <num> ;
+     * <data> ::= data <id> \{ <id_type_mapping_var_list, delimiter=,> \}
      */
-    fn parse_layer(&mut self, namespace: &Name) -> (i32, SysDCLayer) {
-        self.tokenizer.request(TokenKind::Layer);
-        let layer_num = self.tokenizer.request(TokenKind::Number).get_number();
-        self.tokenizer.request(TokenKind::Semicolon);
-        (layer_num, SysDCLayer::new(&namespace, layer_num))
-    }
+    fn parse_data(&mut self, namespace: &Name) -> Option<SysDCData> {
+        // data
+        self.tokenizer.expect(TokenKind::Data)?;
 
-    /**
-     * <ref> ::= ref <id> {<id>,} <id>;
-     */
-    fn parse_ref(&mut self, namespace: &Name) {
-        if self.tokenizer.expect(TokenKind::Ref).is_none() {
-            return;
-        }
+        // <id>
+        let name = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier).get_id());
 
-        let from = self.tokenizer.request (TokenKind::Identifier).get_id();
-        loop {
-            let ref_target = self.tokenizer.request(TokenKind::Identifier).get_id();
-            println!("[WARNING] Unsolved Reference => {:?}, {:?}, {:?}", &namespace, &from, &ref_target);
-            if self.tokenizer.expect(TokenKind::Separater).is_none() {
-                break;
-            }
-        }   // TODO: Connector
-        self.tokenizer.request(TokenKind::Semicolon);
-    }
-
-    /**
-     * <data> ::= data <id_type_mapping_var_list, begin="{", end="}">
-     */
-    fn parse_data(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCData>>> {
-        if self.tokenizer.expect(TokenKind::Data).is_none() {
-            return None;
-        }
-
-        let data = SysDCData::new(namespace, self.tokenizer.request(TokenKind::Identifier).get_id());
-        let var_list = self.parse_id_type_mapping_var_list(&data.borrow().name, TokenKind::BracketBegin, TokenKind::BracketEnd);
-        for var in var_list {
-            data.borrow_mut().push_variable(var);
-        }
-        Some(data)
-    }
-
-    /**
-     * <module> ::= module <id> binds <id> as <id> \{ <functions> \}
-     */
-
-    fn parse_module(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCModule>>> {
-        if self.tokenizer.expect(TokenKind::Module).is_none() {
-            return None;
-        }
-
-        let module = SysDCModule::new(namespace, self.tokenizer.request(TokenKind::Identifier).get_id());
-
-        if self.tokenizer.expect(TokenKind::Binds).is_some() {
-            let binds_target = self.tokenizer.request(TokenKind::Identifier).get_id();
-            if self.tokenizer.expect(TokenKind::As).is_some() {
-                let as_name = self.tokenizer.request(TokenKind::Identifier).get_id();
-                println!("[WARNING] Unsolved Type => {:?}, {:?}, binds {} as {}", &namespace, &module.borrow().name.get_local_name(), binds_target, as_name);
-            } else {
-                println!("[WARNING] Unsolved Type => {:?}, {:?}, binds {}", &namespace, &module.borrow().name.get_local_name(), binds_target);
-            }
-        }   // TODO: Connector
-
+        // \{ <id_type_mapping_var_list, delimiter=,> \}
         self.tokenizer.request(TokenKind::BracketBegin);
-        loop {
-            let func = self.parse_function(&module.borrow().name);
-            match func {
-                Some(func) => module.borrow_mut().push_function(func),
-                None => break
-            }
-        }
+        let member = parse_list!(self.parse_id_type_mapping_var(&name), TokenKind::Separater);
         self.tokenizer.request(TokenKind::BracketEnd);
-        Some(module)
+
+        Some(SysDCData::new(name, member))
     }
 
     /**
-     * <function> ::= <id> <id_type_mapping_var_list, begin="(", end=")"> -> <type> \{ {<annotation>} \}
+     * <module> ::= module <id> \{ <function_list, delimiter=None> \}
      */
-    fn parse_function(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCFunction>>> {
-        let name_token = self.tokenizer.expect(TokenKind::Identifier);
-        if name_token.is_none() {
-            return None;
-        }
+    fn parse_module(&mut self, namespace: &Name) -> Option<SysDCModule> {
+        // module
+        self.tokenizer.expect(TokenKind::Module)?;
 
-        let func = SysDCFunction::new(namespace, name_token.unwrap().get_id());
+        // <id>
+        let name = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier).get_id());
 
-        let args = self.parse_id_type_mapping_var_list(&func.borrow().name, TokenKind::ParenthesisBegin, TokenKind::ParenthesisEnd);
-        for arg in args {
-            func.borrow_mut().push_arg(arg);
-        }
+        // \{ <function_list, delimiter=None> \}
+        self.tokenizer.request(TokenKind::BracketBegin);
+        let functions = parse_list!(self.parse_function(&name));
+        self.tokenizer.request(TokenKind::BracketEnd);
 
+        Some(SysDCModule::new(name, functions))
+    }
+
+    /**
+     * <function> ::= <id> <id_type_mapping_var_list, delimiter=,> -> <id> \{ <function_body> \}
+     */
+    fn parse_function(&mut self, namespace: &Name) -> Option<SysDCFunction> {
+        // <id>
+        let name_token = self.tokenizer.expect(TokenKind::Identifier)?;
+        let name = Name::from(namespace, name_token.get_id());
+
+        // <id_type_mapping_var_list, delimiter=,>
+        self.tokenizer.request(TokenKind::ParenthesisBegin);
+        let args = parse_list!(self.parse_id_type_mapping_var(&name), TokenKind::Separater);
+        self.tokenizer.request(TokenKind::ParenthesisEnd);
+
+        // -> <id>
         self.tokenizer.request(TokenKind::Allow);
-        let types = self.tokenizer.request(TokenKind::Identifier).get_id();
-        func.borrow_mut().set_return_type(SysDCType::from_allow_unsolved(&namespace, types.clone())); // TODO: Connector
-        println!("[WARNING] Unsolved Type => {:?}, {:?}", &namespace, &types);
+        let return_type = Type::from(&name, self.tokenizer.request(TokenKind::Identifier).get_id());   // TODO: Checker
 
+        // \{ <function_body> \}
         self.tokenizer.request(TokenKind::BracketBegin);
-        let (uses_variables, modifies_variables, link) = self.parse_annotation(&func.borrow().name);
-        for variable in uses_variables {
-            func.borrow_mut().push_using_variable(variable);
-        }
-        for variable in modifies_variables {
-            func.borrow_mut().push_modifying_variable(variable);
-        }
-        if let Some(link) = link {
-            func.borrow_mut().set_link(link);
-        }
+        let (return_name, spawns) = self.parse_function_body(&name);
         self.tokenizer.request(TokenKind::BracketEnd);
 
-        Some(func)
+        Some(SysDCFunction::new(name, args, (return_name, return_type), spawns))
     }
 
     /**
-     * <annotation> ::= {<use> | <modify>} (link \= <link> ;)
+     * <function_body> = <annotation_list, delimiter=''>
      */
-    fn parse_annotation(&mut self, namespace: &Name) -> (Vec<Rc<RefCell<SysDCVariable>>>, Vec<Rc<RefCell<SysDCVariable>>>, Option<Rc<RefCell<SysDCLink>>>) {
-        let (mut uses_variables, mut modifies_variables) = (vec!(), vec!());
-        loop {
-            if let Some(variables) = self.parse_use(namespace) {
-                uses_variables.extend(variables);
-                continue;
+    fn parse_function_body(&mut self, namespace: &Name) -> (Name, Vec<SysDCSpawn>) {
+        let mut returns: Option<Name> = None;
+        let mut spawns = vec!();
+        while let Some(annotation) = self.parse_annotation(namespace) {
+            match annotation {
+                SysDCAnnotation::Return(ret) => {
+                    if returns.is_some() {
+                        panic!("[ERROR] Annotation \"return\" is multiple defined")
+                    }
+                    returns = Some(ret)
+                }
+                SysDCAnnotation::Spawn(spawn) => spawns.push(spawn),
             }
-            if let Some(variables) = self.parse_modify(namespace) {
-                modifies_variables.extend(variables);
-                continue;
-            }
-            break;
         }
-
-        let mut link: Option<Rc<RefCell<SysDCLink>>> = None;
-        if self.tokenizer.expect(TokenKind::Link).is_some() {
-            self.tokenizer.request(TokenKind::Equal);
-            link = Some(self.parse_link(namespace));
+        if returns.is_none() {
+            panic!("[ERROR] Annotation \"return\" is not defined");
         }
-
-        (uses_variables, modifies_variables, link)
+        (returns.unwrap(), spawns)
     }
 
     /**
-     * <use> ::= use \= <var_list, begin="[", end="]"> ;
+     * <annotation> = <attribute_list, delimiter=''> @ <id> <body: annotationによって変化>
      */
-    fn parse_use(&mut self, namespace: &Name) -> Option<Vec<Rc<RefCell<SysDCVariable>>>> {
-        if self.tokenizer.expect(TokenKind::Use).is_none() {
+    fn parse_annotation(&mut self, namespace: &Name) -> Option<SysDCAnnotation> {
+        // <attribute_list, delimiter=''>
+        let attributes = parse_list!(self.parse_attribute(namespace));
+
+        // @
+        if self.tokenizer.expect(TokenKind::AtMark).is_none() {
+            if attributes.len() > 0 {
+                panic!("[ERROR] Attributes found, but annotation not found");
+            }
             return None;
         }
 
-        self.tokenizer.request(TokenKind::Equal);
-        let uses_variables = self.parse_var_list(namespace, TokenKind::ListBegin, TokenKind::ListEnd);
-        self.tokenizer.request(TokenKind::Semicolon);
-        Some(uses_variables)
-    }
-
-    /**
-     * <modify> ::= modify \= <var_list, begin="[", end="]"> ;
-     */
-    fn parse_modify(&mut self, namespace: &Name) -> Option<Vec<Rc<RefCell<SysDCVariable>>>> {
-        if self.tokenizer.expect(TokenKind::Modify).is_none() {
-            return None;
-        }
-
-        self.tokenizer.request(TokenKind::Equal);
-        let modifies_variables = self.parse_var_list(namespace, TokenKind::ListBegin, TokenKind::ListEnd);
-        self.tokenizer.request(TokenKind::Semicolon);
-        Some(modifies_variables)
-    }
-
-    /**
-     * <link> ::= (chain | branch) <link_list, begin="{", end="}"> | <instance_of_function>
-     */
-    fn parse_link(&mut self, namespace: &Name) -> Rc<RefCell<SysDCLink>> {
-        if self.tokenizer.expect(TokenKind::Chain).is_some() {
-            let chain = SysDCLink::new_chain(namespace, "link".to_string());
-            let link_list = self.parse_link_list(&chain.borrow().name, TokenKind::BracketBegin, TokenKind::BracketEnd);
-            for link in link_list {
-                chain.borrow_mut().push_link(link);
-            }
-            return chain;
-        }
-
-        if self.tokenizer.expect(TokenKind::Branch).is_some() {
-            let branch = SysDCLink::new_branch(namespace, "link".to_string());
-            let link_list = self.parse_link_list(&branch.borrow().name, TokenKind::BracketBegin, TokenKind::BracketEnd);
-            for link in link_list {
-                branch.borrow_mut().push_link(link);
-            }
-            return branch;
-        }
-
-        self.parse_instance_of_function(namespace)
-    }
-
-    /**
-     * <link_list> ::= <begin> {<link>} <end>
-     */
-    fn parse_link_list(&mut self, namespace: &Name, begin: TokenKind, end: TokenKind) -> Vec<Rc<RefCell<SysDCLink>>> {
-        self.tokenizer.request(begin);
-        let mut link_list = vec!();
-        loop {
-            link_list.push(self.parse_link(namespace));
-            if self.tokenizer.expect(end.clone()).is_some() {
-                break;
-            } else {
-                self.tokenizer.request(TokenKind::Separater);
-            }
-        }
-        link_list
-    }
-
-    /**
-     * <instance_of_function> ::= {<id>::} <id> <var_list, begin="(", end=")"> 
-     */
-    fn parse_instance_of_function(&mut self, namespace: &Name) -> Rc<RefCell<SysDCLink>> {
-        let instance_of_function = SysDCLink::new_instance_of_function(namespace, "link".to_string());
-
-        let mut discovered_name_elems = vec!();
-        loop {
-            discovered_name_elems.push(self.tokenizer.request(TokenKind::Identifier).get_id());
-            if self.tokenizer.expect(TokenKind::PAccessor).is_none() {
-                break;
-            }
-        }   // TODO: Connector
-        println!("[WARNING] Unsolved Function => {:?}, {:?}", &namespace, &discovered_name_elems.join("::"));
-
-        let args = self.parse_var_list(&instance_of_function.borrow().name, TokenKind::ParenthesisBegin, TokenKind::ParenthesisEnd);
-        for arg in args {
-            instance_of_function.borrow_mut().push_arg(arg);
-        }
-
-        instance_of_function
-    }
-
-    /**
-     * <var_list> ::= <begin> {<var>} <end>
-     */
-    fn parse_var_list(&mut self, namespace: &Name, begin: TokenKind, end: TokenKind) -> Vec<Rc<RefCell<SysDCVariable>>> {
-        self.tokenizer.request(begin);
-        let mut var_list = vec!();
-        loop {
-            if let Some(var) = self.parse_var(namespace) {
-                var_list.push(var);
-                if self.tokenizer.expect(end.clone()).is_some() {
-                    break;
-                } else {
-                    self.tokenizer.request(TokenKind::Separater);
+        // <id>
+        let annotation = self.tokenizer.request(TokenKind::Identifier).get_id();
+        match annotation.as_str() {
+            "spawn" => {
+                let spawn_result = self.parse_id_type_mapping_var(namespace);
+                if spawn_result.is_none() {
+                    panic!("[ERROR] Missing to specify the result of spawn");
                 }
-            } else {
-                self.tokenizer.request(end.clone());
-                break;
-            }
-        }
-        var_list
-    }
 
-    /**
-     * <var> ::= {<id>.} <id>
-     */
-    fn parse_var(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCVariable>>> {
-        let mut discovered_name_elems = vec!();
-        if let Some(mut token_id) = self.tokenizer.expect(TokenKind::Identifier) {
-            loop {
-                discovered_name_elems.push(token_id.get_id());
-                if self.tokenizer.expect(TokenKind::Accessor).is_none() {
-                    break;
+                let mut uses = vec!();
+                for (attr, var_list) in attributes {
+                    for (name, types) in var_list {
+                        match attr.as_str() {
+                            "use" => uses.push(SysDCSpawnChild::new_use(name, types)),
+                            attr => panic!("[ERROR] Attribute \"{}\" is invalid on \"spawn\" attribute", attr)
+                        }
+                    }
                 }
-                token_id = self.tokenizer.request(TokenKind::Identifier);
+
+                Some(SysDCAnnotation::new_spawn(spawn_result.unwrap(), uses))
+            },
+            "return" => {
+                let returns = self.tokenizer.request(TokenKind::Identifier).get_id();
+                Some(SysDCAnnotation::new_return(Name::from(namespace, returns)))
             }
-        } else {
-            return None;
+            annotation => panic!("[ERROR] Annotation \"{}\" is invalid", annotation)
         }
-        println!("[WARNING] Unsolved Type => {:?}, {:?}", &namespace, &discovered_name_elems.join("."));
-        Some(SysDCVariable::new(namespace, discovered_name_elems.join("."), SysDCType::from_allow_unsolved(&namespace, discovered_name_elems.join(".")))) // TODO: Connector
     }
 
     /**
-     * <id_type_mapping_var_list> = <begin> {<id_type_mapping_var>} <end>
+     * <attribute> = \+ <id> <var_list, delimiter=','>
      */
-    fn parse_id_type_mapping_var_list(&mut self, namespace: &Name, begin: TokenKind, end: TokenKind) -> Vec<Rc<RefCell<SysDCVariable>>> {
-        self.tokenizer.request(begin);
-        let mut var_list = vec!();
-        loop {
-            if let Some(var) = self.parse_id_type_mapping_var(namespace) {
-                var_list.push(var);
-                if self.tokenizer.expect(end.clone()).is_some() {
-                    break;
-                } else {
-                    self.tokenizer.request(TokenKind::Separater);
-                }
-            } else {
-                self.tokenizer.request(end.clone());
-                break;
-            }
+    fn parse_attribute(&mut self, namespace: &Name) -> Option<(String, Vec<(Name, Type)>)> {
+        // \+
+        self.tokenizer.expect(TokenKind::Plus)?;
+
+        // <id>
+        let attribute = self.tokenizer.request(TokenKind::Identifier).get_id();
+        match attribute.as_str() {
+            "use" => {},
+            attribute => panic!("[ERROR] Attribute \"{}\" is invalid", attribute)
         }
-        var_list
+
+        // <var_list, delimiter=','>
+        let var_list = parse_list!(self.parse_var(namespace), TokenKind::Separater);
+
+        Some((attribute, var_list))
     }
 
     /**
-     * <id_type_mapping_var> ::= <id> : <type> 
+     * <var> ::= <id_list, delimiter=.>
      */
-    fn parse_id_type_mapping_var(&mut self, namespace: &Name) -> Option<Rc<RefCell<SysDCVariable>>> {
-        if let Some(token_id) = self.tokenizer.expect(TokenKind::Identifier) {
-            let id = token_id.get_id();
-            self.tokenizer.request(TokenKind::Mapping);
-            let types = self.tokenizer.request(TokenKind::Identifier).get_id();
-            println!("[WARNING] Unsolved Type => {:?}, {:?}", &namespace, &types);
-            Some(SysDCVariable::new(namespace, id, SysDCType::from_allow_unsolved(&namespace, types)))    // TODO: Connector
-        } else {
-            None
+    fn parse_var(&mut self, namespace: &Name) -> Option<(Name, Type)> {
+        // <id_list, delimiter=,>
+        let name_elems = parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Accessor);
+        let var = name_elems.iter().map(|x| x.get_id()).collect::<Vec<String>>().join(".");
+        match var.len() {
+            0 => None,
+            _ => Some((Name::from(namespace, var), Type::UnsolvedNoHint))
         }
+    }
+
+    /**
+     * <id_type_mapping_var> ::= <id> : <id> 
+     */
+    fn parse_id_type_mapping_var(&mut self, namespace: &Name) -> Option<(Name, Type)> {
+        // <id> : <id>
+        let id1 = self.tokenizer.expect(TokenKind::Identifier)?.get_id();
+        self.tokenizer.request(TokenKind::Mapping);
+        let id2 = self.tokenizer.request(TokenKind::Identifier).get_id();
+        Some((Name::from(namespace, id1), Type::from(namespace, id2)))
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::Name;
-    use super::SysDCType;
-    use super::{ Tokenizer, Parser };
-    use super::{ SysDCUnit, SysDCData, SysDCVariable, SysDCModule, SysDCFunction, SysDCLink };
-
+    use super::Parser;
+    use super::super::name::Name;
+    use super::super::types::Type;
+    use super::super::token::Tokenizer;
+    use super::super::structure::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
+    
     #[test]
-    fn parse_simple_unit() {
+    fn data_empty_ok() {
         let program = "
-            layer 0;
-            ref printer Printer;
-        ";
-        compare_unit(program, generate_test_unit(0));
-    }
+            data A {}
+            data B{}
+            data C{   
 
-    #[test]
-    fn parse_data() {
-        let program = "
-            layer 0;
-            data User {
-                id: int32,
-                age: int32,
-                name: string
+            }
+            data D
+            {}
+            data
+            E
+            {
+
             }
         ";
 
-        let mut unit = generate_test_unit(0);
-        let data = SysDCData::new(&unit.name, "User".to_string());
-        let id = SysDCVariable::new(&data.borrow().name, "id".to_string(), SysDCType::Int32);
-        let age = SysDCVariable::new(&data.borrow().name, "age".to_string(), SysDCType::Int32);
-        let name = SysDCVariable::new(&data.borrow().name, "name".to_string(), SysDCType::StringType);
-        data.borrow_mut().push_variable(id);
-        data.borrow_mut().push_variable(age);
-        data.borrow_mut().push_variable(name);
-        unit.push_data(data);
+        let name = generate_name_for_test();
+
+        let data = vec!(
+            SysDCData::new(Name::from(&name, "A".to_string()), vec!()),
+            SysDCData::new(Name::from(&name, "B".to_string()), vec!()),
+            SysDCData::new(Name::from(&name, "C".to_string()), vec!()),
+            SysDCData::new(Name::from(&name, "D".to_string()), vec!()),
+            SysDCData::new(Name::from(&name, "E".to_string()), vec!())
+        );
+        let unit = SysDCUnit::new(name, data, vec!());
 
         compare_unit(program, unit);
     }
 
     #[test]
-    fn parse_module_function_has_not_args() {
+    fn data_has_member_ok() {
         let program = "
-            layer 0;
-            module UserModule {
-                greet() -> none {
-                    link = Printer::print()
-                }
+            data Box {
+                x: i32,
+                y: UserDefinedData,
             }
         ";
 
-        let mut unit = generate_test_unit(0);
-        let module = SysDCModule::new(&unit.name, "UserModule".to_string());
-        let func = SysDCFunction::new(&module.borrow().name, "greet".to_string());
-        let iop_printer = SysDCLink::new_instance_of_function(&func.borrow().name, "link".to_string());
-        func.borrow_mut().set_link(iop_printer);
-        func.borrow_mut().set_return_type(SysDCType::NoneType);
-        module.borrow_mut().push_function(func);
-        unit.push_module(module);
+        let name = generate_name_for_test();
+        let name_box = Name::from(&name, "Box".to_string());
 
-        compare_unit(program, unit);
-    }
-
-    #[test]
-    fn parse_module_func_has_args() {
-        let program = "
-            layer 0;
-            module UserModule binds User {
-                greet(name: string, message: string) -> none {
-                    use = [name, message];
-                    modify = [name];
-                }
-            }
-        ";
-
-        let mut unit = generate_test_unit(0);
-        let module = SysDCModule::new(&unit.name, "UserModule".to_string());
-        let func = SysDCFunction::new(&module.borrow().name, "greet".to_string());
-        let arg_name = SysDCVariable::new(&func.borrow().name, "name".to_string(), SysDCType::StringType);
-        let arg_message = SysDCVariable::new(&func.borrow().name, "message".to_string(), SysDCType::StringType);
-        let use_name = SysDCVariable::new(&func.borrow().name, "name".to_string(), SysDCType::from_allow_unsolved(&func.borrow().name, "name".to_string()));
-        let use_message = SysDCVariable::new(&func.borrow().name, "message".to_string(), SysDCType::from_allow_unsolved(&func.borrow().name, "message".to_string()));
-        let modify_name = SysDCVariable::new(&func.borrow().name, "name".to_string(), SysDCType::from_allow_unsolved(&func.borrow().name, "name".to_string()));
-        func.borrow_mut().set_return_type(SysDCType::NoneType);
-        func.borrow_mut().push_arg(arg_name);
-        func.borrow_mut().push_arg(arg_message);
-        func.borrow_mut().push_using_variable(use_name);
-        func.borrow_mut().push_using_variable(use_message);
-        func.borrow_mut().push_modifying_variable(modify_name);
-        module.borrow_mut().push_function(func);
-        unit.push_module(module);
-
-        compare_unit(program, unit);
-    }
-
-    #[test]
-    fn parse_module_with_link_chain_first() {
-        let program = "
-            layer 0;
-            module UserModule binds User as this {
-                greet(message: string) -> none {
-                    link = chain {
-                        branch {
-                            Printer::print(this.age),
-                            Printer::print(this.name)
-                        },
-                        chain {
-                            Printer::print(this.id),
-                            Printer::print(message)
-                        }
-                    }
-                }
-            }
-        ";
-
-        let mut unit = generate_test_unit(0);
-        let module = SysDCModule::new(&unit.name, "UserModule".to_string());
-        let func = SysDCFunction::new(&module.borrow().name, "greet".to_string());
-        let arg_message = SysDCVariable::new(&func.borrow().name, "message".to_string(), SysDCType::StringType);
-        let chain_link = SysDCLink::new_chain(&func.borrow().name, "link".to_string());
-        let branch_link2 = SysDCLink::new_branch(&chain_link.borrow().name, "link".to_string());
-        let iop_age_link3 = SysDCLink::new_instance_of_function(&branch_link2.borrow().name, "link".to_string());
-        let arg_age_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, "this.age".to_string(), SysDCType::from_allow_unsolved(&iop_age_link3.borrow().name, "this.age".to_string()));
-        let iop_name_link3 = SysDCLink::new_instance_of_function(&branch_link2.borrow().name, "link".to_string());
-        let arg_name_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, "this.name".to_string(), SysDCType::from_allow_unsolved(&iop_age_link3.borrow().name, "this.name".to_string()));
-        let chain_link2 = SysDCLink::new_chain(&chain_link.borrow().name, "link".to_string());
-        let iop_id_link3 = SysDCLink::new_instance_of_function(&chain_link2.borrow().name, "link".to_string());
-        let arg_id_link3 = SysDCVariable::new(&iop_id_link3.borrow().name, "this.id".to_string(), SysDCType::from_allow_unsolved(&iop_id_link3.borrow().name, "this.id".to_string()));
-        let iop_message_link3 = SysDCLink::new_instance_of_function(&chain_link2.borrow().name, "link".to_string());
-        let arg_message_link3 = SysDCVariable::new(&iop_message_link3.borrow().name, "message".to_string(), SysDCType::from_allow_unsolved(&iop_message_link3.borrow().name, "message".to_string()));
-        iop_age_link3.borrow_mut().push_arg(arg_age_link3);
-        iop_name_link3.borrow_mut().push_arg(arg_name_link3);
-        branch_link2.borrow_mut().push_link(iop_age_link3);
-        branch_link2.borrow_mut().push_link(iop_name_link3);
-        iop_id_link3.borrow_mut().push_arg(arg_id_link3);
-        iop_message_link3.borrow_mut().push_arg(arg_message_link3);
-        chain_link2.borrow_mut().push_link(iop_id_link3);
-        chain_link2.borrow_mut().push_link(iop_message_link3);
-        chain_link.borrow_mut().push_link(branch_link2);
-        chain_link.borrow_mut().push_link(chain_link2);
-        func.borrow_mut().set_link(chain_link);
-        func.borrow_mut().set_return_type(SysDCType::NoneType);
-        func.borrow_mut().push_arg(arg_message);
-        module.borrow_mut().push_function(func);
-        unit.push_module(module);
-
-        compare_unit(program, unit);
-    }
-
-    #[test]
-    fn parse_module_with_link_branch_first() {
-        let program = "
-            layer 0;
-            module UserModule {
-                greet(message: string) -> none {
-                    link = branch {
-                        branch {
-                            Printer::print(this.age),
-                            Printer::print(this.name)
-                        },
-                        chain {
-                            Printer::print(this.id),
-                            Printer::print(message)
-                        }
-                    }
-                }
-            }
-        ";
-
-        let mut unit = generate_test_unit(0);
-        let module = SysDCModule::new(&unit.name, "UserModule".to_string());
-        let func = SysDCFunction::new(&module.borrow().name, "greet".to_string());
-        let arg_message = SysDCVariable::new(&func.borrow().name, "message".to_string(), SysDCType::StringType);
-        let branch_link = SysDCLink::new_branch(&func.borrow().name, "link".to_string());
-        let branch_link2 = SysDCLink::new_branch(&branch_link.borrow().name, "link".to_string());
-        let iop_age_link3 = SysDCLink::new_instance_of_function(&branch_link2.borrow().name, "link".to_string());
-        let arg_age_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, "this.age".to_string(), SysDCType::from_allow_unsolved(&iop_age_link3.borrow().name, "this.age".to_string()));
-        let iop_name_link3 = SysDCLink::new_instance_of_function(&branch_link2.borrow().name, "link".to_string());
-        let arg_name_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, "this.name".to_string(), SysDCType::from_allow_unsolved(&iop_age_link3.borrow().name, "this.name".to_string()));
-        let chain_link2 = SysDCLink::new_chain(&branch_link.borrow().name, "link".to_string());
-        let iop_id_link3 = SysDCLink::new_instance_of_function(&chain_link2.borrow().name, "link".to_string());
-        let arg_id_link3 = SysDCVariable::new(&iop_id_link3.borrow().name, "this.id".to_string(), SysDCType::from_allow_unsolved(&iop_id_link3.borrow().name, "this.id".to_string()));
-        let iop_message_link3 = SysDCLink::new_instance_of_function(&chain_link2.borrow().name, "link".to_string());
-        let arg_message_link3 = SysDCVariable::new(&iop_message_link3.borrow().name, "message".to_string(), SysDCType::from_allow_unsolved(&iop_message_link3.borrow().name, "message".to_string()));
-        iop_age_link3.borrow_mut().push_arg(arg_age_link3);
-        iop_name_link3.borrow_mut().push_arg(arg_name_link3);
-        branch_link2.borrow_mut().push_link(iop_age_link3);
-        branch_link2.borrow_mut().push_link(iop_name_link3);
-        iop_id_link3.borrow_mut().push_arg(arg_id_link3);
-        iop_message_link3.borrow_mut().push_arg(arg_message_link3);
-        chain_link2.borrow_mut().push_link(iop_id_link3);
-        chain_link2.borrow_mut().push_link(iop_message_link3);
-        branch_link.borrow_mut().push_link(branch_link2);
-        branch_link.borrow_mut().push_link(chain_link2);
-        func.borrow_mut().set_link(branch_link);
-        func.borrow_mut().set_return_type(SysDCType::NoneType);
-        func.borrow_mut().push_arg(arg_message);
-        module.borrow_mut().push_function(func);
-        unit.push_module(module);
+        let member = vec!(
+            (Name::from(&name_box, "x".to_string()), Type::Int32),
+            (Name::from(&name_box, "y".to_string()), Type::from(&name_box, "UserDefinedData".to_string()))
+        );
+        let data = SysDCData::new(name_box, member);
+        let unit = SysDCUnit::new(name, vec!(data), vec!());
 
         compare_unit(program, unit);
     }
 
     #[test]
     #[should_panic]
-    fn parse_syntax_error_1() {
-        parse("aaa");
-    }
-
-    #[test]
-    #[should_panic]
-    fn parse_syntax_error_2() {
-        parse("
-            layer 0;
-            data User {
-                id: int32,
-                age,
-                name: string
+    fn data_has_illegal_member_def_1() {
+        let program = "
+            data Box {
+                x: i32
+                y: i32
             }
-        ");
+        ";
+        parse(program);
     }
 
     #[test]
     #[should_panic]
-    fn parse_syntax_error_3() {
-        parse("
-            layer 0;
-            module {
-                greet() {
+    fn data_has_illegal_member_def_2() {
+        let program = "
+            data Box {
+                x: i32,
+                y:
+            }
+        ";
+        parse(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn data_has_illegal_member_def_3() {
+        let program = "
+            data Box
+                x: i32,
+                y: i32
+        ";
+        parse(program);
+    }
+
+    #[test]
+    fn module_empty_ok() {
+        let program = "
+            module A {}
+            module B{}
+            module C{   
+
+            }
+            module D
+            {}
+            module
+            E
+            {
+
+            }
+        ";
+
+        let name = generate_name_for_test();
+
+        let module = vec!(
+            SysDCModule::new(Name::from(&name, "A".to_string()), vec!()),
+            SysDCModule::new(Name::from(&name, "B".to_string()), vec!()),
+            SysDCModule::new(Name::from(&name, "C".to_string()), vec!()),
+            SysDCModule::new(Name::from(&name, "D".to_string()), vec!()),
+            SysDCModule::new(Name::from(&name, "E".to_string()), vec!())
+        );
+        let unit = SysDCUnit::new(name, vec!(), module);
+
+        compare_unit(program, unit);
+    }
+
+    #[test]
+    fn function_only_has_return() {
+        let program = "
+            module BoxModule {
+                new() -> Box {
+                    @return box
                 }
             }
-        ");
+        ";
+
+        let name = generate_name_for_test();
+        let name_module = Name::from(&name, "BoxModule".to_string());
+        let name_func = Name::from(&name_module, "new".to_string());
+        let name_func_ret = Name::from(&name_func, "box".to_string());
+
+        let func_returns = (name_func_ret, Type::from(&name_func, "Box".to_string()));
+        let func = SysDCFunction::new(name_func, vec!(), func_returns, vec!());
+
+        let module = SysDCModule::new(name_module, vec!(func));
+
+        let unit = SysDCUnit::new(name, vec!(), vec!(module));
+
+        compare_unit(program, unit);
+    }
+
+    #[test]
+    fn function_has_return_and_spawn() {
+        let program = "
+            module BoxModule {
+                new() -> Box {
+                    @return box
+
+                    @spawn box: Box
+                }
+            }
+        ";
+
+        let name = generate_name_for_test();
+        let name_module = Name::from(&name, "BoxModule".to_string());
+        let name_func = Name::from(&name_module, "new".to_string());
+        let name_func_spawn_box = Name::from(&name_func, "box".to_string());
+        let name_func_ret = Name::from(&name_func, "box".to_string());
+
+        let func_spawns = vec!(
+            SysDCSpawn::new((name_func_spawn_box, Type::from(&name_func, "Box".to_string())), vec!())
+        );
+        let func_returns = (name_func_ret, Type::from(&name_func, "Box".to_string()));
+        let func = SysDCFunction::new(name_func, vec!(), func_returns, func_spawns);
+
+        let module = SysDCModule::new(name_module, vec!(func));
+
+        let unit = SysDCUnit::new(name, vec!(), vec!(module));
+
+        compare_unit(program, unit);
+    }
+
+    #[test]
+    fn function_has_full() {
+        let program = "
+            module BoxModule {
+                move(box: Box, dx: i32, dy: i32) -> Box {
+                    @return movedBox
+
+                    +use box.x, box.y
+                    +use dx, dy
+                    @spawn movedBox: Box
+                }
+            }
+        ";
+
+        let name = generate_name_for_test();
+        let name_module = Name::from(&name, "BoxModule".to_string());
+        let name_func = Name::from(&name_module, "move".to_string());
+        let name_func_arg_box = Name::from(&name_func, "box".to_string());
+        let name_func_arg_dx = Name::from(&name_func, "dx".to_string());
+        let name_func_arg_dy = Name::from(&name_func, "dy".to_string());
+        let name_func_spawn_box = Name::from(&name_func, "movedBox".to_string());
+        let name_func_spawn_use_box_x = Name::from(&name_func, "box.x".to_string());
+        let name_func_spawn_use_box_y = Name::from(&name_func, "box.y".to_string());
+        let name_func_spawn_use_dx = Name::from(&name_func, "dx".to_string());
+        let name_func_spawn_use_dy = Name::from(&name_func, "dy".to_string());
+        let name_func_ret = Name::from(&name_func, "movedBox".to_string());
+
+        let func_args = vec!(
+            (name_func_arg_box, Type::from(&name_func, "Box".to_string())),
+            (name_func_arg_dx, Type::Int32),
+            (name_func_arg_dy, Type::Int32)
+        );
+        let func_spawns = vec!(
+            SysDCSpawn::new((name_func_spawn_box, Type::from(&name_func, "Box".to_string())), vec!(
+                SysDCSpawnChild::new_use(name_func_spawn_use_box_x, Type::UnsolvedNoHint),
+                SysDCSpawnChild::new_use(name_func_spawn_use_box_y, Type::UnsolvedNoHint),
+                SysDCSpawnChild::new_use(name_func_spawn_use_dx, Type::UnsolvedNoHint),
+                SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::UnsolvedNoHint)
+            ))
+        );
+        let func_returns = (name_func_ret, Type::from(&name_func, "Box".to_string()));
+        let func = SysDCFunction::new(name_func, func_args, func_returns, func_spawns);
+
+        let module = SysDCModule::new(name_module, vec!(func));
+
+        let unit = SysDCUnit::new(name, vec!(), vec!(module));
+
+        compare_unit(program, unit);
     }
 
     #[test]
     #[should_panic]
-    fn parse_syntax_error_4() {
-        parse("
-            layer 0;
-            module UserModule {
-                greet() -> none {
-                    link = chain { }
+    fn illegal_function_1() {
+        let program = "
+            module BoxModule {
+                move() -> {
+
                 }
             }
-        ");
+        ";
+        parse(program);
     }
 
     #[test]
     #[should_panic]
-    fn parse_syntax_error_5() {
-        parse("
-            layer 0;
-            module UserModule {
-                greet() -> noen {
-                    link = 
+    fn illegal_function_2() {
+        let program = "
+            module BoxModule {
+                move(box: Box, dx: i32, dy: ) -> i32 {
+
                 }
             }
-        ");
+        ";
+        parse(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn illegal_function_3() {
+        let program = "
+            module BoxModule {
+                move() {
+
+                }
+            }
+        ";
+        parse(program);
+    }
+
+    #[test]
+    fn full() {
+        let program = "
+            data Box {
+                x: i32,
+                y: i32
+            }
+
+            module BoxModule {
+                move(box: Box, dx: i32, dy: i32) -> Box {
+                    @return movedBox
+
+                    +use box.x, box.y, dx, dy
+                    @spawn movedBox: Box
+                }
+            }
+        ";
+
+        let name = generate_name_for_test();
+        let name_data = Name::from(&name, "Box".to_string());
+        let name_data_x = Name::from(&name_data, "x".to_string());
+        let name_data_y = Name::from(&name_data, "y".to_string());
+        let name_module = Name::from(&name, "BoxModule".to_string());
+        let name_func = Name::from(&name_module, "move".to_string());
+        let name_func_arg_box = Name::from(&name_func, "box".to_string());
+        let name_func_arg_dx = Name::from(&name_func, "dx".to_string());
+        let name_func_arg_dy = Name::from(&name_func, "dy".to_string());
+        let name_func_spawn_box = Name::from(&name_func, "movedBox".to_string());
+        let name_func_spawn_use_box_x = Name::from(&name_func, "box.x".to_string());
+        let name_func_spawn_use_box_y = Name::from(&name_func, "box.y".to_string());
+        let name_func_spawn_use_dx = Name::from(&name_func, "dx".to_string());
+        let name_func_spawn_use_dy = Name::from(&name_func, "dy".to_string());
+        let name_func_ret = Name::from(&name_func, "movedBox".to_string());
+
+        let func_args = vec!(
+            (name_func_arg_box, Type::from(&name_func, "Box".to_string())),
+            (name_func_arg_dx, Type::Int32),
+            (name_func_arg_dy, Type::Int32)
+        );
+        let func_spawns = vec!(
+            SysDCSpawn::new((name_func_spawn_box, Type::from(&name_func, "Box".to_string())), vec!(
+                SysDCSpawnChild::new_use(name_func_spawn_use_box_x, Type::UnsolvedNoHint),
+                SysDCSpawnChild::new_use(name_func_spawn_use_box_y, Type::UnsolvedNoHint),
+                SysDCSpawnChild::new_use(name_func_spawn_use_dx, Type::UnsolvedNoHint),
+                SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::UnsolvedNoHint)
+            ))
+        );
+        let func_returns = (name_func_ret, Type::from(&name_func, "Box".to_string()));
+        let func = SysDCFunction::new(name_func, func_args, func_returns, func_spawns);
+
+        let module = SysDCModule::new(name_module, vec!(func));
+
+        let data_members = vec!(
+            (name_data_x, Type::Int32),
+            (name_data_y, Type::Int32)
+        );
+        let data = SysDCData::new(name_data, data_members);
+
+        let unit = SysDCUnit::new(name, vec!(data), vec!(module));
+
+        compare_unit(program, unit);
+    }
+
+
+    fn generate_name_for_test() -> Name {
+        Name::from(&Name::new_root(), "test".to_string())
     }
 
     fn compare_unit(program: &str, unit: SysDCUnit) {
         assert_eq!(format!("{:?}", parse(program)), format!("{:?}", unit));
     }
 
-    fn generate_test_unit(layer_num: i32) -> SysDCUnit {
-        let root_namespace = Name::new_root();
-        let layer_namespace = Name::new(&root_namespace, format!("layer{}", layer_num));
-        SysDCUnit::new(&layer_namespace, "test".to_string()) 
-    }
-
     fn parse(program: &str) -> SysDCUnit {
         let program = program.to_string();
         let tokenizer = Tokenizer::new(&program);
-        let mut parser = Parser::new(Name::new_root(), "test".to_string(), tokenizer);
-        let (_, unit) = parser.parse();
-        unit
+        let mut parser = Parser::new(tokenizer);
+        parser.parse(&generate_name_for_test())
     }
 }
