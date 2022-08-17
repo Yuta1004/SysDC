@@ -144,14 +144,14 @@ mod test {
         let spawn_use_dx = SysDCSpawnChild::new_use(name_spawn_use_dx, SysDCType::Int32);
         let spawn_use_dy = SysDCSpawnChild::new_use(name_spawn_use_dy, SysDCType::Int32);
         let spawn = SysDCSpawn::new(
-            (name_func_ret, SysDCType::from(&name_func, "Box".to_string())),
+            (name_spawn_ret, SysDCType::from(&name_func, "Box".to_string())),
             vec!(spawn_use_box_x, spawn_use_box_y, spawn_use_dx, spawn_use_dy)
         );
 
         let func_args = vec!(
             (name_func_arg_box, SysDCType::Int32),
             (name_func_arg_dx, SysDCType::Int32),
-            (name_func_arg_dx, SysDCType::Int32)
+            (name_func_arg_dy, SysDCType::Int32)
         );
         let func_returns = (name_func_ret, SysDCType::from(&name_func, "Box".to_string()));
         let func = SysDCFunction::new(name_func, func_args, func_returns, vec!(spawn));
@@ -166,7 +166,7 @@ mod test {
 
         let unit = SysDCUnit::new(name, vec!(data), vec!(module));
 
-        let system = SysDCSystem::new(vec!(unit));
+        SysDCSystem::new(vec!(unit));
     }
 }
 
