@@ -1,8 +1,8 @@
+mod parse;
+mod token;
 pub mod name;
-pub mod parse;
-pub mod structure;
-pub mod token;
 pub mod types;
+pub mod structure;
 
 use name::Name;
 use parse::Parser;
