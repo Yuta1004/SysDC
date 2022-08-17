@@ -1,32 +1,23 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     /* Reserved */
-    Layer,              // layer
-    Ref,                // ref
     Data,               // data
     Module,             // module
-    Binds,              // binds
-    As,                 // as
-    Use,                // use
-    Modify,             // modify
-    Link,               // link
-    Branch,             // branch
-    Chain,              // chain
+    // Let
 
     /* Symbol */
     Allow,              // ->
     Mapping,            // :
     Equal,              // =
     Accessor,           // .
-    PAccessor,          // ::
     Separater,          // ,
     Semicolon,          // ;
     ParenthesisBegin,   // (
     ParenthesisEnd,     // )
     BracketBegin,       // {
     BracketEnd,         // }
-    ListBegin,          // [
-    ListEnd,            // ]
+    // AtMark
+    // Plus
 
     /* Others */
     Identifier,
@@ -43,30 +34,18 @@ pub struct Token {
 impl Token {
     pub fn from_string(orig: String) -> Token {
         let kind = match orig.as_str() {
-            "layer"     => TokenKind::Layer,
-            "ref"       => TokenKind::Ref,
             "data"      => TokenKind::Data,
             "module"    => TokenKind::Module,
-            "binds"     => TokenKind::Binds,
-            "as"        => TokenKind::As,
-            "use"       => TokenKind::Use,
-            "modify"    => TokenKind::Modify,
-            "link"      => TokenKind::Link,
-            "branch"    => TokenKind::Branch,
-            "chain"     => TokenKind::Chain,
             "->"        => TokenKind::Allow,
             ":"         => TokenKind::Mapping,
             "="         => TokenKind::Equal,
             "."         => TokenKind::Accessor,
-            "::"        => TokenKind::PAccessor,
             ","         => TokenKind::Separater,
             ";"         => TokenKind::Semicolon,
             "("         => TokenKind::ParenthesisBegin,
             ")"         => TokenKind::ParenthesisEnd,
             "{"         => TokenKind::BracketBegin,
             "}"         => TokenKind::BracketEnd,
-            "["         => TokenKind::ListBegin,
-            "]"         => TokenKind::ListEnd,
             _           => TokenKind::Identifier
         };
         let orig_id = match kind {
@@ -164,8 +143,6 @@ impl<'a> Tokenizer<'a> {
                 
                 // Ok(force stop)
                 (CharType::Symbol, _) => break,
-                (CharType::SymbolAccessor, CharType::SymbolAccessor) => { self.now_ref_pos += 1; break },
-                (CharType::SymbolAccessor, _) => break,
                 (CharType::SymbolAllow1, CharType::SymbolAllow2) => { self.now_ref_pos += 1; break },
 
                 // Ng(panic)
@@ -231,10 +208,9 @@ impl CharType {
         match c {
             '0'..='9' => CharType::Number,
             'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
-            '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' | '[' | ']' => CharType::Symbol,
+            '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' | ':' => CharType::Symbol,
             '-' => CharType::SymbolAllow1,
             '>' => CharType::SymbolAllow2,
-            ':' => CharType::SymbolAccessor,
             ' ' | '\t' | '\n' => CharType::Space,
             _ => CharType::Other
         }
@@ -249,30 +225,18 @@ mod test {
         #[test]
         fn create_token_from_string() {
             let str_kind_mapping = [
-                ("layer",   TokenKind::Layer),
-                ("ref",     TokenKind::Ref),
                 ("data",    TokenKind::Data),
                 ("module",  TokenKind::Module),
-                ("binds",   TokenKind::Binds),
-                ("as",      TokenKind::As),
-                ("use",     TokenKind::Use),
-                ("modify",  TokenKind::Modify),
-                ("link",    TokenKind::Link),
-                ("branch",  TokenKind::Branch),
-                ("chain",   TokenKind::Chain),
                 ("->",      TokenKind::Allow),
                 (":",       TokenKind::Mapping),
                 ("=",       TokenKind::Equal),
                 (".",       TokenKind::Accessor),
-                ("::",      TokenKind::PAccessor),
                 (",",       TokenKind::Separater),
                 (";",       TokenKind::Semicolon),
                 ("(",       TokenKind::ParenthesisBegin),
                 (")",       TokenKind::ParenthesisEnd),
                 ("{",       TokenKind::BracketBegin),
                 ("}",       TokenKind::BracketEnd),
-                ("[",       TokenKind::ListBegin),
-                ("]",       TokenKind::ListEnd)
             ];
             for (_str, kind) in str_kind_mapping {
                 assert_eq!(Token::from_string(_str.to_string()).kind, kind);
@@ -294,12 +258,7 @@ mod test {
         #[test]
         fn get_identifer_from_identifer_token() {
             let id = Token::from_string("test".to_string()).get_id();
-            assert_eq!(id, "test");
-        }
-
-        #[test]
-        #[should_panic]
-        fn get_number_from_identifer_token() {
+            assert_eq!(id, "test")                ("]",       TokenKind::ListEnd)
             Token::from_string("test".to_string()).get_number();
         }
 
