@@ -18,21 +18,27 @@ impl InputPlugin for DebugPlugin {
     fn run(&self, _: Vec<String>) -> Result<Vec<(String, String)>, Box<dyn Error>> {
         let unit_name = "debug".to_string();
         let program = "
-            layer 0;
-
-            data User {
-                id: int32,
-                age: int32,
-                name: string
+            data Box {
+                x: i32,
+                y: i32,
+                w: i32,
+                h: i32
             }
 
-            module UserModule binds User as this {
-                greet() -> string {
-                    use = [this.name];
+            module BoxModule {
+                new(x: i32, y: i32, w: i32, h: i32) -> Box {
+                    @return box
+
+                    +use x, y, w, h
+                    @spawn box: Box
                 }
-                
-                change_age(age: int32) -> none {
-                    modify = [this.age];
+
+                move(box: Box, dx: i32, dy: i32) -> Box {
+                    @return movedBox
+
+                    +use box.x, box.y
+                    +use dx, dy
+                    @spawn movedBox: Box
                 }
             }
         ".to_string();
