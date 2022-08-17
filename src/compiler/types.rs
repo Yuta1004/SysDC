@@ -9,7 +9,8 @@ pub enum SysDCType {
 
     /* User defined */
     Solved(Name),
-    Unsolved(Name)
+    Unsolved(Name),
+    UnsolvedNoHint
 }
 
 impl SysDCType {
@@ -24,7 +25,8 @@ impl SysDCType {
         match self {
             SysDCType::Int32 => Name::new_on_global_namespace("i32".to_string()),
             SysDCType::Solved(name) => name.clone(),
-            SysDCType::Unsolved(name) => name.clone()
+            SysDCType::Unsolved(name) => name.clone(),
+            SysDCType::UnsolvedNoHint => Name::new_on_global_namespace("NoHintType".to_string())
         }
     }
 }
