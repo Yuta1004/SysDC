@@ -1,4 +1,4 @@
-pub mod default;
+mod default;
 
 use std::fmt;
 use std::fmt::{ Display, Formatter };
