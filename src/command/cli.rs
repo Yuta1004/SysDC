@@ -65,7 +65,7 @@ impl CliCmd {
             "out" => {
                 match system {
                     Some(s) => {
-                        CliCmd::run_mode_out(plugin_manager, subcmd, args, s);
+                        CliCmd::run_mode_out(plugin_manager, subcmd, args, s)?;
                         Ok((false, None))
                     },
                     None => Err(Box::new(
