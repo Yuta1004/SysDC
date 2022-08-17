@@ -6,7 +6,6 @@ use super::name::Name;
 pub enum SysDCType {
     /* Default */
     Int32,
-    NoneType,
 
     /* User defined */
     Solved(Name),
@@ -17,7 +16,6 @@ impl SysDCType {
     pub fn from(namespace: &Name, name: String) -> SysDCType {
         match name.as_str() {
             "i32" => SysDCType::Int32,
-            "none" => SysDCType::NoneType,
             _ => SysDCType::Unsolved(Name::new(namespace, name))
         }
     }
@@ -25,7 +23,6 @@ impl SysDCType {
     pub fn get_name(&self) -> Name {
         match self {
             SysDCType::Int32 => Name::new_on_global_namespace("i32".to_string()),
-            SysDCType::NoneType => Name::new_on_global_namespace("none".to_string()),
             SysDCType::Solved(name) => name.clone(),
             SysDCType::Unsolved(name) => name.clone()
         }
@@ -46,7 +43,6 @@ mod test {
     #[test]
     fn from_all_ok() {
         assert_eq!(SysDCType::from(&Name::new_root(), "i32".to_string()), SysDCType::Int32);
-        assert_eq!(SysDCType::from(&Name::new_root(), "none".to_string()), SysDCType::NoneType);
         assert_eq!(SysDCType::from(&Name::new_root(), "cocoa".to_string()), SysDCType::Unsolved(Name::new(&Name::new_root(), "cocoa".to_string())));
     }
 }
