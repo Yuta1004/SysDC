@@ -1,7 +1,7 @@
 use super::name::Name;
 use super::types::SysDCType;
 use super::token::{ TokenKind, Tokenizer };
-use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawn, SysDCSpawnChild };
+use super::structure::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawn, SysDCSpawnChild };
 
 // 複数要素を一気にパースするためのマクロ
 // - 返り値: Vec<T>
