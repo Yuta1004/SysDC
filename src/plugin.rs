@@ -65,11 +65,11 @@ impl PluginManager {
 
     fn load_default_plugins() -> (Vec<Box<dyn InputPlugin>>, Vec<Box<dyn OutputPlugin>>) {
         let in_plugins: Vec<Box<dyn InputPlugin>> = vec!(
-            input::DebugPlugin::new(),
-            input::FilesPlugin::new()
+            input::debug::DebugPlugin::new(),
+            input::files::FilesPlugin::new()
         );
         let out_plugins: Vec<Box<dyn OutputPlugin>> = vec!(
-            output::DebugPlugin::new()
+            output::debug::DebugPlugin::new()
         );
         (in_plugins, out_plugins)
     }
