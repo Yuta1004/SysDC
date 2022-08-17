@@ -142,7 +142,7 @@ impl<'a> Parser<'a> {
 
         self.tokenizer.request(TokenKind::Allow);
         let types = self.tokenizer.request(TokenKind::Identifier).get_id();
-        func.borrow_mut().set_return_type(SysDCType::from_allow_unsolved(&namespace, types.clone())); // TODO: Connector
+        func.borrow_mut().set_return_type(SysDCType::from(&namespace, types.clone())); // TODO: Connector
         println!("[WARNING] Unsolved Type => {:?}, {:?}", &namespace, &types);
 
         self.tokenizer.request(TokenKind::BracketBegin);
@@ -319,7 +319,7 @@ impl<'a> Parser<'a> {
             return None;
         }
         println!("[WARNING] Unsolved Type => {:?}, {:?}", &namespace, &discovered_name_elems.join("."));
-        Some(SysDCVariable::new(namespace, discovered_name_elems.join("."), SysDCType::from_allow_unsolved(&namespace, discovered_name_elems.join(".")))) // TODO: Connector
+        Some(SysDCVariable::new(namespace, discovered_name_elems.join("."), SysDCType::from(&namespace, discovered_name_elems.join(".")))) // TODO: Connector
     }
 
     /**
@@ -353,7 +353,7 @@ impl<'a> Parser<'a> {
             self.tokenizer.request(TokenKind::Mapping);
             let types = self.tokenizer.request(TokenKind::Identifier).get_id();
             println!("[WARNING] Unsolved Type => {:?}, {:?}", &namespace, &types);
-            Some(SysDCVariable::new(namespace, id, SysDCType::from_allow_unsolved(&namespace, types)))    // TODO: Connector
+            Some(SysDCVariable::new(namespace, id, SysDCType::from(&namespace, types)))    // TODO: Connector
         } else {
             None
         }
@@ -381,9 +381,8 @@ mod test {
         let program = "
             layer 0;
             data User {
-                id: int32,
-                age: int32,
-                name: string
+                id: i32,
+                age: i32
             }
         ";
 
@@ -391,10 +390,8 @@ mod test {
         let data = SysDCData::new(&unit.name, "User".to_string());
         let id = SysDCVariable::new(&data.borrow().name, "id".to_string(), SysDCType::Int32);
         let age = SysDCVariable::new(&data.borrow().name, "age".to_string(), SysDCType::Int32);
-        let name = SysDCVariable::new(&data.borrow().name, "name".to_string(), SysDCType::StringType);
         data.borrow_mut().push_variable(id);
         data.borrow_mut().push_variable(age);
-        data.borrow_mut().push_variable(name);
         unit.push_data(data);
 
         compare_unit(program, unit);
@@ -428,7 +425,7 @@ mod test {
         let program = "
             layer 0;
             module UserModule binds User {
-                greet(name: string, message: string) -> none {
+                greet(name: i32, message: i32) -> none {
                     use = [name, message];
                     modify = [name];
                 }
@@ -438,11 +435,11 @@ mod test {
         let mut unit = generate_test_unit(0);
         let module = SysDCModule::new(&unit.name, "UserModule".to_string());
         let func = SysDCFunction::new(&module.borrow().name, "greet".to_string());
-        let arg_name = SysDCVariable::new(&func.borrow().name, "name".to_string(), SysDCType::StringType);
-        let arg_message = SysDCVariable::new(&func.borrow().name, "message".to_string(), SysDCType::StringType);
-        let use_name = SysDCVariable::new(&func.borrow().name, "name".to_string(), SysDCType::from_allow_unsolved(&func.borrow().name, "name".to_string()));
-        let use_message = SysDCVariable::new(&func.borrow().name, "message".to_string(), SysDCType::from_allow_unsolved(&func.borrow().name, "message".to_string()));
-        let modify_name = SysDCVariable::new(&func.borrow().name, "name".to_string(), SysDCType::from_allow_unsolved(&func.borrow().name, "name".to_string()));
+        let arg_name = SysDCVariable::new(&func.borrow().name, "name".to_string(), SysDCType::Int32);
+        let arg_message = SysDCVariable::new(&func.borrow().name, "message".to_string(), SysDCType::Int32);
+        let use_name = SysDCVariable::new(&func.borrow().name, "name".to_string(), SysDCType::from(&func.borrow().name, "name".to_string()));
+        let use_message = SysDCVariable::new(&func.borrow().name, "message".to_string(), SysDCType::from(&func.borrow().name, "message".to_string()));
+        let modify_name = SysDCVariable::new(&func.borrow().name, "name".to_string(), SysDCType::from(&func.borrow().name, "name".to_string()));
         func.borrow_mut().set_return_type(SysDCType::NoneType);
         func.borrow_mut().push_arg(arg_name);
         func.borrow_mut().push_arg(arg_message);
@@ -460,7 +457,7 @@ mod test {
         let program = "
             layer 0;
             module UserModule binds User as this {
-                greet(message: string) -> none {
+                greet(message: i32) -> none {
                     link = chain {
                         branch {
                             Printer::print(this.age),
@@ -478,18 +475,18 @@ mod test {
         let mut unit = generate_test_unit(0);
         let module = SysDCModule::new(&unit.name, "UserModule".to_string());
         let func = SysDCFunction::new(&module.borrow().name, "greet".to_string());
-        let arg_message = SysDCVariable::new(&func.borrow().name, "message".to_string(), SysDCType::StringType);
+        let arg_message = SysDCVariable::new(&func.borrow().name, "message".to_string(), SysDCType::Int32);
         let chain_link = SysDCLink::new_chain(&func.borrow().name, "link".to_string());
         let branch_link2 = SysDCLink::new_branch(&chain_link.borrow().name, "link".to_string());
         let iop_age_link3 = SysDCLink::new_instance_of_function(&branch_link2.borrow().name, "link".to_string());
-        let arg_age_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, "this.age".to_string(), SysDCType::from_allow_unsolved(&iop_age_link3.borrow().name, "this.age".to_string()));
+        let arg_age_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, "this.age".to_string(), SysDCType::from(&iop_age_link3.borrow().name, "this.age".to_string()));
         let iop_name_link3 = SysDCLink::new_instance_of_function(&branch_link2.borrow().name, "link".to_string());
-        let arg_name_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, "this.name".to_string(), SysDCType::from_allow_unsolved(&iop_age_link3.borrow().name, "this.name".to_string()));
+        let arg_name_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, "this.name".to_string(), SysDCType::from(&iop_age_link3.borrow().name, "this.name".to_string()));
         let chain_link2 = SysDCLink::new_chain(&chain_link.borrow().name, "link".to_string());
         let iop_id_link3 = SysDCLink::new_instance_of_function(&chain_link2.borrow().name, "link".to_string());
-        let arg_id_link3 = SysDCVariable::new(&iop_id_link3.borrow().name, "this.id".to_string(), SysDCType::from_allow_unsolved(&iop_id_link3.borrow().name, "this.id".to_string()));
+        let arg_id_link3 = SysDCVariable::new(&iop_id_link3.borrow().name, "this.id".to_string(), SysDCType::from(&iop_id_link3.borrow().name, "this.id".to_string()));
         let iop_message_link3 = SysDCLink::new_instance_of_function(&chain_link2.borrow().name, "link".to_string());
-        let arg_message_link3 = SysDCVariable::new(&iop_message_link3.borrow().name, "message".to_string(), SysDCType::from_allow_unsolved(&iop_message_link3.borrow().name, "message".to_string()));
+        let arg_message_link3 = SysDCVariable::new(&iop_message_link3.borrow().name, "message".to_string(), SysDCType::from(&iop_message_link3.borrow().name, "message".to_string()));
         iop_age_link3.borrow_mut().push_arg(arg_age_link3);
         iop_name_link3.borrow_mut().push_arg(arg_name_link3);
         branch_link2.borrow_mut().push_link(iop_age_link3);
@@ -514,7 +511,7 @@ mod test {
         let program = "
             layer 0;
             module UserModule {
-                greet(message: string) -> none {
+                greet(message: i32) -> none {
                     link = branch {
                         branch {
                             Printer::print(this.age),
@@ -532,18 +529,18 @@ mod test {
         let mut unit = generate_test_unit(0);
         let module = SysDCModule::new(&unit.name, "UserModule".to_string());
         let func = SysDCFunction::new(&module.borrow().name, "greet".to_string());
-        let arg_message = SysDCVariable::new(&func.borrow().name, "message".to_string(), SysDCType::StringType);
+        let arg_message = SysDCVariable::new(&func.borrow().name, "message".to_string(), SysDCType::Int32);
         let branch_link = SysDCLink::new_branch(&func.borrow().name, "link".to_string());
         let branch_link2 = SysDCLink::new_branch(&branch_link.borrow().name, "link".to_string());
         let iop_age_link3 = SysDCLink::new_instance_of_function(&branch_link2.borrow().name, "link".to_string());
-        let arg_age_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, "this.age".to_string(), SysDCType::from_allow_unsolved(&iop_age_link3.borrow().name, "this.age".to_string()));
+        let arg_age_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, "this.age".to_string(), SysDCType::from(&iop_age_link3.borrow().name, "this.age".to_string()));
         let iop_name_link3 = SysDCLink::new_instance_of_function(&branch_link2.borrow().name, "link".to_string());
-        let arg_name_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, "this.name".to_string(), SysDCType::from_allow_unsolved(&iop_age_link3.borrow().name, "this.name".to_string()));
+        let arg_name_link3 = SysDCVariable::new(&iop_age_link3.borrow().name, "this.name".to_string(), SysDCType::from(&iop_age_link3.borrow().name, "this.name".to_string()));
         let chain_link2 = SysDCLink::new_chain(&branch_link.borrow().name, "link".to_string());
         let iop_id_link3 = SysDCLink::new_instance_of_function(&chain_link2.borrow().name, "link".to_string());
-        let arg_id_link3 = SysDCVariable::new(&iop_id_link3.borrow().name, "this.id".to_string(), SysDCType::from_allow_unsolved(&iop_id_link3.borrow().name, "this.id".to_string()));
+        let arg_id_link3 = SysDCVariable::new(&iop_id_link3.borrow().name, "this.id".to_string(), SysDCType::from(&iop_id_link3.borrow().name, "this.id".to_string()));
         let iop_message_link3 = SysDCLink::new_instance_of_function(&chain_link2.borrow().name, "link".to_string());
-        let arg_message_link3 = SysDCVariable::new(&iop_message_link3.borrow().name, "message".to_string(), SysDCType::from_allow_unsolved(&iop_message_link3.borrow().name, "message".to_string()));
+        let arg_message_link3 = SysDCVariable::new(&iop_message_link3.borrow().name, "message".to_string(), SysDCType::from(&iop_message_link3.borrow().name, "message".to_string()));
         iop_age_link3.borrow_mut().push_arg(arg_age_link3);
         iop_name_link3.borrow_mut().push_arg(arg_name_link3);
         branch_link2.borrow_mut().push_link(iop_age_link3);
@@ -575,7 +572,7 @@ mod test {
         parse("
             layer 0;
             data User {
-                id: int32,
+                id: i32,
                 age,
                 name: string
             }

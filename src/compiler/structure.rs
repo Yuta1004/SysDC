@@ -280,9 +280,9 @@ mod test {
     fn create_sysdc_tree() {
         /* [file: user.def]
             data User {
-                id: int32,
-                age: int32,
-                name: string
+                id: i32,
+                age: i32,
+                name: i32
             }
 
             module UserModule binds User as this {
@@ -297,7 +297,7 @@ mod test {
         */
         /* [file: printer.def]
             module Printer {
-                print(text: string) -> none {
+                print(text: i32) -> none {
                     use text; 
                 }
             }
@@ -331,7 +331,7 @@ mod test {
                     let user_data_name = &user_data.borrow().name.clone();
                     user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, "id".to_string(), SysDCType::Int32));
                     user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, "age".to_string(), SysDCType::Int32));
-                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, "name".to_string(), SysDCType::StringType));
+                    user_data.borrow_mut().push_variable(SysDCVariable::new(user_data_name, "name".to_string(), SysDCType::Int32));
                     user_unit.push_data(user_data);
 
                     let user_module = SysDCModule::new(&user_unit.name, "UserModule".to_string());
