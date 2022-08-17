@@ -33,8 +33,9 @@ impl InputPlugin for FilesPlugin {
                         let unit_name = entry.file_name().ok_or(PluginError::UnknownError)?
                                              .to_str().ok_or(PluginError::UnknownError)?
                                              .to_string();
+                        let unit_name = unit_name.split(".").collect::<Vec<&str>>();
                         let program = fs::read_to_string(&entry).unwrap();
-                        programs.push((unit_name, program));
+                        programs.push((unit_name[0].to_string(), program));
                     }
                 }
             }
