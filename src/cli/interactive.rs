@@ -10,6 +10,7 @@ use crate::plugin::PluginManager;
 
 #[derive(Debug)]
 enum CommandError {
+    NotFoundError(String),
     SyntaxError(String),
     RuntimeError(String)
 }
@@ -19,6 +20,7 @@ impl Error for CommandError {}
 impl Display for CommandError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
+            CommandError::NotFoundError(text) => write!(f, "{} is not found (CommandError::NotFoundError)", text),
             CommandError::SyntaxError(text) => write!(f, "{} (CommandError::SyntaxError)", text),
             CommandError::RuntimeError(text) => write!(f, "{} (CommandError::RuntimeError)", text)
         }
@@ -72,7 +74,7 @@ impl InteractiveCmd {
             },
             _ => {
                 Err(Box::new(
-                    CommandError::RuntimeError(format!("\"{}\" not found", cmd))
+                    CommandError::NotFoundError(format!("Command \"{}\"", cmd))
                 ))
             }
         }
@@ -83,7 +85,7 @@ impl InteractiveCmd {
             Some(plugin) => plugin,
             None => {
                 return Err(Box::new(
-                    CommandError::RuntimeError(format!("\"{}\" not found", name))
+                    CommandError::NotFoundError(format!("Plugin \"{}\"", name))
                 ));
             }
         };
@@ -102,10 +104,11 @@ impl InteractiveCmd {
             Some(plugin) => plugin,
             None => {
                 return Err(Box::new(
-                    CommandError::RuntimeError(format!("\"{}\" not found", name))
+                    CommandError::NotFoundError(format!("Plugin \"{}\"", name))
                 ));
             }
         };
+
         match &self.system {
             Some(s) => plugin.run(args, s),
             None => Err(Box::new(
