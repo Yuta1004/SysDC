@@ -1,5 +1,5 @@
-pub mod cli;
-pub mod plugin;
+mod cli;
+mod plugin;
 
 use clap::{ AppSettings, Parser, Subcommand };
 
