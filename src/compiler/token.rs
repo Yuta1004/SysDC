@@ -201,7 +201,6 @@ enum CharType {
     Symbol,
     SymbolAllow1,
     SymbolAllow2,
-    SymbolAccessor,
     Space,
     Other
 }
