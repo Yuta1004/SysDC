@@ -26,14 +26,14 @@ impl Display for CommandError {
 }
 
 #[derive(clap::Parser)]
-pub struct CliCmd;
+pub struct InteractiveCmd;
 
-impl CliCmd {
+impl InteractiveCmd {
     pub fn run(&self) {
         let mut system: Option<SysDCSystem> = None;
         let plugin_manager = PluginManager::new();
         loop {
-            match CliCmd::run_one_line(&plugin_manager, &system) {
+            match InteractiveCmd::run_one_line(&plugin_manager, &system) {
                 Ok((do_exit, _system)) => {
                     if _system.is_some() {
                         system = _system;
@@ -54,18 +54,18 @@ impl CliCmd {
 
         let mut text = String::new();
         io::stdin().read_line(&mut text)?;
-        let (cmd, subcmd, args) = CliCmd::parse_cli_text(text.trim().to_string())?;
+        let (cmd, subcmd, args) = InteractiveCmd::parse_input(text.trim().to_string())?;
 
         match cmd.as_str() {
             "exit" => Ok((true, None)),
             "in" => {
-                let _system = CliCmd::run_mode_in(plugin_manager, subcmd, args)?;
+                let _system = InteractiveCmd::run_mode_in(plugin_manager, subcmd, args)?;
                 Ok((false, Some(_system)))
             },
             "out" => {
                 match system {
                     Some(s) => {
-                        CliCmd::run_mode_out(plugin_manager, subcmd, args, s)?;
+                        InteractiveCmd::run_mode_out(plugin_manager, subcmd, args, s)?;
                         Ok((false, None))
                     },
                     None => Err(Box::new(
@@ -110,7 +110,7 @@ impl CliCmd {
         plugin.run(args, system)
     }
 
-    fn parse_cli_text(text: String) -> Result<(String, String, Vec<String>), Box<dyn Error>> {
+    fn parse_input(text: String) -> Result<(String, String, Vec<String>), Box<dyn Error>> {
         let splitted_text = text.split(" ").map(|s| s.to_string()).collect::<Vec<String>>();
         match splitted_text.len() {
             1 => {
@@ -129,13 +129,13 @@ impl CliCmd {
 
 #[cfg(test)]
 mod test {
-    use super::CliCmd;
+    use super::InteractiveCmd;
 
     #[test]
-    fn test_parse_cli_text() {
-        assert!(CliCmd::parse_cli_text("".to_string()).is_err());
+    fn test_parse_input() {
+        assert!(InteractiveCmd::parse_input("".to_string()).is_err());
 
-        match CliCmd::parse_cli_text("aaa".to_string()) {
+        match InteractiveCmd::parse_input("aaa".to_string()) {
             Ok((cmd, subcmd, args)) => {
                 let empty_string_vec: Vec<String> = vec!();
                 assert_eq!(cmd, "aaa");
@@ -145,7 +145,7 @@ mod test {
             Err(e) => panic!("{}", e)
         }
 
-        match CliCmd::parse_cli_text("aaa bbb".to_string()) {
+        match InteractiveCmd::parse_input("aaa bbb".to_string()) {
             Ok((cmd, subcmd, args)) => {
                 let empty_string_vec: Vec<String> = vec!();
                 assert_eq!(cmd, "aaa");
@@ -155,7 +155,7 @@ mod test {
             Err(e) => panic!("{}", e)
         } 
 
-        match CliCmd::parse_cli_text("aaa bbb ccc".to_string()) {
+        match InteractiveCmd::parse_input("aaa bbb ccc".to_string()) {
             Ok((cmd, subcmd, args)) => {
                 assert_eq!(cmd, "aaa");
                 assert_eq!(subcmd, "bbb");
