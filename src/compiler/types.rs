@@ -1,5 +1,7 @@
 use std::fmt::{ Debug, Formatter };
 
+use serde::{ Serialize, Serializer };
+
 use super::name::Name;
 use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
 
@@ -28,6 +30,19 @@ impl Type {
             Type::Solved(name) => name.clone(),
             Type::Unsolved(name) => name.clone(),
             Type::UnsolvedNoHint => Name::new_on_global_namespace("NoHintType".to_string())
+        }
+    }
+}
+
+impl Serialize for Type {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer
+    {
+        match self {
+            Type::Unsolved(_) |
+            Type::UnsolvedNoHint => panic!("[ERROR] Cannot serialize object containing unsolved types."),
+            t => t.get_name().serialize(serializer)
         }
     }
 }
