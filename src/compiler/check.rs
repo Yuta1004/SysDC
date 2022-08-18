@@ -38,7 +38,7 @@ impl Checker {
                 .into_iter()
                 .map(|(name, types)| match types.kind {
                     TypeKind::Int32 => (name, types),
-                    _ => (name.clone(), self.def_manager.try_match_from_type(name.get_namespace(), types))
+                    _ => (name.clone(), self.def_manager.try_match_from_type(&name.get_namespace(), types))
                 })
                 .collect()
         )
@@ -57,12 +57,12 @@ impl Checker {
     fn check_function(&self, func: SysDCFunction) -> SysDCFunction {
         let checked_args = func.args
             .into_iter()
-            .map(|(name, types)| (name.clone(), self.def_manager.try_match_from_type(name.get_namespace(), types)))
+            .map(|(name, types)| (name.clone(), self.def_manager.try_match_from_type(&name.get_namespace(), types)))
             .collect::<Vec<(Name, Type)>>();
 
         let mut checked_spawns = vec!();
         for SysDCSpawn { result: (name, types), detail } in func.spawns {
-            let resolved_result = (name.clone(), self.def_manager.try_match_from_type(name.get_namespace(), types));
+            let resolved_result = (name.clone(), self.def_manager.try_match_from_type(&name.get_namespace(), types));
             let mut resolved_detail = vec!();
             for uses in detail {
                 match uses {
@@ -77,7 +77,7 @@ impl Checker {
         }
 
         let (ret_name, ret_type) = func.returns.unwrap();
-        let resolved_ret_type = self.def_manager.try_match_from_type(ret_name.clone().get_namespace(), ret_type);
+        let resolved_ret_type = self.def_manager.try_match_from_type(&ret_name.clone().get_namespace(), ret_type);
         let resolved_ret = (ret_name, resolved_ret_type);
 
         SysDCFunction::new(func.name, checked_args, resolved_ret, checked_spawns)
@@ -114,11 +114,11 @@ impl DefinesManager {
         DefinesManager { defines: DefinesManager::listup_defines(system) }
     }
 
-    pub fn try_match_from_type(&self, namespace: String, child: Type) -> Type {
-        match child.kind {
+    pub fn try_match_from_type(&self, namespace: &String, child: Type) -> Type {
+        match &child.kind {
             TypeKind::Int32 => child,
             TypeKind::Unsolved(hint) => {
-                let found_def = self.find(namespace, hint);
+                let found_def = self.find(&namespace, hint);
                 match found_def.kind {
                     DefineKind::Data => Type::new(TypeKind::Data, Some(found_def.refs)),
                     _ => panic!("[ERROR] \"{:?}\" is defined but type is unmatched", child)
@@ -128,19 +128,19 @@ impl DefinesManager {
         }
     }
 
-    fn find(&self, namespace: String, name: String) -> Define {
+    fn find(&self, namespace: &String, name: &String) -> Define {
         if namespace.len() == 0 {
             panic!("[ERROR] Cannot find the name \"{}\"", name);
         }
 
         for Define{ kind, refs } in &self.defines {
-            if refs.get_namespace() == namespace && refs.get_local_name() == name {
+            if &refs.get_namespace() == namespace && &refs.get_local_name() == name {
                 return Define::new(kind.clone(), refs.clone())
             }
         }
         let splitted_namespace = namespace.split(".").collect::<Vec<&str>>();
         let par_namespace = splitted_namespace[0..splitted_namespace.len()-1].join(".");
-        self.find(par_namespace, name)
+        self.find(&par_namespace, name)
     }
 
     fn listup_defines(system: &SysDCSystem) -> Vec<Define> {
