@@ -1,6 +1,8 @@
 use std::fmt::{ Debug, Formatter };
 
-#[derive(Clone, PartialEq)]
+use serde::{ Serialize, Deserialize };
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Name {
     name: String,
     namespace: String

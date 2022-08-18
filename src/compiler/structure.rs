@@ -1,7 +1,9 @@
+use serde::{ Serialize, Deserialize };
+
 use super::name::Name;
 use super::types::Type;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SysDCSystem {
     pub units: Vec<SysDCUnit>
 }
@@ -12,7 +14,7 @@ impl SysDCSystem {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SysDCUnit {
     pub name: Name,
     pub data: Vec<SysDCData>,
@@ -25,7 +27,7 @@ impl SysDCUnit {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SysDCData {
     pub name: Name,
     pub member: Vec<(Name, Type)> 
@@ -37,7 +39,7 @@ impl SysDCData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SysDCModule {
     pub name: Name,
     pub functions: Vec<SysDCFunction>
@@ -49,7 +51,7 @@ impl SysDCModule {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SysDCFunction {
     pub name: Name,
     pub args: Vec<(Name, Type)>,
@@ -63,7 +65,7 @@ impl SysDCFunction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum SysDCAnnotation {
     Return(Name),
     Spawn(SysDCSpawn)
@@ -79,7 +81,7 @@ impl SysDCAnnotation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SysDCSpawn {
     pub result: (Name, Type),
     pub detail: Vec<SysDCSpawnChild>
@@ -91,7 +93,7 @@ impl SysDCSpawn {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum SysDCSpawnChild {
     Use { name: Name, types: Type },
     // Process { name: Name, func: Name, args: Vec<(Name, Type)> }

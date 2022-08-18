@@ -1,8 +1,13 @@
 use std::io;
 use std::io::Write;
+use std::fs;
+use std::fs::File;
 use std::fmt;
 use std::fmt::{ Display, Formatter };
 use std::error::Error;
+
+use serde::Serialize;
+use rmp_serde::Serializer;
 
 use crate::compiler::Compiler;
 use crate::compiler::structure::SysDCSystem;
@@ -72,6 +77,14 @@ impl InteractiveCmd {
                 self.run_mode_out(subcmd, args)?;
                 Ok(false)
             },
+            "load" => {
+                self.load_system(subcmd)?;
+                Ok(false)
+            }
+            "save" => {
+                self.save_system(subcmd)?;
+                Ok(false)
+            }
             _ => {
                 Err(Box::new(
                     CommandError::NotFoundError(format!("Command \"{}\"", cmd))
@@ -117,13 +130,37 @@ impl InteractiveCmd {
         }
     }
 
+    fn load_system(&mut self, filepath: String) -> Result<(), Box<dyn Error>> {
+        let serialized_system = fs::read(filepath+".sysdc")?;
+        self.system = Some(rmp_serde::from_slice::<SysDCSystem>(&serialized_system[..])?);
+        Ok(())
+    }
+
+    fn save_system(&self, filepath: String) -> Result<(), Box<dyn Error>> {
+        let serialized_system = match &self.system {
+            Some(s) => {
+                let mut buf = vec!();
+                s.serialize(&mut Serializer::new(&mut buf))?;
+                buf
+            },
+            None => return Err(Box::new(
+                CommandError::RuntimeError("Must run \"in\" command before run \"save\" command".to_string())
+            ))
+        };
+
+        let mut f = File::create(&(filepath+".sysdc"))?;
+        f.write_all(&serialized_system)?;
+        f.flush()?;
+        Ok(())
+    }
+
     fn parse_input(text: String) -> Result<(String, String, Vec<String>), Box<dyn Error>> {
         let splitted_text = text.split(" ").map(|s| s.to_string()).collect::<Vec<String>>();
         match splitted_text.len() {
             1 => {
                 if splitted_text[0].len() == 0 {
                     return Err(Box::new(
-                        CommandError::SyntaxError("Usage: in/out <name> <args>".to_string())
+                        CommandError::SyntaxError("Usage: in/out/save <name> <args>".to_string())
                     ));
                 }
                 Ok((splitted_text[0].clone(), "".to_string(), vec!()))
