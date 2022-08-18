@@ -1,72 +1,95 @@
 use std::fmt::{ Debug, Formatter };
 
-use serde::ser::{ Serialize, Serializer };
-use serde::de::{ Deserialize, Deserializer };
+use serde::{ Serialize, Deserialize };
+use serde::ser::Serializer;
+use serde::de::Deserializer;
 
 use super::name::Name;
 use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
 
-#[derive(Clone, PartialEq)]
-pub enum Type {
-    /* Data */
-    Int32,
-    UserDefined(Name),
-
-    /* for TypeResolver */
-    Unsolved(Name),
-    UnsolvedNoHint
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+pub struct Type {
+    pub kind: TypeKind,
+    pub refs: Option<Name>
 }
 
 impl Type {
-    pub fn from(namespace: &Name, name: String) -> Type {
+    pub fn new(kind: TypeKind, name: Name) -> Type {
+        Type {
+            kind,
+            refs: Some(name)
+        }
+    }
+
+    pub fn new_unsovled_nohint() -> Type {
+        Type {
+            kind: TypeKind::UnsolvedNoHint,
+            refs: None
+        }
+    }
+
+    pub fn from(name: String) -> Type {
         match name.as_str() {
-            "i32" => Type::Int32,
-            _ => Type::Unsolved(Name::from(namespace, name))
+            "i32" => Type { kind: TypeKind::Int32, refs: None },
+            _ => Type { kind: TypeKind::Unsolved(name), refs: None }
         }
-    }
-
-    pub fn get_name(&self) -> Name {
-        match self {
-            Type::Int32 => Name::new_on_global_namespace("i32".to_string()),
-            Type::UserDefined(name) => name.clone(),
-            Type::Unsolved(name) => name.clone(),
-            Type::UnsolvedNoHint => Name::new_on_global_namespace("NoHintType".to_string())
-        }
-    }
-}
-
-impl Serialize for Type {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer
-    {
-        match self {
-            Type::Unsolved(_) |
-            Type::UnsolvedNoHint => panic!("[ERROR] Cannot serialize object containing unsolved types."),
-            t => t.get_name().serialize(serializer)
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for Type {
-    fn deserialize<D>(deserializer: D) -> Result<Type, D::Error>
-    where
-        D: Deserializer<'de> 
-    {
-        let name = Name::deserialize(deserializer)?;
-        Ok(match name.get_local_name().as_str() {
-            "i32" => Type::Int32,
-            _ => {
-                let namespace = Name::from(&Name::new_root(), name.get_global_name().replace(".0.", ""));
-                Type::UserDefined(Name::from(&namespace, name.get_local_name()))
-            }
-        })
     }
 }
 
 impl Debug for Type {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.get_name().get_global_name())
+        match &self.kind {
+            TypeKind::Int32 => write!(f, "Int32"),
+            TypeKind::Unsolved(hint) => write!(f, "{}", hint),
+            TypeKind::UnsolvedNoHint => write!(f, "UnsolvedNoHint"),
+            _ => write!(f, "{}", self.refs.as_ref().unwrap().get_global_name())
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum TypeKind {
+    /* Primitive */
+    Int32,
+
+    /* UserDefined */
+    Data,
+    DataMember,
+    Module,
+    Function,
+
+    /* for TypeResolver */
+    Unsolved(String),
+    UnsolvedNoHint
+}
+
+impl Serialize for TypeKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer
+    {
+        match self {
+            TypeKind::Unsolved(_) |
+            TypeKind::UnsolvedNoHint => panic!("[ERROR] Cannot serialize object containing unsolved types."),
+            _ => serializer.serialize_str(&format!("{:?}", self))
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for TypeKind {
+    fn deserialize<D>(deserializer: D) -> Result<TypeKind, D::Error>
+    where
+        D: Deserializer<'de> 
+    {
+        let kind = String::deserialize(deserializer)?;
+        Ok(match kind.as_str() {
+            "Int32" => TypeKind::Int32,
+            "Data" => TypeKind::Data,
+            "DataMember" => TypeKind::DataMember,
+            "Module" => TypeKind::Module,
+            "Function" => TypeKind::Function,
+            s => panic!("[ERROR] Found unknown type at deserializing => \"{}\"", s)
+        })
     }
 }
 
@@ -77,76 +100,76 @@ impl Resolver {
         SysDCSystem::new(
             system.units
                 .into_iter()
-                .map(|u| Resolver::resolve_unit(u, vec!(), vec!()))
+                .map(|u| Resolver::resolve_unit(u, vec!()))
                 .collect()
         )
     }
 
-    fn resolve_unit(unit: SysDCUnit, mut defined_t: Vec<Name>, defined_f: Vec<Name>) -> SysDCUnit {
-        defined_t.extend(
-            unit.data
-                .iter()
-                .map(|x| x.name.clone())
-                .collect::<Vec<Name>>()
-        );
+    fn resolve_unit(unit: SysDCUnit, defined: Vec<Type>) -> SysDCUnit {
+        // defined.extend(
+        //     unit.data
+        //         .iter()
+        //         .map(|x| x.name.clone())
+        //         .collect::<Vec<Name>>()
+        // );
 
         SysDCUnit::new(
             unit.name,
             unit.data
                 .into_iter()
-                .map(|d| Resolver::resolve_data(d, defined_t.clone()))
+                .map(|d| Resolver::resolve_data(d, defined.clone()))
                 .collect(),
             unit.modules
                 .into_iter()
-                .map(|m| Resolver::resolve_module(m, defined_t.clone(), defined_f.clone()))
+                .map(|m| Resolver::resolve_module(m, defined.clone()))
                 .collect()
         )
     }
 
-    fn resolve_data(data: SysDCData, defined_t: Vec<Name>) -> SysDCData {
+    fn resolve_data(data: SysDCData, defined: Vec<Type>) -> SysDCData {
         SysDCData::new(
             data.name,
             data.member
                 .into_iter()
-                .map(|(n, t)| (n, Resolver::resolve_type(t, &defined_t)))
+                .map(|(n, t)| (n, Resolver::resolve_type(&t, &defined)))
                 .collect()
         )
     }
 
-    fn resolve_module(module: SysDCModule, defined_t: Vec<Name>, mut defined_f: Vec<Name>) -> SysDCModule {
-        defined_f.extend(
-            module.functions
-                .iter()
-                .map(|x| x.name.clone())
-                .collect::<Vec<Name>>()
-        );
+    fn resolve_module(module: SysDCModule, defined: Vec<Type>) -> SysDCModule {
+        // defined.extend(
+        //     module.functions
+        //         .iter()
+        //         .map(|x| x.name.clone())
+        //         .collect::<Vec<Name>>()
+        // );
 
         SysDCModule::new(
             module.name,
             module.functions
                 .into_iter()
-                .map(|f| Resolver::resolve_function(f, defined_t.clone(), defined_f.clone()))
+                .map(|f| Resolver::resolve_function(f, defined.clone()))
                 .collect()
         )
     }
 
-    fn resolve_function(func: SysDCFunction, defined_t: Vec<Name>, _: Vec<Name>) -> SysDCFunction {
+    fn resolve_function(func: SysDCFunction, defined: Vec<Type>) -> SysDCFunction {
         let resolved_args = func.args
             .into_iter()
-            .map(|(n, t)| (n, Resolver::resolve_type(t.clone(), &defined_t)))
+            .map(|(n, t)| (n, Resolver::resolve_type(&t, &defined)))
             .collect::<Vec<(Name, Type)>>();
 
         let mut defined_vars = resolved_args.clone();
         defined_vars.extend(
             func.spawns
                 .iter()
-                .map(|SysDCSpawn { result: (n, t), detail: _}| (n.clone(), Resolver::resolve_type(t.clone(), &defined_t)))
+                .map(|SysDCSpawn { result: (n, t), detail: _}| (n.clone(), Resolver::resolve_type(t, &defined)))
                 .collect::<Vec<(Name, Type)>>()
         );
 
         let mut resolved_spanws = vec!();
         for SysDCSpawn { result: (name, types), detail } in func.spawns {
-            let resolved_result = (name.clone(), Resolver::resolve_type(types, &defined_t));
+            let resolved_result = (name.clone(), Resolver::resolve_type(&types, &defined));
             let mut resolved_detail = vec!();
             for uses in detail {
                 match uses {
@@ -165,17 +188,18 @@ impl Resolver {
         SysDCFunction::new(func.name, resolved_args, (ret_name, resolved_ret_type), resolved_spanws)
     }
 
-    fn resolve_type(types: Type, defined: &Vec<Name>) -> Type {
-        match types {
-            Type::UnsolvedNoHint => panic!("[ERROR] Found unsolved type which hasn't hint"),
-            Type::Unsolved(hint) => {
-                match defined.iter().find(|x| x.get_local_name() == hint.get_local_name()) {
-                    Some(name) => Type::UserDefined(name.clone()),
-                    None => panic!("[ERROR] Type \"{}\" is not defined", hint.get_global_name())
-                }
-            },
-            types => types
-        }
+    fn resolve_type(types: &Type, defined: &Vec<Type>) -> Type {
+        // match types {
+        //     Type::UnsolvedNoHint => panic!("[ERROR] Found unsolved type which hasn't hint"),
+        //     Type::Unsolved(hint) => {
+        //         match defined.iter().find(|x| x.get_local_name() == hint.get_local_name()) {
+        //             Some(name) => Type::UserDefined(name.clone()),
+        //             None => panic!("[ERROR] Type \"{}\" is not defined", hint.get_global_name())
+        //         }
+        //     },
+        //     types => types
+        // }
+        Type::from("i32".to_string())
     }
 
     fn resolve_var(name: &Name, defined: &Vec<(Name, Type)>) -> Type {
@@ -188,12 +212,11 @@ impl Resolver {
 
 #[cfg(test)]
 mod test {
-    use super::Name;
-    use super::Type;
+    use super::{ Type, TypeKind };
 
     #[test]
     fn from_all_ok() {
-        assert_eq!(Type::from(&Name::new_root(), "i32".to_string()), Type::Int32);
-        assert_eq!(Type::from(&Name::new_root(), "cocoa".to_string()), Type::Unsolved(Name::from(&Name::new_root(), "cocoa".to_string())));
+        assert_eq!(Type::from("i32".to_string()), Type { kind: TypeKind::Int32, refs: None });
+        assert_eq!(Type::from("cocoa".to_string()), Type { kind: TypeKind::Unsolved("cocoa".to_string()), refs: None });
     }
 }
