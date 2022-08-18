@@ -213,4 +213,123 @@ impl DefinesManager {
         );
         defined
     }
-} 
+}
+
+#[cfg(test)]
+mod test {
+    use super::super::super::compiler::Compiler;
+
+    #[test]
+    fn primitive_member_only_data() {
+        let program = "
+            data Test {
+                a: i32,
+                b: i32,
+                c: i32
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn user_defined_type_mix_data() {
+        let program = "
+            data A {
+                a: i32
+            }
+
+            data Test {
+                a: A,
+                b: i32,
+                c: A
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn recursive_type_has_data() {
+        let program = "
+            data A {
+                a: A
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn undefined_type_mix_data() {
+        let program = "
+            data Test {
+                a: i32,
+                b: Unknown
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn user_defind_type_mix_module() {
+        let program = "
+            data A {
+                a: i32,
+                b: i32
+            }
+            
+            module TestModule {
+                test(a: A) -> A {
+                    @return a
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn user_defined_type_mix_module_with_spawn() {
+        let program = "
+            data A {
+                a: i32,
+                b: i32
+            }
+
+            module TestModule {
+                test(a: A) -> A {
+                    @return b
+
+                    +use a
+                    @spawn b: A 
+                }
+            }
+        ";
+        check(program)
+    }
+
+    #[test]
+    #[should_panic]
+    fn user_defind_type_mix_module_with_spawn_failure() {
+        let program = "
+            data A {
+                a: i32,
+                b: i32
+            }
+
+            module TestModule {
+                test(a: A) -> A {
+                    @return b
+
+                    +use aaa
+                    @spawn b: A
+                }
+            }
+        ";
+        check(program);
+    }
+
+    fn check(program: &str) {
+        let mut compiler = Compiler::new();
+        compiler.add_unit("test".to_string(), &program.to_string());
+        compiler.generate_system();
+    }
+}
