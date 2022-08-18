@@ -90,9 +90,6 @@ impl<'de> Deserialize<'de> for TypeKind {
         Ok(match kind.as_str() {
             "Int32" => TypeKind::Int32,
             "Data" => TypeKind::Data,
-            "DataMember" => TypeKind::DataMember,
-            "Module" => TypeKind::Module,
-            "Function" => TypeKind::Function,
             s => panic!("[ERROR] Found unknown type at deserializing => \"{}\"", s)
         })
     }
