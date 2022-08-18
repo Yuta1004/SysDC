@@ -14,10 +14,10 @@ pub struct Type {
 }
 
 impl Type {
-    pub fn new(kind: TypeKind, name: Name) -> Type {
+    pub fn new(kind: TypeKind, name: Option<Name>) -> Type {
         Type {
             kind,
-            refs: Some(name)
+            refs: name
         }
     }
 
@@ -42,23 +42,28 @@ impl Debug for Type {
             TypeKind::Int32 => write!(f, "Int32"),
             TypeKind::Unsolved(hint) => write!(f, "{}", hint),
             TypeKind::UnsolvedNoHint => write!(f, "UnsolvedNoHint"),
-            _ => write!(f, "{}", self.refs.as_ref().unwrap().get_global_name())
+            _ => {
+                write!(f, "{:?}:{:?}", self.kind, self.refs)
+            }
         }
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeKind {
-    /* Primitive */
+    /* プリミティブ型 */
     Int32,
 
-    /* UserDefined */
+    /* ユーザ定義型 */
     Data,
-    DataMember,
+
+    /* 定義済みチェック用 (解決後のSysDCSystemには含まれない) */
     Module,
     Function,
-
-    /* for TypeResolver */
+    DataMember,
+    Variable,
+    
+    /* パーサ用 (解決後のSysDCSystemには含まれない) */
     Unsolved(String),
     UnsolvedNoHint
 }
@@ -105,13 +110,26 @@ impl Resolver {
         )
     }
 
-    fn resolve_unit(unit: SysDCUnit, defined: Vec<Type>) -> SysDCUnit {
-        // defined.extend(
-        //     unit.data
-        //         .iter()
-        //         .map(|x| x.name.clone())
-        //         .collect::<Vec<Name>>()
-        // );
+    fn resolve_unit(unit: SysDCUnit, mut defined: Vec<Type>) -> SysDCUnit {
+        defined.extend(
+            unit.data
+                .iter()
+                .map(|x| Type::new(TypeKind::Data, Some(x.name.clone())))
+                .collect::<Vec<Type>>()
+        );
+        defined.extend(
+            unit.data
+                .iter()
+                .flat_map(|x| &x.member)
+                .map(|(n, t)| Type::new(TypeKind::DataMember, Some(n.clone())))
+                .collect::<Vec<Type>>()
+        );
+        defined.extend(
+            unit.modules
+                .iter()
+                .map(|x| Type::new(TypeKind::Module, Some(x.name.clone())))
+                .collect::<Vec<Type>>()
+        );
 
         SysDCUnit::new(
             unit.name,
@@ -136,13 +154,13 @@ impl Resolver {
         )
     }
 
-    fn resolve_module(module: SysDCModule, defined: Vec<Type>) -> SysDCModule {
-        // defined.extend(
-        //     module.functions
-        //         .iter()
-        //         .map(|x| x.name.clone())
-        //         .collect::<Vec<Name>>()
-        // );
+    fn resolve_module(module: SysDCModule, mut defined: Vec<Type>) -> SysDCModule {
+        defined.extend(
+            module.functions
+                .iter()
+                .map(|x| Type::new(TypeKind::Function, Some(x.name.clone())))
+                .collect::<Vec<Type>>()
+        );
 
         SysDCModule::new(
             module.name,
@@ -153,18 +171,23 @@ impl Resolver {
         )
     }
 
-    fn resolve_function(func: SysDCFunction, defined: Vec<Type>) -> SysDCFunction {
+    fn resolve_function(func: SysDCFunction, mut defined: Vec<Type>) -> SysDCFunction {
         let resolved_args = func.args
-            .into_iter()
-            .map(|(n, t)| (n, Resolver::resolve_type(&t, &defined)))
+            .iter()
+            .map(|(n, t)| (n.clone(), Resolver::resolve_type(t, &defined)))
             .collect::<Vec<(Name, Type)>>();
 
-        let mut defined_vars = resolved_args.clone();
-        defined_vars.extend(
+        defined.extend(
+            resolved_args
+                .iter()
+                .map(|(n, _)| Type::new(TypeKind::Variable, Some(n.clone())))
+                .collect::<Vec<Type>>()
+        );
+        defined.extend(
             func.spawns
                 .iter()
-                .map(|SysDCSpawn { result: (n, t), detail: _}| (n.clone(), Resolver::resolve_type(t, &defined)))
-                .collect::<Vec<(Name, Type)>>()
+                .map(|SysDCSpawn { result: (n, t), detail: _}| Type::new(TypeKind::Variable, Some(n.clone())))
+                .collect::<Vec<Type>>()
         );
 
         let mut resolved_spanws = vec!();
@@ -174,7 +197,7 @@ impl Resolver {
             for uses in detail {
                 match uses {
                     SysDCSpawnChild::Use{ name, types: _ } => {
-                        let resolved_type = Resolver::resolve_var(&name, &defined_vars);
+                        let resolved_type = Resolver::resolve_var(&name, &defined);
                         resolved_detail.push(SysDCSpawnChild::new_use(name, resolved_type));
                     }
                 }
@@ -182,31 +205,19 @@ impl Resolver {
             resolved_spanws.push(SysDCSpawn::new(resolved_result, resolved_detail))
         }
 
-        let (ret_name, _) = func.returns.unwrap();
-        let resolved_ret_type = Resolver::resolve_var(&ret_name, &defined_vars);
+        let (ret_name, ret_type) = func.returns.unwrap();
+        let resolved_ret_type = Resolver::resolve_type(&ret_type, &defined);
 
         SysDCFunction::new(func.name, resolved_args, (ret_name, resolved_ret_type), resolved_spanws)
     }
 
     fn resolve_type(types: &Type, defined: &Vec<Type>) -> Type {
-        // match types {
-        //     Type::UnsolvedNoHint => panic!("[ERROR] Found unsolved type which hasn't hint"),
-        //     Type::Unsolved(hint) => {
-        //         match defined.iter().find(|x| x.get_local_name() == hint.get_local_name()) {
-        //             Some(name) => Type::UserDefined(name.clone()),
-        //             None => panic!("[ERROR] Type \"{}\" is not defined", hint.get_global_name())
-        //         }
-        //     },
-        //     types => types
-        // }
+        println!("{:?}", defined);
         Type::from("i32".to_string())
     }
 
-    fn resolve_var(name: &Name, defined: &Vec<(Name, Type)>) -> Type {
-        match defined.iter().find(|(x, _)| x.get_local_name() == name.get_local_name()) {
-            Some((_, types)) => types.clone(),
-            None => panic!("[ERROR] Variable \"{}\" is not defined", name.get_global_name())
-        }
+    fn resolve_var(name: &Name, defined: &Vec<Type>) -> Type {
+        Type::from("i32".to_string())
     }
 }
 
