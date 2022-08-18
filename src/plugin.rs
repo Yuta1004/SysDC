@@ -69,7 +69,8 @@ impl PluginManager {
             input::files::FilesPlugin::new()
         );
         let out_plugins: Vec<Box<dyn OutputPlugin>> = vec!(
-            output::debug::DebugPlugin::new()
+            output::debug::DebugPlugin::new(),
+            output::json::JSONPlugin::new()
         );
         (in_plugins, out_plugins)
     }
