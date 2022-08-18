@@ -2,11 +2,51 @@ use super::name::Name;
 use super::types::{ Type, TypeKind };
 use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn };
 
-pub struct Checker;
+pub struct Checker {
+    def_manager: DefinesManager
+}
 
 impl Checker {
     pub fn check(system: SysDCSystem) -> SysDCSystem {
-        system
+        let checker = Checker { def_manager: DefinesManager::new(&system) };
+        SysDCSystem::new(
+            system.units
+                .into_iter()
+                .map(|unit| checker.check_unit(unit))
+                .collect()
+        )
+    }
+
+    fn check_unit(&self, unit: SysDCUnit) -> SysDCUnit {
+        SysDCUnit::new(
+            unit.name,
+            unit.data
+                .into_iter()
+                .map(|data| self.check_data(data))
+                .collect(),
+            unit.modules
+                .into_iter()
+                .map(|module| self.check_module(module))
+                .collect()
+        )
+    }
+
+    fn check_data(&self, data: SysDCData) -> SysDCData {
+        data
+    }
+
+    fn check_module(&self, module: SysDCModule) -> SysDCModule {
+        SysDCModule::new(
+            module.name,
+            module.functions
+                .into_iter()
+                .map(|func| self.check_function(func))
+                .collect()
+        )
+    }
+
+    fn check_function(&self, func: SysDCFunction) -> SysDCFunction {
+        func
     }
 }
 
@@ -31,36 +71,30 @@ impl Define {
     }
 }
 
-struct DefinesManager<'a> {
-    system: &'a SysDCSystem,
+struct DefinesManager {
     defines: Vec<Define>
 }
 
-impl<'a> DefinesManager<'a> {
-    pub fn new(system: &'a SysDCSystem) -> DefinesManager {
-        let mut manager = DefinesManager {
-            system,
-            defines: vec!()
-        };
-        manager.defines = manager.listup_defines();
-        manager
+impl DefinesManager {
+    pub fn new(system: &SysDCSystem) -> DefinesManager {
+        DefinesManager { defines: DefinesManager::listup_defines(system) }
     }
 
-    fn listup_defines(&self) -> Vec<Define> {
-        self.system.units
+    fn listup_defines(system: &SysDCSystem) -> Vec<Define> {
+        system.units
             .iter()
-            .flat_map(|unit| self.listup_defines_unit(unit))
+            .flat_map(|unit| DefinesManager::listup_defines_unit(unit))
             .collect()
     }
 
-    fn listup_defines_unit(&self, unit: &SysDCUnit) -> Vec<Define> {
+    fn listup_defines_unit(unit: &SysDCUnit) -> Vec<Define> {
         let mut defined = vec!();
         defined.extend(
             unit.data
                 .iter()
                 .flat_map(|data| {
                     let mut d = vec!(Define::new(DefineKind::Data, Some(data.name.clone())));
-                    d.extend(self.listup_defines_data(data));
+                    d.extend(DefinesManager::listup_defines_data(data));
                     d
                 })
                 .collect::<Vec<Define>>()
@@ -70,7 +104,7 @@ impl<'a> DefinesManager<'a> {
                 .iter()
                 .flat_map(|module| {
                     let mut d = vec!(Define::new(DefineKind::Module, Some(module.name.clone())));
-                    d.extend(self.listup_defines_module(module));
+                    d.extend(DefinesManager::listup_defines_module(module));
                     d
                 })
                 .collect::<Vec<Define>>()
@@ -78,25 +112,25 @@ impl<'a> DefinesManager<'a> {
         defined
     }
 
-    fn listup_defines_data(&self, data: &SysDCData) -> Vec<Define> {
+    fn listup_defines_data(data: &SysDCData) -> Vec<Define> {
         data.member
             .iter()
             .map(|(name, _)| Define::new(DefineKind::DataMember, Some(name.clone())))
             .collect::<Vec<Define>>()
     }
 
-    fn listup_defines_module(&self, module: &SysDCModule) -> Vec<Define> {
+    fn listup_defines_module(module: &SysDCModule) -> Vec<Define> {
         module.functions
             .iter()
             .flat_map(|func| { 
                 let mut d = vec!(Define::new(DefineKind::Function, Some(func.name.clone())));
-                d.extend(self.listup_defines_function(func));
+                d.extend(DefinesManager::listup_defines_function(func));
                 d
             })
             .collect::<Vec<Define>>()
     }
 
-    fn listup_defines_function(&self, func: &SysDCFunction) -> Vec<Define> {
+    fn listup_defines_function(func: &SysDCFunction) -> Vec<Define> {
         let mut defined = vec!();
         defined.extend(
             func.args
