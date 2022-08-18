@@ -117,19 +117,25 @@ impl DefinesManager {
     pub fn try_match_from_type(&self, namespace: String, child: Type) -> Type {
         match child.kind {
             TypeKind::Int32 => child,
-            TypeKind::Unsolved(hint) => Type::new(TypeKind::Data, Some(self.find(namespace, hint))),
+            TypeKind::Unsolved(hint) => {
+                let found_def = self.find(namespace, hint);
+                match found_def.kind {
+                    DefineKind::Data => Type::new(TypeKind::Data, Some(found_def.refs)),
+                    _ => panic!("[ERROR] \"{:?}\" is defined but type is unmatched", child)
+                }
+            },
             _ => panic!("[ERROR] Called unmatch try_match function (from_type)")
         }
     }
 
-    fn find(&self, namespace: String, name: String) -> Name {
+    fn find(&self, namespace: String, name: String) -> Define {
         if namespace.len() == 0 {
             panic!("[ERROR] Cannot find the name \"{}\"", name);
         }
 
-        for Define{ kind: _, refs } in &self.defines {
+        for Define{ kind, refs } in &self.defines {
             if refs.get_namespace() == namespace && refs.get_local_name() == name {
-                return refs.clone()
+                return Define::new(kind.clone(), refs.clone())
             }
         }
         let splitted_namespace = namespace.split(".").collect::<Vec<&str>>();
