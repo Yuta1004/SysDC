@@ -58,7 +58,7 @@ impl<'de> Deserialize<'de> for Type {
             "i32" => Type::Int32,
             _ => {
                 let namespace = Name::from(&Name::new_root(), name.get_global_name().replace(".0.", ""));
-                Type::Unsolved(Name::from(&namespace, name.get_local_name()))
+                Type::Solved(Name::from(&namespace, name.get_local_name()))
             }
         })
     }
