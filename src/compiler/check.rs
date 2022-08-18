@@ -76,7 +76,7 @@ impl Checker {
         }
 
         let (ret_name, ret_type) = func.returns.unwrap();
-        let resolved_ret_type = self.def_manager.try_match_from_type(&ret_name.clone().get_namespace(), ret_type);
+        let resolved_ret_type = self.def_manager.try_match_from_type(&ret_name.get_namespace(), ret_type);
         let resolved_ret = (ret_name, resolved_ret_type);
 
         SysDCFunction::new(func.name, checked_args, resolved_ret, checked_spawns)
