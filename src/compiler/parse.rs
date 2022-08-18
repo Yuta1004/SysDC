@@ -554,8 +554,8 @@ mod test {
         let module = SysDCModule::new(name_module, vec!(func));
 
         let data_members = vec!(
-            (name_data_x, Type::from("Box".to_string())),
-            (name_data_y, Type::from("Box".to_string()))
+            (name_data_x, Type::from("i32".to_string())),
+            (name_data_y, Type::from("i32".to_string()))
         );
         let data = SysDCData::new(name_data, data_members);
 
