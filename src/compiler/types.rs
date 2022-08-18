@@ -1,6 +1,7 @@
 use std::fmt::{ Debug, Formatter };
 
-use serde::{ Serialize, Serializer };
+use serde::ser::{ Serialize, Serializer };
+use serde::de::{ Deserialize, Deserializer };
 
 use super::name::Name;
 use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
@@ -44,6 +45,28 @@ impl Serialize for Type {
             Type::UnsolvedNoHint => panic!("[ERROR] Cannot serialize object containing unsolved types."),
             t => t.get_name().serialize(serializer)
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for Type {
+    fn deserialize<D>(deserializer: D) -> Result<Type, D::Error>
+    where
+        D: Deserializer<'de> 
+    {
+        let name = Name::deserialize(deserializer)?;
+        Ok(match name.get_local_name().as_str() {
+            "i32" => Type::Int32,
+            _ => {
+                let namespace = Name::from(&Name::new_root(), name.get_global_name().replace(".0.", ""));
+                Type::Unsolved(Name::from(&namespace, name.get_local_name()))
+            }
+        })
+    }
+}
+
+impl Debug for Type {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.get_name().get_global_name())
     }
 }
 
@@ -160,12 +183,6 @@ impl Resolver {
             Some((_, types)) => types.clone(),
             None => panic!("[ERROR] Variable \"{}\" is not defined", name.get_global_name())
         }
-    }
-}
-
-impl Debug for Type {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.get_name().get_global_name())
     }
 }
 
