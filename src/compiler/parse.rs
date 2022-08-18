@@ -233,7 +233,7 @@ impl<'a> Parser<'a> {
 mod test {
     use super::Parser;
     use super::super::name::Name;
-    use super::super::types::{ Type, TypeKind };
+    use super::super::types::Type;
     use super::super::token::Tokenizer;
     use super::super::structure::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
     
@@ -394,7 +394,6 @@ mod test {
         ";
 
         let name = generate_name_for_test();
-        let name_data = Name::from(&name, "Box".to_string());
         let name_module = Name::from(&name, "BoxModule".to_string());
         let name_func = Name::from(&name_module, "new".to_string());
         let name_func_spawn_box = Name::from(&name_func, "box".to_string());

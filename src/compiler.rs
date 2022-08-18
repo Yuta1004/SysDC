@@ -9,7 +9,6 @@ use name::Name;
 use parse::Parser;
 use token::Tokenizer;
 use check::Checker;
-use types::TypeResolver;
 use structure::{ SysDCSystem, SysDCUnit };
 
 pub struct Compiler {
