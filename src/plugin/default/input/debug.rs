@@ -36,7 +36,7 @@ impl InputPlugin for DebugPlugin {
                 move(box: Box, dx: i32, dy: i32) -> Box {
                     @return movedBox
 
-                    +use box.x, box.y
+                    +use box
                     +use dx, dy
                     @spawn movedBox: Box
                 }
@@ -44,7 +44,7 @@ impl InputPlugin for DebugPlugin {
                 changeSize(box: Box, w: i32, h: i32) -> Box {
                     @return changedBox
 
-                    +use box.w, box.h
+                    +use box
                     +use w, h
                     @spawn changedBox: Box
                 }
