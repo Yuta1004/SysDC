@@ -6,7 +6,8 @@ use std::fmt;
 use std::fmt::{ Display, Formatter };
 use std::error::Error;
 
-use serde_json;
+use serde::Serialize;
+use rmp_serde::Serializer;
 
 use crate::compiler::Compiler;
 use crate::compiler::structure::SysDCSystem;
@@ -130,21 +131,25 @@ impl InteractiveCmd {
     }
 
     fn load_system(&mut self, filepath: String) -> Result<(), Box<dyn Error>> {
-        let serialized_system = fs::read_to_string(filepath+".sysdc")?;
-        self.system = Some(serde_json::from_str::<SysDCSystem>(&serialized_system)?);
+        let serialized_system = fs::read(filepath+".sysdc")?;
+        self.system = Some(rmp_serde::from_slice::<SysDCSystem>(&serialized_system[..])?);
         Ok(())
     }
 
     fn save_system(&self, filepath: String) -> Result<(), Box<dyn Error>> {
         let serialized_system = match &self.system {
-            Some(s) => serde_json::to_string(s)?,
+            Some(s) => {
+                let mut buf = vec!();
+                s.serialize(&mut Serializer::new(&mut buf))?;
+                buf
+            },
             None => return Err(Box::new(
                 CommandError::RuntimeError("Must run \"in\" command before run \"save\" command".to_string())
             ))
         };
-        
+
         let mut f = File::create(&(filepath+".sysdc"))?;
-        write!(f, "{}", serialized_system)?;
+        f.write_all(&serialized_system)?;
         f.flush()?;
         Ok(())
     }
