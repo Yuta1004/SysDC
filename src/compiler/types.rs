@@ -209,7 +209,6 @@ impl TypeResolver {
     }
 
     fn resolve_type(types: &Type, defined: &Vec<Type>) -> Type {
-        println!("{:?}", defined);
         Type::from("i32".to_string())
     }
 
