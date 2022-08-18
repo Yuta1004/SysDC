@@ -34,6 +34,10 @@ impl Name {
     pub fn get_global_name(&self) -> String {
         self.namespace.clone() + "." + &self.name
     }
+
+    pub fn get_namespace(&self) -> String {
+        self.namespace.clone()
+    }
 }
 
 impl Debug for Name {

@@ -1,6 +1,6 @@
 use super::name::Name;
 use super::types::{ Type, TypeKind };
-use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn };
+use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild  };
 
 pub struct Checker {
     def_manager: DefinesManager
@@ -32,7 +32,16 @@ impl Checker {
     }
 
     fn check_data(&self, data: SysDCData) -> SysDCData {
-        data
+        SysDCData::new(
+            data.name,
+            data.member
+                .into_iter()
+                .map(|(name, types)| match types.kind {
+                    TypeKind::Int32 => (name, types),
+                    _ => (name.clone(), self.def_manager.try_match_from_type(name.get_namespace(), types))
+                })
+                .collect()
+        )
     }
 
     fn check_module(&self, module: SysDCModule) -> SysDCModule {
@@ -46,11 +55,36 @@ impl Checker {
     }
 
     fn check_function(&self, func: SysDCFunction) -> SysDCFunction {
-        func
+        let checked_args = func.args
+            .into_iter()
+            .map(|(name, types)| (name.clone(), self.def_manager.try_match_from_type(name.get_namespace(), types)))
+            .collect::<Vec<(Name, Type)>>();
+
+        let mut checked_spawns = vec!();
+        for SysDCSpawn { result: (name, types), detail } in func.spawns {
+            let resolved_result = (name.clone(), self.def_manager.try_match_from_type(name.get_namespace(), types));
+            let mut resolved_detail = vec!();
+            for uses in detail {
+                match uses {
+                    SysDCSpawnChild::Use{ name, types: _ } => {
+                        // let resolved_type = self.def_manager.try_match_from_type(name.get_namespace(), &defined);
+                        let resolved_type = Type::new_unsovled_nohint();
+                        resolved_detail.push(SysDCSpawnChild::new_use(name, resolved_type));
+                    }
+                }
+            }
+            checked_spawns.push(SysDCSpawn::new(resolved_result, resolved_detail))
+        }
+
+        let (ret_name, ret_type) = func.returns.unwrap();
+        let resolved_ret_type = self.def_manager.try_match_from_type(ret_name.clone().get_namespace(), ret_type);
+        let resolved_ret = (ret_name, resolved_ret_type);
+
+        SysDCFunction::new(func.name, checked_args, resolved_ret, checked_spawns)
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum DefineKind {
     Data,
     DataMember,
@@ -62,11 +96,11 @@ enum DefineKind {
 #[derive(Debug)]
 struct Define {
     kind: DefineKind,
-    refs: Option<Name>
+    refs: Name
 }
 
 impl Define {
-    pub fn new(kind: DefineKind, refs: Option<Name>) -> Define {
+    pub fn new(kind: DefineKind, refs: Name) -> Define {
         Define { kind, refs }
     }
 }
@@ -78,6 +112,29 @@ struct DefinesManager {
 impl DefinesManager {
     pub fn new(system: &SysDCSystem) -> DefinesManager {
         DefinesManager { defines: DefinesManager::listup_defines(system) }
+    }
+
+    pub fn try_match_from_type(&self, namespace: String, child: Type) -> Type {
+        match child.kind {
+            TypeKind::Int32 => child,
+            TypeKind::Unsolved(hint) => Type::new(TypeKind::Data, Some(self.find(namespace, hint))),
+            _ => panic!("[ERROR] Called unmatch try_match function (from_type)")
+        }
+    }
+
+    fn find(&self, namespace: String, name: String) -> Name {
+        if namespace.len() == 0 {
+            panic!("[ERROR] Cannot find the name \"{}\"", name);
+        }
+
+        for Define{ kind: _, refs } in &self.defines {
+            if refs.get_namespace() == namespace && refs.get_local_name() == name {
+                return refs.clone()
+            }
+        }
+        let splitted_namespace = namespace.split(".").collect::<Vec<&str>>();
+        let par_namespace = splitted_namespace[0..splitted_namespace.len()-1].join(".");
+        self.find(par_namespace, name)
     }
 
     fn listup_defines(system: &SysDCSystem) -> Vec<Define> {
@@ -93,7 +150,7 @@ impl DefinesManager {
             unit.data
                 .iter()
                 .flat_map(|data| {
-                    let mut d = vec!(Define::new(DefineKind::Data, Some(data.name.clone())));
+                    let mut d = vec!(Define::new(DefineKind::Data, data.name.clone()));
                     d.extend(DefinesManager::listup_defines_data(data));
                     d
                 })
@@ -103,7 +160,7 @@ impl DefinesManager {
             unit.modules
                 .iter()
                 .flat_map(|module| {
-                    let mut d = vec!(Define::new(DefineKind::Module, Some(module.name.clone())));
+                    let mut d = vec!(Define::new(DefineKind::Module, module.name.clone()));
                     d.extend(DefinesManager::listup_defines_module(module));
                     d
                 })
@@ -115,7 +172,7 @@ impl DefinesManager {
     fn listup_defines_data(data: &SysDCData) -> Vec<Define> {
         data.member
             .iter()
-            .map(|(name, _)| Define::new(DefineKind::DataMember, Some(name.clone())))
+            .map(|(name, _)| Define::new(DefineKind::DataMember, name.clone()))
             .collect::<Vec<Define>>()
     }
 
@@ -123,7 +180,7 @@ impl DefinesManager {
         module.functions
             .iter()
             .flat_map(|func| { 
-                let mut d = vec!(Define::new(DefineKind::Function, Some(func.name.clone())));
+                let mut d = vec!(Define::new(DefineKind::Function, func.name.clone()));
                 d.extend(DefinesManager::listup_defines_function(func));
                 d
             })
@@ -135,13 +192,13 @@ impl DefinesManager {
         defined.extend(
             func.args
                 .iter()
-                .map(|(name, _)| Define::new(DefineKind::Variable, Some(name.clone())))
+                .map(|(name, _)| Define::new(DefineKind::Variable, name.clone()))
                 .collect::<Vec<Define>>()
         );
         defined.extend(
             func.spawns
                 .iter()
-                .map(|SysDCSpawn { result: (name, _), detail: _}| Define::new(DefineKind::Variable, Some(name.clone())))
+                .map(|SysDCSpawn { result: (name, _), detail: _}| Define::new(DefineKind::Variable, name.clone()))
                 .collect::<Vec<Define>>()
         );
         defined
