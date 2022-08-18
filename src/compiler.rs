@@ -24,7 +24,7 @@ impl Compiler {
         let name = Name::from(&Name::new_root(), unit_name);
         let tokenizer = Tokenizer::new(program);
         let mut parser = Parser::new(tokenizer);
-        let unit = parser.parse(&name);
+        let unit = parser.parse(name);
         self.units.push(unit);
     }
 

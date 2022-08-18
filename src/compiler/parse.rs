@@ -41,11 +41,11 @@ impl<'a> Parser<'a> {
      * <root> ::= { <sentence> }
      * <sentence> ::= { <data> | <module> }
      */
-    pub fn parse(&mut self, namespace: &Name) -> SysDCUnit {
+    pub fn parse(&mut self, namespace: Name) -> SysDCUnit {
         let mut data = vec!();
         let mut modules = vec!();
         while self.tokenizer.has_token() {
-            match (self.parse_data(namespace), self.parse_module(namespace)) {
+            match (self.parse_data(&namespace), self.parse_module(&namespace)) {
                 (None, None) => panic!("[ERROR] Data/Module not found, but tokens remain"),
                 (d, m) => {
                     if d.is_some() { data.push(d.unwrap()); }
@@ -53,7 +53,7 @@ impl<'a> Parser<'a> {
                 }
             }
         }
-        SysDCUnit::new(namespace.clone(), data, modules)
+        SysDCUnit::new(namespace, data, modules)
     }
 
     /**
@@ -577,6 +577,6 @@ mod test {
         let program = program.to_string();
         let tokenizer = Tokenizer::new(&program);
         let mut parser = Parser::new(tokenizer);
-        parser.parse(&generate_name_for_test())
+        parser.parse(generate_name_for_test())
     }
 }
