@@ -1,5 +1,6 @@
 mod parse;
 mod token;
+mod check;
 pub mod name;
 pub mod types;
 pub mod structure;
@@ -7,7 +8,7 @@ pub mod structure;
 use name::Name;
 use parse::Parser;
 use token::Tokenizer;
-use types::Resolver;
+use check::Checker;
 use structure::{ SysDCSystem, SysDCUnit };
 
 pub struct Compiler {
@@ -23,12 +24,12 @@ impl Compiler {
         let name = Name::from(&Name::new_root(), unit_name);
         let tokenizer = Tokenizer::new(program);
         let mut parser = Parser::new(tokenizer);
-        let unit = parser.parse(&name);
+        let unit = parser.parse(name);
         self.units.push(unit);
     }
 
     pub fn generate_system(self) -> SysDCSystem {
-        Resolver::resolve(SysDCSystem::new(self.units))
+        Checker::check(SysDCSystem::new(self.units))
     }
 }
 

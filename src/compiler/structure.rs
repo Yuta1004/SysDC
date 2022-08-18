@@ -146,28 +146,28 @@ mod test {
         let name_spawn_use_dy = Name::from(&name_func, "dy".to_string());
         let name_spawn_ret = Name::from(&name_func, "movedBox".to_string());
 
-        let spawn_use_box_x = SysDCSpawnChild::new_use(name_spawn_use_box_x, Type::Int32);
-        let spawn_use_box_y = SysDCSpawnChild::new_use(name_spawn_use_box_y, Type::Int32);
-        let spawn_use_dx = SysDCSpawnChild::new_use(name_spawn_use_dx, Type::Int32);
-        let spawn_use_dy = SysDCSpawnChild::new_use(name_spawn_use_dy, Type::Int32);
+        let spawn_use_box_x = SysDCSpawnChild::new_use(name_spawn_use_box_x, Type::from("i32".to_string()));
+        let spawn_use_box_y = SysDCSpawnChild::new_use(name_spawn_use_box_y, Type::from("i32".to_string()));
+        let spawn_use_dx = SysDCSpawnChild::new_use(name_spawn_use_dx, Type::from("i32".to_string()));
+        let spawn_use_dy = SysDCSpawnChild::new_use(name_spawn_use_dy, Type::from("i32".to_string()));
         let spawn = SysDCSpawn::new(
-            (name_spawn_ret, Type::from(&name_func, "Box".to_string())),
+            (name_spawn_ret, Type::from("Box".to_string())),
             vec!(spawn_use_box_x, spawn_use_box_y, spawn_use_dx, spawn_use_dy)
         );
 
         let func_args = vec!(
-            (name_func_arg_box, Type::Int32),
-            (name_func_arg_dx, Type::Int32),
-            (name_func_arg_dy, Type::Int32)
+            (name_func_arg_box, Type::from("i32".to_string())),
+            (name_func_arg_dx, Type::from("i32".to_string())),
+            (name_func_arg_dy, Type::from("i32".to_string()))
         );
-        let func_returns = (name_func_ret, Type::from(&name_func, "Box".to_string()));
+        let func_returns = (name_func_ret, Type::from("Box".to_string()));
         let func = SysDCFunction::new(name_func, func_args, func_returns, vec!(spawn));
 
         let module = SysDCModule::new(name_module, vec!(func));
 
         let data_members = vec!(
-            (name_data_x, Type::Int32),
-            (name_data_y, Type::Int32)
+            (name_data_x, Type::from("i32".to_string())),
+            (name_data_y, Type::from("i32".to_string()))
         );
         let data = SysDCData::new(name_data, data_members);
 

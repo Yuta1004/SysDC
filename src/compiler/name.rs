@@ -4,8 +4,8 @@ use serde::{ Serialize, Deserialize };
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Name {
-    name: String,
-    namespace: String
+    pub name: String,
+    pub namespace: String
 }
 
 impl Name {
@@ -27,12 +27,15 @@ impl Name {
         }
     }
 
-    pub fn get_local_name(&self) -> String {
-        self.name.clone()
-    }
-
     pub fn get_global_name(&self) -> String {
         self.namespace.clone() + "." + &self.name
+    }
+
+    pub fn get_par_name(&self) -> Name {
+        let splitted_namespace = self.namespace.split(".").collect::<Vec<&str>>();
+        let par_name = splitted_namespace[splitted_namespace.len()-1];
+        let par_namespace = splitted_namespace[0..splitted_namespace.len()-1].join(".");
+        Name { name: par_name.to_string(), namespace: par_namespace }
     }
 }
 
@@ -50,11 +53,9 @@ mod test {
     fn create_name() {
         let root = Name::new_root();
         let name = Name::from(&root, "aaa".to_string());
-        assert_eq!(name.get_local_name(), "aaa".to_string());
         assert_eq!(name.get_global_name(), ".0.aaa".to_string());
 
         let name = Name::new_root();
-        assert_eq!(name.get_local_name(), "0".to_string());
         assert_eq!(name.get_global_name(), ".0".to_string());
     }
 }
