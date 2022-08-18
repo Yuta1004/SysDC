@@ -8,11 +8,11 @@ use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFun
 
 #[derive(Clone, PartialEq)]
 pub enum Type {
-    /* Default */
+    /* Data */
     Int32,
+    UserDefined(Name),
 
-    /* User defined */
-    Solved(Name),
+    /* for TypeResolver */
     Unsolved(Name),
     UnsolvedNoHint
 }
@@ -28,7 +28,7 @@ impl Type {
     pub fn get_name(&self) -> Name {
         match self {
             Type::Int32 => Name::new_on_global_namespace("i32".to_string()),
-            Type::Solved(name) => name.clone(),
+            Type::UserDefined(name) => name.clone(),
             Type::Unsolved(name) => name.clone(),
             Type::UnsolvedNoHint => Name::new_on_global_namespace("NoHintType".to_string())
         }
@@ -58,7 +58,7 @@ impl<'de> Deserialize<'de> for Type {
             "i32" => Type::Int32,
             _ => {
                 let namespace = Name::from(&Name::new_root(), name.get_global_name().replace(".0.", ""));
-                Type::Solved(Name::from(&namespace, name.get_local_name()))
+                Type::UserDefined(Name::from(&namespace, name.get_local_name()))
             }
         })
     }
@@ -170,7 +170,7 @@ impl Resolver {
             Type::UnsolvedNoHint => panic!("[ERROR] Found unsolved type which hasn't hint"),
             Type::Unsolved(hint) => {
                 match defined.iter().find(|x| x.get_local_name() == hint.get_local_name()) {
-                    Some(name) => Type::Solved(name.clone()),
+                    Some(name) => Type::UserDefined(name.clone()),
                     None => panic!("[ERROR] Type \"{}\" is not defined", hint.get_global_name())
                 }
             },
