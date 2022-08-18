@@ -1,5 +1,6 @@
 mod parse;
 mod token;
+mod check;
 pub mod name;
 pub mod types;
 pub mod structure;
@@ -7,6 +8,7 @@ pub mod structure;
 use name::Name;
 use parse::Parser;
 use token::Tokenizer;
+use check::Checker;
 use types::TypeResolver;
 use structure::{ SysDCSystem, SysDCUnit };
 
@@ -28,7 +30,7 @@ impl Compiler {
     }
 
     pub fn generate_system(self) -> SysDCSystem {
-        TypeResolver::resolve(SysDCSystem::new(self.units))
+        Checker::check(SysDCSystem::new(self.units))
     }
 }
 
