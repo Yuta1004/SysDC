@@ -67,8 +67,7 @@ impl Checker {
             for uses in detail {
                 match uses {
                     SysDCSpawnChild::Use{ name, types: _ } => {
-                        // let resolved_type = self.def_manager.try_match_from_type(name.get_namespace(), &defined);
-                        let resolved_type = Type::new_unsovled_nohint();
+                        let resolved_type = self.def_manager.try_match_from_name(&name.get_namespace(), &name.get_local_name());
                         resolved_detail.push(SysDCSpawnChild::new_use(name, resolved_type));
                     }
                 }
@@ -90,7 +89,7 @@ enum DefineKind {
     DataMember,
     Module,
     Function,
-    Variable
+    Variable(Type)
 }
 
 #[derive(Debug)]
@@ -118,13 +117,21 @@ impl DefinesManager {
         match &child.kind {
             TypeKind::Int32 => child,
             TypeKind::Unsolved(hint) => {
-                let found_def = self.find(&namespace, hint);
+                let found_def = self.find(namespace, hint);
                 match found_def.kind {
                     DefineKind::Data => Type::new(TypeKind::Data, Some(found_def.refs)),
                     _ => panic!("[ERROR] \"{:?}\" is defined but type is unmatched", child)
                 }
             },
             _ => panic!("[ERROR] Called unmatch try_match function (from_type)")
+        }
+    }
+
+    pub fn try_match_from_name(&self, namespace: &String, name: &String) -> Type {
+        let found_def = self.find(namespace, name);
+        match found_def.kind {
+            DefineKind::Variable(types) => self.try_match_from_type(namespace, types),
+            _ => panic!("[ERROR] Variable \"{}\" is not defined", name)
         }
     }
 
@@ -198,13 +205,13 @@ impl DefinesManager {
         defined.extend(
             func.args
                 .iter()
-                .map(|(name, _)| Define::new(DefineKind::Variable, name.clone()))
+                .map(|(name, types)| Define::new(DefineKind::Variable(types.clone()), name.clone()))
                 .collect::<Vec<Define>>()
         );
         defined.extend(
             func.spawns
                 .iter()
-                .map(|SysDCSpawn { result: (name, _), detail: _}| Define::new(DefineKind::Variable, name.clone()))
+                .map(|SysDCSpawn { result: (name, types), detail: _}| Define::new(DefineKind::Variable(types.clone()), name.clone()))
                 .collect::<Vec<Define>>()
         );
         defined
