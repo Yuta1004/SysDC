@@ -7,6 +7,7 @@ pub mod structure;
 use name::Name;
 use parse::Parser;
 use token::Tokenizer;
+use types::Resolver;
 use structure::{ SysDCSystem, SysDCUnit };
 
 pub struct Compiler {
@@ -27,7 +28,7 @@ impl Compiler {
     }
 
     pub fn generate_system(self) -> SysDCSystem {
-        SysDCSystem::new(self.units)
+        Resolver::resolve(SysDCSystem::new(self.units))
     }
 }
 
