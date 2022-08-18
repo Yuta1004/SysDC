@@ -1,8 +1,11 @@
 use std::io;
 use std::io::Write;
+use std::fs::File;
 use std::fmt;
 use std::fmt::{ Display, Formatter };
 use std::error::Error;
+
+use serde_json;
 
 use crate::compiler::Compiler;
 use crate::compiler::structure::SysDCSystem;
@@ -72,6 +75,10 @@ impl InteractiveCmd {
                 self.run_mode_out(subcmd, args)?;
                 Ok(false)
             },
+            "save" => {
+                self.save_system(subcmd)?;
+                Ok(false)
+            }
             _ => {
                 Err(Box::new(
                     CommandError::NotFoundError(format!("Command \"{}\"", cmd))
@@ -117,13 +124,27 @@ impl InteractiveCmd {
         }
     }
 
+    fn save_system(&self, filepath: String) -> Result<(), Box<dyn Error>> {
+        let serialized_system = match &self.system {
+            Some(s) => serde_json::to_string(s).unwrap(),
+            None => return Err(Box::new(
+                CommandError::RuntimeError("Must run \"in\" command before run \"save\" command".to_string())
+            ))
+        };
+        
+        let mut f = File::create(&(filepath+".sysdc"))?;
+        write!(f, "{}", serialized_system)?;
+        f.flush()?;
+        Ok(())
+    }
+
     fn parse_input(text: String) -> Result<(String, String, Vec<String>), Box<dyn Error>> {
         let splitted_text = text.split(" ").map(|s| s.to_string()).collect::<Vec<String>>();
         match splitted_text.len() {
             1 => {
                 if splitted_text[0].len() == 0 {
                     return Err(Box::new(
-                        CommandError::SyntaxError("Usage: in/out <name> <args>".to_string())
+                        CommandError::SyntaxError("Usage: in/out/save <name> <args>".to_string())
                     ));
                 }
                 Ok((splitted_text[0].clone(), "".to_string(), vec!()))
