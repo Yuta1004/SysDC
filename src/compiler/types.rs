@@ -36,62 +36,75 @@ pub struct Resolver;
 
 impl Resolver {
     pub fn resolve(system: SysDCSystem) -> SysDCSystem {
-        let mut resolved_units = vec!();
-        for unit in system.units {
-            resolved_units.push(Resolver::resolve_unit(unit, vec!(), vec!()));
-        }
-        SysDCSystem::new(resolved_units)
+        SysDCSystem::new(
+            system.units
+                .into_iter()
+                .map(|u| Resolver::resolve_unit(u, vec!(), vec!()))
+                .collect()
+        )
     }
 
     fn resolve_unit(unit: SysDCUnit, mut defined_t: Vec<Name>, defined_f: Vec<Name>) -> SysDCUnit {
-        let new_defined_t = unit.data.iter().map(|x| x.name.clone()).collect::<Vec<Name>>();
-        println!("Defined new found types => {:?}", new_defined_t);
-        defined_t.extend(new_defined_t);
+        defined_t.extend(
+            unit.data
+                .iter()
+                .map(|x| x.name.clone())
+                .collect::<Vec<Name>>()
+        );
 
-        let mut resolved_data = vec!();
-        for data in unit.data {
-            resolved_data.push(Resolver::resolve_data(data, defined_t.clone()))
-        }
-
-        let mut resolved_modules = vec!();
-        for module in unit.modules {
-            resolved_modules.push(Resolver::resolve_module(module, defined_t.clone(), defined_f.clone()))
-        }
-
-        SysDCUnit::new(unit.name, resolved_data, resolved_modules)
+        SysDCUnit::new(
+            unit.name,
+            unit.data
+                .into_iter()
+                .map(|d| Resolver::resolve_data(d, defined_t.clone()))
+                .collect(),
+            unit.modules
+                .into_iter()
+                .map(|m| Resolver::resolve_module(m, defined_t.clone(), defined_f.clone()))
+                .collect()
+        )
     }
 
     fn resolve_data(data: SysDCData, defined_t: Vec<Name>) -> SysDCData {
         SysDCData::new(
             data.name,
-            data.member.into_iter()
-                       .map(|(n, t)| (n, Resolver::resolve_type(t, &defined_t)))
-                       .collect()
+            data.member
+                .into_iter()
+                .map(|(n, t)| (n, Resolver::resolve_type(t, &defined_t)))
+                .collect()
         )
     }
 
     fn resolve_module(module: SysDCModule, defined_t: Vec<Name>, mut defined_f: Vec<Name>) -> SysDCModule {
-        let new_defined_f = module.functions.iter().map(|x| x.name.clone()).collect::<Vec<Name>>();
-        println!("Defined new found functions => {:?}", new_defined_f);
-        defined_f.extend(new_defined_f);
+        defined_f.extend(
+            module.functions
+                .iter()
+                .map(|x| x.name.clone())
+                .collect::<Vec<Name>>()
+        );
 
-        let mut resolved_functions = vec!();
-        for func in module.functions {
-            resolved_functions.push(Resolver::resolve_function(func, defined_t.clone(), defined_f.clone()))
-        }
-        SysDCModule::new(module.name, resolved_functions)
+        SysDCModule::new(
+            module.name,
+            module.functions
+                .into_iter()
+                .map(|f| Resolver::resolve_function(f, defined_t.clone(), defined_f.clone()))
+                .collect()
+        )
     }
 
-    fn resolve_function(func: SysDCFunction, defined_t: Vec<Name>, defined_f: Vec<Name>) -> SysDCFunction {
-        let mut resolved_args = vec!();
-        for (name, types) in func.args {
-            resolved_args.push((name, Resolver::resolve_type(types, &defined_t)));
-        }
+    fn resolve_function(func: SysDCFunction, defined_t: Vec<Name>, _: Vec<Name>) -> SysDCFunction {
+        let resolved_args = func.args
+            .into_iter()
+            .map(|(n, t)| (n, Resolver::resolve_type(t.clone(), &defined_t)))
+            .collect::<Vec<(Name, Type)>>();
 
         let mut defined_vars = resolved_args.clone();
-        for SysDCSpawn { result: (name, types), detail: _ } in &func.spawns {
-            defined_vars.push((name.clone(), Resolver::resolve_type(types.clone(), &defined_t)));
-        }
+        defined_vars.extend(
+            func.spawns
+                .iter()
+                .map(|SysDCSpawn { result: (n, t), detail: _}| (n.clone(), Resolver::resolve_type(t.clone(), &defined_t)))
+                .collect::<Vec<(Name, Type)>>()
+        );
 
         let mut resolved_spanws = vec!();
         for SysDCSpawn { result: (name, types), detail } in func.spawns {
