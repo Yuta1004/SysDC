@@ -98,14 +98,14 @@ impl<'de> Deserialize<'de> for TypeKind {
     }
 }
 
-pub struct Resolver;
+pub struct TypeResolver;
 
-impl Resolver {
+impl TypeResolver {
     pub fn resolve(system: SysDCSystem) -> SysDCSystem {
         SysDCSystem::new(
             system.units
                 .into_iter()
-                .map(|u| Resolver::resolve_unit(u, vec!()))
+                .map(|u| TypeResolver::resolve_unit(u, vec!()))
                 .collect()
         )
     }
@@ -135,11 +135,11 @@ impl Resolver {
             unit.name,
             unit.data
                 .into_iter()
-                .map(|d| Resolver::resolve_data(d, defined.clone()))
+                .map(|d| TypeResolver::resolve_data(d, defined.clone()))
                 .collect(),
             unit.modules
                 .into_iter()
-                .map(|m| Resolver::resolve_module(m, defined.clone()))
+                .map(|m| TypeResolver::resolve_module(m, defined.clone()))
                 .collect()
         )
     }
@@ -149,7 +149,7 @@ impl Resolver {
             data.name,
             data.member
                 .into_iter()
-                .map(|(n, t)| (n, Resolver::resolve_type(&t, &defined)))
+                .map(|(n, t)| (n, TypeResolver::resolve_type(&t, &defined)))
                 .collect()
         )
     }
@@ -166,7 +166,7 @@ impl Resolver {
             module.name,
             module.functions
                 .into_iter()
-                .map(|f| Resolver::resolve_function(f, defined.clone()))
+                .map(|f| TypeResolver::resolve_function(f, defined.clone()))
                 .collect()
         )
     }
@@ -174,7 +174,7 @@ impl Resolver {
     fn resolve_function(func: SysDCFunction, mut defined: Vec<Type>) -> SysDCFunction {
         let resolved_args = func.args
             .iter()
-            .map(|(n, t)| (n.clone(), Resolver::resolve_type(t, &defined)))
+            .map(|(n, t)| (n.clone(), TypeResolver::resolve_type(t, &defined)))
             .collect::<Vec<(Name, Type)>>();
 
         defined.extend(
@@ -192,12 +192,12 @@ impl Resolver {
 
         let mut resolved_spanws = vec!();
         for SysDCSpawn { result: (name, types), detail } in func.spawns {
-            let resolved_result = (name.clone(), Resolver::resolve_type(&types, &defined));
+            let resolved_result = (name.clone(), TypeResolver::resolve_type(&types, &defined));
             let mut resolved_detail = vec!();
             for uses in detail {
                 match uses {
                     SysDCSpawnChild::Use{ name, types: _ } => {
-                        let resolved_type = Resolver::resolve_var(&name, &defined);
+                        let resolved_type = TypeResolver::resolve_var(&name, &defined);
                         resolved_detail.push(SysDCSpawnChild::new_use(name, resolved_type));
                     }
                 }
@@ -206,7 +206,7 @@ impl Resolver {
         }
 
         let (ret_name, ret_type) = func.returns.unwrap();
-        let resolved_ret_type = Resolver::resolve_type(&ret_type, &defined);
+        let resolved_ret_type = TypeResolver::resolve_type(&ret_type, &defined);
 
         SysDCFunction::new(func.name, resolved_args, (ret_name, resolved_ret_type), resolved_spanws)
     }
