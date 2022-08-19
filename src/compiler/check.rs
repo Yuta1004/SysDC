@@ -249,7 +249,7 @@ mod test {
     }
 
     #[test]
-    fn recursive_type_has_data() {
+    fn recursive_type_mix_data() {
         let program = "
             data A {
                 a: A
