@@ -209,10 +209,25 @@ impl DefinesManager {
         defined.extend(
             func.spawns
                 .iter()
-                .map(|SysDCSpawn { result: (name, types), detail: _}| Define::new(DefineKind::Variable(types.clone()), name.clone()))
+                .flat_map(|spawn@SysDCSpawn { result: (name, types), detail: _}| {
+                    let mut d = vec!(Define::new(DefineKind::Variable(types.clone()), name.clone()));
+                    d.extend(DefinesManager::listup_defines_function_spawn_details(spawn));
+                    d
+                })
                 .collect::<Vec<Define>>()
         );
         defined
+    }
+
+    fn listup_defines_function_spawn_details(spawn: &SysDCSpawn) -> Vec<Define> {
+        let SysDCSpawn { detail: details, .. } = spawn;
+        details
+            .iter()
+            .flat_map(|detail| match detail {
+                SysDCSpawnChild::LetTo { name, func, ..} => vec!(Define::new(DefineKind::Variable(func.clone()), name.clone())),
+                _ => vec!()
+            })
+            .collect()
     }
 }
 
