@@ -299,8 +299,10 @@ mod test {
                 test(a: A) -> A {
                     @return b
 
-                    +use a
-                    @spawn b: A 
+                    @spawn b: A {
+                        use a;
+                        return a;
+                    }
                 }
             }
         ";
@@ -320,8 +322,10 @@ mod test {
                 test(a: A) -> A {
                     @return b
 
-                    +use aaa
-                    @spawn b: A
+                    @spawn b: A {
+                        use aaa;
+                        return aaa;
+                    }
                 }
             }
         ";

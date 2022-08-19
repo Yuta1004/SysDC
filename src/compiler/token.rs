@@ -3,8 +3,11 @@ pub enum TokenKind {
     /* Reserved */
     Data,               // data
     Module,             // module
+    Return,             // return
+    Spawn,              // spawn
     Let,                // let
-    From,               // from
+    Use,                // use
+
 
     /* Symbol */
     Allow,              // ->
@@ -35,8 +38,10 @@ impl Token {
         let kind = match orig.as_str() {
             "data"      => TokenKind::Data,
             "module"    => TokenKind::Module,
+            "return"    => TokenKind::Return,
             "let"       => TokenKind::Let,
-            "from"    => TokenKind::From,
+            "spawn"     => TokenKind::Spawn,
+            "use"       => TokenKind::Use,
             "->"        => TokenKind::Allow,
             ":"         => TokenKind::Mapping,
             "="         => TokenKind::Equal,
@@ -211,8 +216,10 @@ mod test {
             let str_kind_mapping = [
                 ("data",    TokenKind::Data),
                 ("module",  TokenKind::Module),
+                ("return",  TokenKind::Return),
                 ("let",     TokenKind::Let),
-                ("from",    TokenKind::From),
+                ("spawn",   TokenKind::Spawn),
+                ("use",     TokenKind::Use), 
                 ("->",      TokenKind::Allow),
                 (":",       TokenKind::Mapping),
                 ("=",       TokenKind::Equal),
@@ -266,8 +273,9 @@ mod test {
                     move(box: Box, dx: i32, dy: i32) -> Box {
                         @return movedBox
 
-                        +use box.x, box.y, dx, dy
-                        @spawn movedBox: Box
+                        @spawn movedBox: Box {
+                            use box.x, box.y;
+                        }
                     }
                 }".to_string();
             let correct_token_kinds = [
@@ -303,26 +311,24 @@ mod test {
                 TokenKind::Identifier,
                 TokenKind::BracketBegin,
                 TokenKind::AtMark,
-                TokenKind::Identifier,
-                TokenKind::Identifier,
-                TokenKind::Plus,
-                TokenKind::Identifier,
-                TokenKind::Identifier,
-                TokenKind::Accessor,
-                TokenKind::Identifier,
-                TokenKind::Separater,
-                TokenKind::Identifier,
-                TokenKind::Accessor,
-                TokenKind::Identifier,
-                TokenKind::Separater,
-                TokenKind::Identifier,
-                TokenKind::Separater,
+                TokenKind::Return,
                 TokenKind::Identifier,
                 TokenKind::AtMark,
-                TokenKind::Identifier,
+                TokenKind::Spawn,
                 TokenKind::Identifier,
                 TokenKind::Mapping,
                 TokenKind::Identifier,
+                TokenKind::BracketBegin,
+                TokenKind::Use,
+                TokenKind::Identifier,
+                TokenKind::Accessor,
+                TokenKind::Identifier,
+                TokenKind::Separater,
+                TokenKind::Identifier,
+                TokenKind::Accessor,
+                TokenKind::Identifier,
+                TokenKind::Semicolon,
+                TokenKind::BracketEnd,
                 TokenKind::BracketEnd,
                 TokenKind::BracketEnd
             ];

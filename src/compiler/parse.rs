@@ -141,113 +141,122 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * <annotation> = <attribute_list, delimiter=''> @ <id> <body: annotationによって変化>
+     * <annotation> = @ ( <annotation_spawn> | <annotation_return> )
      */
     fn parse_annotation(&mut self, namespace: &Name) -> Option<SysDCAnnotation> {
-        // <attribute_list, delimiter=''>
-        let attributes = parse_list!(self.parse_attribute(namespace));
-
         // @
-        if self.tokenizer.expect(TokenKind::AtMark).is_none() {
-            if attributes.len() > 0 {
-                panic!("[ERROR] Attributes found, but annotation not found");
-            }
-            return None;
+        self.tokenizer.expect(TokenKind::AtMark)?;
+
+        // ( <annotation_return> | <annotation_spawn> )
+        if let Some(annotation) = self.parse_annotation_return(namespace) {
+            return Some(annotation);
         }
-
-        // <id> <body: annotationによって変化>
-        let annotation = self.tokenizer.request(TokenKind::Identifier).get_id();
-        match annotation.as_str() {
-            "spawn" => {
-                let spawn_result = self.parse_id_type_mapping(namespace);
-                if spawn_result.is_none() {
-                    panic!("[ERROR] Missing to specify the result of spawn");
-                }
-
-                let mut details = vec!();
-                for (attr, var_list) in attributes {
-                    for (name, types) in var_list {
-                        match attr.as_str() {
-                            "use" => details.push(SysDCSpawnChild::new_use(name, types)),
-                            attr => panic!("[ERROR] Attribute \"{}\" is invalid on \"spawn\" attribute", attr)
-                        }
-                    }
-                }
-
-                if self.tokenizer.expect(TokenKind::BracketBegin).is_some() {
-                    let mut namespace = namespace.clone();
-                    loop {
-                        match self.parse_spawn_detail(&namespace) {
-                            Some(let_to@SysDCSpawnChild::LetTo{..}) => { details.push(let_to); break }
-                            Some(detail) => details.push(detail),
-                            None => panic!("")
-                        }
-                        namespace = Name::from(&namespace, "_".to_string());
-                    }
-                    self.tokenizer.request(TokenKind::BracketEnd);
-                }
-
-                Some(SysDCAnnotation::new_spawn(spawn_result.unwrap(), details))
-            },
-            "return" => {
-                let returns = self.tokenizer.request(TokenKind::Identifier).get_id();
-                Some(SysDCAnnotation::new_return(Name::from(namespace, returns)))
-            }
-            annotation => panic!("[ERROR] Annotation \"{}\" is invalid", annotation)
+        if let Some(annotation) = self.parse_annotation_spawn(namespace) {
+            return Some(annotation);
         }
+        None
     }
 
     /**
-     * <attribute> = \+ <id> <var_list, delimiter=','>
+     * <annotation_return> ::= return <id>
      */
-    fn parse_attribute(&mut self, namespace: &Name) -> Option<(String, Vec<(Name, Type)>)> {
-        // \+
-        self.tokenizer.expect(TokenKind::Plus)?;
+    fn parse_annotation_return(&mut self, namespace: &Name) -> Option<SysDCAnnotation> {
+        self.tokenizer.expect(TokenKind::Return)?;
+        let returns = self.tokenizer.request(TokenKind::Identifier).get_id();
+        Some(SysDCAnnotation::new_return(Name::from(namespace, returns)))   
+    }
 
-        // <id>
-        let attribute = self.tokenizer.request(TokenKind::Identifier).get_id();
-        match attribute.as_str() {
-            "use" => {},
-            attribute => panic!("[ERROR] Attribute \"{}\" is invalid", attribute)
+    /**
+     * <annotation_spawn> ::= spawn <id_type_mapping> ( \{ { <annotation_spawn_detail> } \} )
+     */
+    fn parse_annotation_spawn(&mut self, namespace: &Name) -> Option<SysDCAnnotation> {
+        // spawn
+        self.tokenizer.expect(TokenKind::Spawn)?;
+
+        // <id_type_mapping>
+        let spawn_result = self.parse_id_type_mapping(namespace);
+        if spawn_result.is_none() {
+            panic!("[ERROR] Missing to specify the result of spawn");
         }
 
-        // <var_list, delimiter=','>
-        let var_list = parse_list!(self.parse_id_chain(namespace), TokenKind::Separater);
+        // ( \{ { <annotation_spawn_detail > } \} )
+        let mut details = vec!();
+        if self.tokenizer.expect(TokenKind::BracketBegin).is_some() {
+            let mut namespace = namespace.clone();
+            loop {
+                match self.parse_annotation_spawn_detail(&namespace) {
+                    Some(new_details) => {
+                        let for_cmp = new_details[0].clone();
+                        details.extend(new_details);
+                        if let SysDCSpawnChild::Return{..} = for_cmp {
+                            break;
+                        }
+                    }
+                    None => panic!("[ERROR] Spawn hasn't return")
+                }
+                namespace = Name::from(&namespace, "_".to_string());
+            }
+            self.tokenizer.request(TokenKind::BracketEnd);
+        }
 
-        Some((attribute, var_list))
+        Some(SysDCAnnotation::new_spawn(spawn_result.unwrap(), details))
     }
 
     /** 
-     * <spawn_detail> ::= ( let <id> = | from ) <id_chain> \( <id_chain_list, delimiter=','> \) ;
+     * <annotation_spawn_detail> ::= (
+     *      let <id> = <id_chain> \( <id_chain_list, delimiter=','> \) ; |
+     *      use <id_chain> ; |
+     *      return <id> ;
+     * )
      */
-    fn parse_spawn_detail(&mut self, namespace: &Name) -> Option<SysDCSpawnChild> {
-        // ( let <id> = | from )
-        let mut let_to = None;
+    fn parse_annotation_spawn_detail(&mut self, namespace: &Name) -> Option<Vec<SysDCSpawnChild>> {
+        // let
         if self.tokenizer.expect(TokenKind::Let).is_some() {
-            let_to = Some(Name::from(namespace, self.tokenizer.request(TokenKind::Identifier).get_id()));
+            // <id>
+            let let_to = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier).get_id());
+
+            // =
             self.tokenizer.request(TokenKind::Equal);
-        } else {
-            self.tokenizer.expect(TokenKind::From)?;
+
+            // <id_chain> 
+            let func = match self.parse_id_chain(namespace) {
+                Some((func, _)) => func.name,
+                None => panic!("[ERROR] Function Name is requested, but not found")
+            };
+        
+            // \( <id_chain_list, delimiter=',') \)
+            self.tokenizer.request(TokenKind::ParenthesisBegin);
+            let args = parse_list!(self.parse_id_chain(namespace), TokenKind::Separater);
+            self.tokenizer.request(TokenKind::ParenthesisEnd);
+
+            // ;
+            self.tokenizer.request(TokenKind::Semicolon);
+
+            return Some(vec!(SysDCSpawnChild::new_let_to(let_to, Type::from(func), args)));
         }
 
-        // <id_chain> 
-        let func = match self.parse_id_chain(namespace) {
-            Some((func, _)) => func.name,
-            None => panic!("[ERROR] Function Name is requested, but not found")
-        };
-       
-        // \( <id_chain_list, delimiter=',') \)
-        self.tokenizer.request(TokenKind::ParenthesisBegin);
-        let args = parse_list!(self.parse_id_chain(namespace), TokenKind::Separater);
-        self.tokenizer.request(TokenKind::ParenthesisEnd);
-
-        // ; \}
-        self.tokenizer.request(TokenKind::Semicolon);
-
-        match let_to {
-            Some(let_to) => Some(SysDCSpawnChild::new_let_to(let_to, Type::from(func), args)),
-            None => Some(SysDCSpawnChild::new_from(Type::from(func), args))
+        // use
+        if self.tokenizer.expect(TokenKind::Use).is_some() {
+            let var_list = parse_list!(self.parse_id_chain(namespace), TokenKind::Separater)
+                .into_iter()
+                .map(|(name, _)| SysDCSpawnChild::new_use(name, Type::new_unsovled_nohint()))
+                .collect();
+            self.tokenizer.request(TokenKind::Semicolon);
+            return Some(var_list);
         }
+
+        // return
+        if self.tokenizer.expect(TokenKind::Return).is_some() {
+            match self.parse_id_chain(namespace) {
+                Some((name, _)) => {
+                    self.tokenizer.request(TokenKind::Semicolon);
+                    return Some(vec!(SysDCSpawnChild::new_return(name, Type::new_unsovled_nohint())));
+                },
+                None => panic!("[ERROR] \"return\" needs variable name")
+            }
+        }
+
+        None
     }
 
     /**
@@ -419,7 +428,6 @@ mod test {
 
         let func_returns = (name_func_ret, Type::from("Box".to_string()));
         let func = SysDCFunction::new(name_func, vec!(), func_returns, vec!());
-
         let module = SysDCModule::new(name_module, vec!(func));
 
         let unit = SysDCUnit::new(name, vec!(), vec!(module));
@@ -450,7 +458,6 @@ mod test {
         );
         let func_returns = (name_func_ret, Type::from("Box".to_string()));
         let func = SysDCFunction::new(name_func, vec!(), func_returns, func_spawns);
-
         let module = SysDCModule::new(name_module, vec!(func));
 
         let unit = SysDCUnit::new(name, vec!(), vec!(module));
@@ -465,9 +472,14 @@ mod test {
                 move(box: Box, dx: i32, dy: i32) -> Box {
                     @return movedBox
 
-                    +use box.x, box.y
-                    +use dx, dy
-                    @spawn movedBox: Box
+                    @spawn movedBox: Box {
+                        use box.x, box.y;
+                        use dx, dy;
+
+                        let movedBox = UnknownModule.func(dx);
+
+                        return movedBox;
+                    }
                 }
             }
         ";
@@ -481,8 +493,11 @@ mod test {
         let name_func_spawn_box = Name::from(&name_func, "movedBox".to_string());
         let name_func_spawn_use_box_x = Name::from(&name_func, "box.x".to_string());
         let name_func_spawn_use_box_y = Name::from(&name_func, "box.y".to_string());
-        let name_func_spawn_use_dx = Name::from(&name_func, "dx".to_string());
-        let name_func_spawn_use_dy = Name::from(&name_func, "dy".to_string());
+        let name_func_spawn_use_dx = Name::from(&name_func, "_.dx".to_string());
+        let name_func_spawn_use_dy = Name::from(&name_func, "_.dy".to_string());
+        let name_func_spawn_let_name = Name::from(&name_func, "_._.movedBox".to_string());
+        let name_func_spawn_let_arg_dx = Name::from(&name_func, "_._.dx".to_string());
+        let name_func_spawn_ret = Name::from(&name_func, "_._._.movedBox".to_string());
         let name_func_ret = Name::from(&name_func, "movedBox".to_string());
 
         let func_args = vec!(
@@ -495,12 +510,13 @@ mod test {
                 SysDCSpawnChild::new_use(name_func_spawn_use_box_x, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_box_y, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
-                SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint())
+                SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
+                SysDCSpawnChild::new_let_to(name_func_spawn_let_name, Type::from("UnknownModule.func".to_string()), vec!((name_func_spawn_let_arg_dx, Type::new_unsovled_nohint()))),
+                SysDCSpawnChild::new_return(name_func_spawn_ret, Type::new_unsovled_nohint())
             ))
         );
         let func_returns = (name_func_ret, Type::from("Box".to_string()));
         let func = SysDCFunction::new(name_func, func_args, func_returns, func_spawns);
-
         let module = SysDCModule::new(name_module, vec!(func));
 
         let unit = SysDCUnit::new(name, vec!(), vec!(module));
@@ -559,8 +575,13 @@ mod test {
                 move(box: Box, dx: i32, dy: i32) -> Box {
                     @return movedBox
 
-                    +use box.x, box.y, dx, dy
-                    @spawn movedBox: Box
+                    @spawn movedBox: Box {
+                        use box.x, box.y, dx, dy;
+
+                        let movedBox = UnknownModule.func(dx);
+
+                        return movedBox;
+                    }
                 }
             }
         ";
@@ -579,6 +600,9 @@ mod test {
         let name_func_spawn_use_box_y = Name::from(&name_func, "box.y".to_string());
         let name_func_spawn_use_dx = Name::from(&name_func, "dx".to_string());
         let name_func_spawn_use_dy = Name::from(&name_func, "dy".to_string());
+        let name_func_spawn_let_name = Name::from(&name_func, "_.movedBox".to_string());
+        let name_func_spawn_let_arg_dx = Name::from(&name_func, "_.dx".to_string());
+        let name_func_spawn_ret = Name::from(&name_func, "_._.movedBox".to_string());
         let name_func_ret = Name::from(&name_func, "movedBox".to_string());
 
         let func_args = vec!(
@@ -591,12 +615,13 @@ mod test {
                 SysDCSpawnChild::new_use(name_func_spawn_use_box_x, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_box_y, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
-                SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint())
+                SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
+                SysDCSpawnChild::new_let_to(name_func_spawn_let_name, Type::from("UnknownModule.func".to_string()), vec!((name_func_spawn_let_arg_dx, Type::new_unsovled_nohint()))),
+                SysDCSpawnChild::new_return(name_func_spawn_ret, Type::new_unsovled_nohint())
             ))
         );
         let func_returns = (name_func_ret, Type::from("Box".to_string()));
         let func = SysDCFunction::new(name_func, func_args, func_returns, func_spawns);
-
         let module = SysDCModule::new(name_module, vec!(func));
 
         let data_members = vec!(

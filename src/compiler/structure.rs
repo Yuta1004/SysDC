@@ -93,11 +93,11 @@ impl SysDCSpawn {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SysDCSpawnChild {
     Use { name: Name, types: Type },
     LetTo { name: Name, func: Type, args: Vec<(Name, Type)> },
-    From { func: Type, args: Vec<(Name, Type)> }
+    Return { name: Name, types: Type }
 }
 
 impl SysDCSpawnChild {
@@ -109,8 +109,8 @@ impl SysDCSpawnChild {
         SysDCSpawnChild::LetTo { name, func, args }
     }
 
-    pub fn new_from(func: Type, args: Vec<(Name, Type)>) -> SysDCSpawnChild {
-        SysDCSpawnChild::From { func, args }
+    pub fn new_return(name: Name, types: Type) -> SysDCSpawnChild {
+        SysDCSpawnChild::Return { name, types }
     }
 }
 
@@ -133,8 +133,9 @@ mod test {
         //      move(box: Box, dx: i32, dy: i32) -> Box {
         //          @return movedBox
         // 
-        //          +use box.x, box.y, dx, dy
-        //          @spawn movedBox: Box
+        //          @spawn movedBox: Box {
+        //              use bod.x, box.y, dx, dy;
+        //          }
         //      }
         //  }
 
