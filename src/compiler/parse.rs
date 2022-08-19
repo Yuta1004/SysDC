@@ -57,7 +57,7 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * <data> ::= data <id> \{ <id_type_mapping_var_list, delimiter=,> \}
+     * <data> ::= data <id> \{ <id_type_mapping_list, delimiter=,> \}
      */
     fn parse_data(&mut self, namespace: &Name) -> Option<SysDCData> {
         // data
@@ -66,9 +66,9 @@ impl<'a> Parser<'a> {
         // <id>
         let name = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier).get_id());
 
-        // \{ <id_type_mapping_var_list, delimiter=,> \}
+        // \{ <id_type_mapping_list, delimiter=,> \}
         self.tokenizer.request(TokenKind::BracketBegin);
-        let member = parse_list!(self.parse_id_type_mapping_var(&name), TokenKind::Separater);
+        let member = parse_list!(self.parse_id_type_mapping(&name), TokenKind::Separater);
         self.tokenizer.request(TokenKind::BracketEnd);
 
         Some(SysDCData::new(name, member))
@@ -93,16 +93,16 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * <function> ::= <id> <id_type_mapping_var_list, delimiter=,> -> <id> \{ <function_body> \}
+     * <function> ::= <id> <id_type_mapping_list, delimiter=,> -> <id> \{ <function_body> \}
      */
     fn parse_function(&mut self, namespace: &Name) -> Option<SysDCFunction> {
         // <id>
         let name_token = self.tokenizer.expect(TokenKind::Identifier)?;
         let name = Name::from(namespace, name_token.get_id());
 
-        // <id_type_mapping_var_list, delimiter=,>
+        // <id_type_mapping_list, delimiter=,>
         self.tokenizer.request(TokenKind::ParenthesisBegin);
-        let args = parse_list!(self.parse_id_type_mapping_var(&name), TokenKind::Separater);
+        let args = parse_list!(self.parse_id_type_mapping(&name), TokenKind::Separater);
         self.tokenizer.request(TokenKind::ParenthesisEnd);
 
         // -> <id>
@@ -159,7 +159,7 @@ impl<'a> Parser<'a> {
         let annotation = self.tokenizer.request(TokenKind::Identifier).get_id();
         match annotation.as_str() {
             "spawn" => {
-                let spawn_result = self.parse_id_type_mapping_var(namespace);
+                let spawn_result = self.parse_id_type_mapping(namespace);
                 if spawn_result.is_none() {
                     panic!("[ERROR] Missing to specify the result of spawn");
                 }
@@ -218,9 +218,9 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * <id_type_mapping_var> ::= <id> : <id> 
+     * <id_type_mapping> ::= <id> : <id> 
      */
-    fn parse_id_type_mapping_var(&mut self, namespace: &Name) -> Option<(Name, Type)> {
+    fn parse_id_type_mapping(&mut self, namespace: &Name) -> Option<(Name, Type)> {
         // <id> : <id>
         let id1 = self.tokenizer.expect(TokenKind::Identifier)?.get_id();
         self.tokenizer.request(TokenKind::Mapping);
