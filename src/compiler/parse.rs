@@ -178,13 +178,8 @@ impl<'a> Parser<'a> {
                     let mut namespace = namespace.clone();
                     loop {
                         match self.parse_spawn_detail(&namespace) {
-                            Some(SysDCSpawnChild::From{ func, args }) => {
-                                details.push(SysDCSpawnChild::new_from(func, args));
-                            },
-                            Some(detail) => {
-                                details.push(detail);
-                                break;
-                            },
+                            Some(let_to@SysDCSpawnChild::LetTo{..}) => { details.push(let_to); break }
+                            Some(detail) => details.push(detail),
                             None => panic!("")
                         }
                         namespace = Name::from(&namespace, "_".to_string());
