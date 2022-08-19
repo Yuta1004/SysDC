@@ -84,10 +84,10 @@ impl Checker {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum DefineKind {
     Data,
-    DataMember,
+    DataMember(Type),
     Module,
     Function,
     Variable(Type)
@@ -129,11 +129,36 @@ impl DefinesManager {
     }
 
     pub fn try_match_from_name(&self, namespace: &Name, name: &String) -> Type {
-        let found_def = self.find(namespace, name);
+        let (head, tails) = DefinesManager::split_name(name);
+        let found_def = self.find(namespace, &head);
         match found_def.kind {
-            DefineKind::Variable(types) => self.try_match_from_type(namespace, types),
+            DefineKind::Variable(types) =>
+                match self.try_match_from_type(namespace, types) {
+                    types@Type { kind: TypeKind::Int32, .. } =>
+                        match tails {
+                            Some(_) => panic!("[ERROR] Cannot access Int32"),
+                            None => types
+                        }
+                    types@Type { kind: TypeKind::Data, .. } =>
+                        match tails {
+                            Some(tails) => self.try_match_from_data_member(namespace, &types, &tails),
+                            None => types
+                        }
+                    _ => panic!("[ERROR] Occur unknown error at DefinesManager::try_match_from_name)")
+                }
             _ => panic!("[ERROR] Variable \"{}\" is not defined", name)
         }
+    }
+
+    fn try_match_from_data_member(&self, namespace: &Name, data: &Type, name: &String) -> Type {
+        for Define { kind, refs } in &self.defines {
+            if let DefineKind::DataMember(types) = kind {
+                if data.refs.as_ref().unwrap().name == refs.get_par_name().name && name == &refs.name {
+                    return self.try_match_from_type(namespace, types.clone());
+                }
+            }
+        }
+        panic!("[ERROR] Member \"{}\" not in Data \"{}\"", name, data.refs.as_ref().unwrap().name);
     }
 
     fn find(&self, namespace: &Name, name: &String) -> Define {
@@ -146,6 +171,14 @@ impl DefinesManager {
             }
         }
         self.find(&namespace.get_par_name(), name)
+    }
+
+    fn split_name(hint: &String) -> (String, Option<String>) {
+        let splitted_hint = hint.split(".").collect::<Vec<&str>>();
+        match splitted_hint.len() {
+            1 => (splitted_hint[0].to_string(), None),
+            _ => (splitted_hint[0].to_string(), Some(splitted_hint[1..].join(".")))
+        }
     }
 
     fn listup_defines(system: &SysDCSystem) -> Vec<Define> {
@@ -183,7 +216,7 @@ impl DefinesManager {
     fn listup_defines_data(data: &SysDCData) -> Vec<Define> {
         data.member
             .iter()
-            .map(|(name, _)| Define::new(DefineKind::DataMember, name.clone()))
+            .map(|(name, types)| Define::new(DefineKind::DataMember(types.clone()), name.clone()))
             .collect::<Vec<Define>>()
     }
 
@@ -316,6 +349,7 @@ mod test {
 
                     @spawn b: A {
                         use a;
+                        use a.a, a.b;
                         return a;
                     }
                 }
@@ -326,7 +360,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn user_defind_type_mix_module_with_spawn_failure() {
+    fn user_defind_type_mix_module_with_spawn_failure_1() {
         let program = "
             data A {
                 a: i32,
@@ -339,6 +373,30 @@ mod test {
 
                     @spawn b: A {
                         use aaa;
+                        return aaa;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn user_defind_type_mix_module_with_spawn_failure_2() {
+        let program = "
+            data A {
+                a: i32,
+                b: i32
+            }
+
+            module TestModule {
+                test(a: A) -> A {
+                    @return b
+
+                    @spawn b: A {
+                        use a;
+                        use a.c;
                         return aaa;
                     }
                 }
