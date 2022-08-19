@@ -8,10 +8,11 @@ module Compiler {
     compiile(program: String) -> SysDCSystem {
         @return system
 
-        +use program
         @spawn system: SysDCSystem {
+            use program;
             let tokens = Tokenizer.tokenize(program);
-            from Parser.parse(tokens);
+            let system = Parser.parse(tokens);
+            return system;
         }
     }
 }
@@ -20,8 +21,9 @@ module Tokenizer {
     tokenize(program: String) -> TokenList {
         @return tokens
 
-        +use program
-        @spawn tokens: TokenList
+        @spawn tokens: TokenList {
+            use program;
+        }
     }
 }
 
@@ -29,7 +31,8 @@ module Parser {
     parse(tokens: TokenList) -> SysDCSystem {
         @return system
 
-        +use tokens
-        @spawn system: SysDCSystem
+        @spawn system: SysDCSystem {
+            use tokens;
+        }
     }
 }
