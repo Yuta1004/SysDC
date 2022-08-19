@@ -74,7 +74,15 @@ impl Checker {
                         let resolved_type = self.def_manager.try_match_from_name(&name, &name.name);
                         resolved_detail.push(SysDCSpawnChild::new_return(name, resolved_type));
                     }
-                    _ => {}
+                    SysDCSpawnChild::LetTo { name, func: Type { kind: TypeKind::Unsolved(func), .. }, args } => {
+                        for ((arg_name, _), defined_type) in args.iter().zip(self.def_manager.get_args_type(&name, &func).iter()) {
+                            let arg_type = self.def_manager.try_match_from_name(arg_name, &arg_name.name);
+                            if &arg_type != defined_type {
+                                panic!("[ERROR] Argument \"{:?}\"'s type is expected \"{:?}\", but \"{:?}\"", arg_name, defined_type, arg_type);
+                            }
+                        }
+                    },
+                    _ => panic!("[ERROR] Occur unknown error at Checker::check_function")
                 }
             }
             checked_spawns.push(SysDCSpawn::new(resolved_result, resolved_detail))
@@ -94,6 +102,7 @@ enum DefineKind {
     DataMember(Type),
     Module,
     Function(Type),
+    Argument(Type),
     Variable(Type)
 }
 
@@ -116,6 +125,34 @@ struct DefinesManager {
 impl DefinesManager {
     pub fn new(system: &SysDCSystem) -> DefinesManager {
         DefinesManager { defines: DefinesManager::listup_defines(system) }
+    }
+
+    pub fn get_args_type(&self, namespace: &Name, name: &String) -> Vec<Type> {
+        let (head, tails) = DefinesManager::split_name(name);
+        let found_def = self.find(namespace, &head);
+        let func = match found_def.kind {
+            DefineKind::Module =>
+                match tails {
+                    Some(tails) => Name::from(&found_def.refs, tails),
+                    None => panic!("[ERROR] Missing function name")
+                }
+            DefineKind::Function(_) =>
+                match tails {
+                    Some(_) => panic!("[ERROR] Cannot nested access to Function"),
+                    None => Name::from(&namespace.get_par_name(true).get_par_name(true), head)
+                }
+            _ => panic!("[ERROR] Function \"{}\" is not defined", name)
+        };
+
+        let mut args = vec!();
+        for Define { kind, refs } in &self.defines {
+            if let DefineKind::Argument(types) = kind {
+                if refs.namespace == func.get_global_name() {
+                    args.push(self.try_match_from_type(&func, types.clone()));
+                }
+            }
+        }
+        args
     }
 
     pub fn try_match_from_type(&self, namespace: &Name, child: Type) -> Type {
@@ -275,7 +312,10 @@ impl DefinesManager {
         defined.extend(
             func.args
                 .iter()
-                .map(|(name, types)| Define::new(DefineKind::Variable(types.clone()), name.clone()))
+                .flat_map(|(name, types)| vec!(
+                    Define::new(DefineKind::Variable(types.clone()), name.clone()),
+                    Define::new(DefineKind::Argument(types.clone()), name.clone())
+                ))
                 .collect::<Vec<Define>>()
         );
         defined.extend(
@@ -606,6 +646,95 @@ mod test {
                     @spawn a: A {
                         let b = new2();
                         return b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn argument_check_ok() {
+        let program = "
+            data A {}
+            data B {}
+            data C {}
+            
+            module TestModule {
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let tmp1 = genA();
+                        let tmp2 = genB(tmp1);
+                        let tmp3 = genC(tmp1, tmp2);
+                    }
+                }
+
+                genA() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+
+                genB(a: A) -> B {
+                    @return b
+
+                    @spawn b: B {
+                        use a;
+                    }
+                }
+
+                genC(a: A, b: B) -> C {
+                    @return c
+
+                    @spawn c: C {
+                        use a, b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn argument_check_ng() {
+        let program = "
+            data A {}
+            data B {}
+            data C {}
+            
+            module TestModule {
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let tmp1 = genA();
+                        let tmp2 = genB(tmp1);
+                        let tmp3 = genC(tmp1, tmp1);
+                    }
+                }
+
+                genA() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+
+                genB(a: A) -> B {
+                    @return b
+
+                    @spawn b: B {
+                        use a;
+                    }
+                }
+
+                genC(a: A, b: B) -> C {
+                    @return c
+
+                    @spawn c: C {
+                        use a, b;
                     }
                 }
             }
