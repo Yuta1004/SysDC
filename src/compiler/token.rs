@@ -4,6 +4,7 @@ pub enum TokenKind {
     Data,               // data
     Module,             // module
     Let,                // let
+    From,               // from
 
     /* Symbol */
     Allow,              // ->
@@ -35,6 +36,7 @@ impl Token {
             "data"      => TokenKind::Data,
             "module"    => TokenKind::Module,
             "let"       => TokenKind::Let,
+            "from"    => TokenKind::From,
             "->"        => TokenKind::Allow,
             ":"         => TokenKind::Mapping,
             "="         => TokenKind::Equal,
@@ -210,6 +212,7 @@ mod test {
                 ("data",    TokenKind::Data),
                 ("module",  TokenKind::Module),
                 ("let",     TokenKind::Let),
+                ("from",    TokenKind::From),
                 ("->",      TokenKind::Allow),
                 (":",       TokenKind::Mapping),
                 ("=",       TokenKind::Equal),
