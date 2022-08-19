@@ -70,6 +70,7 @@ impl Checker {
                         let resolved_type = self.def_manager.try_match_from_name(&name, &name.name);
                         resolved_detail.push(SysDCSpawnChild::new_use(name, resolved_type));
                     }
+                    _ => {}
                 }
             }
             checked_spawns.push(SysDCSpawn::new(resolved_result, resolved_detail))
@@ -248,7 +249,7 @@ mod test {
     }
 
     #[test]
-    fn recursive_type_has_data() {
+    fn recursive_type_mix_data() {
         let program = "
             data A {
                 a: A
@@ -298,8 +299,10 @@ mod test {
                 test(a: A) -> A {
                     @return b
 
-                    +use a
-                    @spawn b: A 
+                    @spawn b: A {
+                        use a;
+                        return a;
+                    }
                 }
             }
         ";
@@ -319,8 +322,10 @@ mod test {
                 test(a: A) -> A {
                     @return b
 
-                    +use aaa
-                    @spawn b: A
+                    @spawn b: A {
+                        use aaa;
+                        return aaa;
+                    }
                 }
             }
         ";

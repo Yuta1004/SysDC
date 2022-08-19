@@ -93,86 +93,23 @@ impl SysDCSpawn {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SysDCSpawnChild {
     Use { name: Name, types: Type },
-    // Process { name: Name, func: Name, args: Vec<(Name, Type)> }
+    LetTo { name: Name, func: Type, args: Vec<(Name, Type)> },
+    Return { name: Name, types: Type }
 }
 
 impl SysDCSpawnChild {
     pub fn new_use(name: Name, types: Type) -> SysDCSpawnChild {
         SysDCSpawnChild::Use { name, types }
     }
-}
 
-#[cfg(test)]
-mod test {
-    use super::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
-    use super::super::name::Name;
-    use super::super::types::Type;
+    pub fn new_let_to(name: Name, func: Type, args: Vec<(Name, Type)>) -> SysDCSpawnChild {
+        SysDCSpawnChild::LetTo { name, func, args }
+    }
 
-    #[test]
-    fn create_system() {
-        //  box.def
-        //  -------
-        //  data Box {
-        //      x: i32,
-        //      y: i32
-        //  }
-        // 
-        //  module BoxModule {
-        //      move(box: Box, dx: i32, dy: i32) -> Box {
-        //          @return movedBox
-        // 
-        //          +use box.x, box.y, dx, dy
-        //          @spawn movedBox: Box
-        //      }
-        //  }
-
-        let name = Name::new_root();
-        let name = Name::from(&name, "box".to_string());
-        let name_data = Name::from(&name, "Box".to_string());
-        let name_data_x = Name::from(&name_data, "x".to_string());
-        let name_data_y = Name::from(&name_data, "y".to_string());
-        let name_module = Name::from(&name, "BoxModule".to_string());
-        let name_func = Name::from(&name_module, "move".to_string());
-        let name_func_arg_box = Name::from(&name_func, "box".to_string());
-        let name_func_arg_dx = Name::from(&name_func, "dx".to_string());
-        let name_func_arg_dy = Name::from(&name_func, "dy".to_string());
-        let name_func_ret = Name::from(&name_func, "movedBox".to_string());
-        let name_spawn_use_box_x = Name::from(&name_func, "box.x".to_string());
-        let name_spawn_use_box_y = Name::from(&name_func, "box.y".to_string());
-        let name_spawn_use_dx = Name::from(&name_func, "dx".to_string());
-        let name_spawn_use_dy = Name::from(&name_func, "dy".to_string());
-        let name_spawn_ret = Name::from(&name_func, "movedBox".to_string());
-
-        let spawn_use_box_x = SysDCSpawnChild::new_use(name_spawn_use_box_x, Type::from("i32".to_string()));
-        let spawn_use_box_y = SysDCSpawnChild::new_use(name_spawn_use_box_y, Type::from("i32".to_string()));
-        let spawn_use_dx = SysDCSpawnChild::new_use(name_spawn_use_dx, Type::from("i32".to_string()));
-        let spawn_use_dy = SysDCSpawnChild::new_use(name_spawn_use_dy, Type::from("i32".to_string()));
-        let spawn = SysDCSpawn::new(
-            (name_spawn_ret, Type::from("Box".to_string())),
-            vec!(spawn_use_box_x, spawn_use_box_y, spawn_use_dx, spawn_use_dy)
-        );
-
-        let func_args = vec!(
-            (name_func_arg_box, Type::from("i32".to_string())),
-            (name_func_arg_dx, Type::from("i32".to_string())),
-            (name_func_arg_dy, Type::from("i32".to_string()))
-        );
-        let func_returns = (name_func_ret, Type::from("Box".to_string()));
-        let func = SysDCFunction::new(name_func, func_args, func_returns, vec!(spawn));
-
-        let module = SysDCModule::new(name_module, vec!(func));
-
-        let data_members = vec!(
-            (name_data_x, Type::from("i32".to_string())),
-            (name_data_y, Type::from("i32".to_string()))
-        );
-        let data = SysDCData::new(name_data, data_members);
-
-        let unit = SysDCUnit::new(name, vec!(data), vec!(module));
-
-        SysDCSystem::new(vec!(unit));
+    pub fn new_return(name: Name, types: Type) -> SysDCSpawnChild {
+        SysDCSpawnChild::Return { name, types }
     }
 }
