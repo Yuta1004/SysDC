@@ -70,6 +70,10 @@ impl Checker {
                         let resolved_type = self.def_manager.try_match_from_name(&name, &name.name);
                         resolved_detail.push(SysDCSpawnChild::new_use(name, resolved_type));
                     }
+                    SysDCSpawnChild::Return { name, .. } => {
+                        let resolved_type = self.def_manager.try_match_from_name(&name, &name.name);
+                        resolved_detail.push(SysDCSpawnChild::new_return(name, resolved_type));
+                    }
                     _ => {}
                 }
             }
@@ -89,7 +93,7 @@ enum DefineKind {
     Data,
     DataMember(Type),
     Module,
-    Function,
+    Function(Type),
     Variable(Type)
 }
 
@@ -118,9 +122,22 @@ impl DefinesManager {
         match &child.kind {
             TypeKind::Int32 => child,
             TypeKind::Unsolved(hint) => {
-                let found_def = self.find(namespace, hint);
+                let (head, tails) = DefinesManager::split_name(hint);
+                let found_def = self.find(namespace, &head);
                 match found_def.kind {
-                    DefineKind::Data => Type::new(TypeKind::Data, Some(found_def.refs)),
+                    DefineKind::Data =>
+                        match tails {
+                            Some(_) => panic!("[ERROR] Cannot nested access to Data"),
+                            None => Type::new(TypeKind::Data, Some(found_def.refs))
+                        }
+                    DefineKind::Module =>
+                        match tails {
+                            Some(tails) => self.try_match_from_module_func(namespace, &found_def.refs.name, &tails),
+                            None => panic!("[ERROR] Missing function name")
+                        }
+                    DefineKind::Function(_) => {
+                        self.try_match_from_module_func(namespace, &namespace.get_par_name(true).get_par_name(true).name, hint)
+                    }
                     _ => panic!("[ERROR] \"{:?}\" is defined but type is unmatched", child)
                 }
             },
@@ -147,7 +164,7 @@ impl DefinesManager {
         let (head, tails) = DefinesManager::split_name(name);
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
-                if data.refs.as_ref().unwrap().name == refs.get_par_name().name && head == refs.name {
+                if data.refs.as_ref().unwrap().name == refs.get_par_name(true).name && head == refs.name {
                     return match self.try_match_from_type(namespace, types.clone()) {
                         types@Type { kind: TypeKind::Int32, .. } =>
                             match tails {
@@ -164,7 +181,23 @@ impl DefinesManager {
                 }
             }
         }
-        panic!("[ERROR] Member \"{}\" not in Data \"{}\"", name, data.refs.as_ref().unwrap().name);
+        panic!("[ERROR] Member \"{}\" is not defined in Data \"{}\"", name, data.refs.as_ref().unwrap().name);
+    }
+
+    fn try_match_from_module_func(&self, namespace: &Name, module: &String, func: &String) -> Type {
+        let (head, tails) = DefinesManager::split_name(func);
+        if tails.is_some() {
+            panic!("[ERROR] Cannot access Function \"{}\" to Function \"{}\"", head, tails.unwrap());
+        }
+
+        for Define { kind, refs } in &self.defines {
+            if let DefineKind::Function(types) = kind {
+                if module == &refs.get_par_name(true).name && head == refs.name {
+                    return self.try_match_from_type(namespace, types.clone());
+                }
+            }
+        }
+        panic!("[ERROR] Function \"{}\" is not defined in Module \"{}\"", func, module);
     }
 
     fn find(&self, namespace: &Name, name: &String) -> Define {
@@ -176,7 +209,7 @@ impl DefinesManager {
                 return Define::new(kind.clone(), refs.clone())
             }
         }
-        self.find(&namespace.get_par_name(), name)
+        self.find(&namespace.get_par_name(false), name)
     }
 
     fn split_name(hint: &String) -> (String, Option<String>) {
@@ -230,7 +263,7 @@ impl DefinesManager {
         module.functions
             .iter()
             .flat_map(|func| { 
-                let mut d = vec!(Define::new(DefineKind::Function, func.name.clone()));
+                let mut d = vec!(Define::new(DefineKind::Function(func.returns.as_ref().unwrap().1.clone()), func.name.clone()));
                 d.extend(DefinesManager::listup_defines_function(func));
                 d
             })
@@ -444,6 +477,135 @@ mod test {
 
                     @spawn b: A {
                         use a.b.a.c;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn let_by_user_defined_function_using_completed_name_1() {
+        let program = "
+            data A {}
+
+            module AModule {
+                new() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+            }
+
+            module TestModule {
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let b = AModule.new();
+                        return b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn let_by_user_defined_function_using_completed_name_2() {
+        let program = "
+            data A {}
+
+            module TestModule {
+                new() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let b = TestModule.new();
+                        return b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn let_by_user_defined_function_using_uncompleted_name() {
+        let program = "
+            data A {}
+
+            module TestModule {
+                new() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let b = new();
+                        return b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn let_by_user_defined_function_using_completed_name_failure() {
+        let program = "
+            data A {}
+
+            module TestModule {
+                new() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let b = TestModule.new2();
+                        return b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn let_by_user_defined_function_using_uncompleted_name_failure() {
+        let program = "
+            data A {}
+
+            module TestModule {
+                new() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let b = new2();
+                        return b;
                     }
                 }
             }

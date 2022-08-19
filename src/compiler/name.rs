@@ -31,8 +31,8 @@ impl Name {
         self.namespace.clone() + "." + &self.name
     }
 
-    pub fn get_par_name(&self) -> Name {
-        let splitted_namespace = self.namespace.split(".").collect::<Vec<&str>>();
+    pub fn get_par_name(&self, ignore_underscore: bool) -> Name {
+        let splitted_namespace = self.namespace.split(".").filter(|x| !ignore_underscore || x != &"_").collect::<Vec<&str>>();
         let par_name = splitted_namespace[splitted_namespace.len()-1];
         let par_namespace = splitted_namespace[0..splitted_namespace.len()-1].join(".");
         Name { name: par_name.to_string(), namespace: par_namespace }
