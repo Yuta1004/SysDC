@@ -66,7 +66,7 @@ impl Checker {
             let mut resolved_detail = vec!();
             for uses in detail {
                 match uses {
-                    SysDCSpawnChild::Use{ name, types: _ } => {
+                    SysDCSpawnChild::Use{ name, .. } => {
                         let resolved_type = self.def_manager.try_match_from_name(&name, &name.name);
                         resolved_detail.push(SysDCSpawnChild::new_use(name, resolved_type));
                     }
@@ -209,7 +209,7 @@ impl DefinesManager {
         defined.extend(
             func.spawns
                 .iter()
-                .flat_map(|spawn@SysDCSpawn { result: (name, types), detail: _}| {
+                .flat_map(|spawn@SysDCSpawn { result: (name, types), .. }| {
                     let mut d = vec!(Define::new(DefineKind::Variable(types.clone()), name.clone()));
                     d.extend(DefinesManager::listup_defines_function_spawn_details(spawn));
                     d
