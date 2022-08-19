@@ -132,29 +132,35 @@ impl DefinesManager {
         let (head, tails) = DefinesManager::split_name(name);
         let found_def = self.find(namespace, &head);
         match found_def.kind {
-            DefineKind::Variable(types) =>
-                match self.try_match_from_type(namespace, types) {
-                    types@Type { kind: TypeKind::Int32, .. } =>
-                        match tails {
-                            Some(_) => panic!("[ERROR] Cannot access Int32"),
-                            None => types
-                        }
-                    types@Type { kind: TypeKind::Data, .. } =>
-                        match tails {
-                            Some(tails) => self.try_match_from_data_member(namespace, &types, &tails),
-                            None => types
-                        }
-                    _ => panic!("[ERROR] Occur unknown error at DefinesManager::try_match_from_name)")
+            DefineKind::Variable(types) => {
+                let types = self.try_match_from_type(namespace, types);
+                match tails {
+                    Some(tails) => self.try_match_from_data_member(namespace, &types, &tails),
+                    None => types
                 }
+            }
             _ => panic!("[ERROR] Variable \"{}\" is not defined", name)
         }
     }
 
     fn try_match_from_data_member(&self, namespace: &Name, data: &Type, name: &String) -> Type {
+        let (head, tails) = DefinesManager::split_name(name);
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
-                if data.refs.as_ref().unwrap().name == refs.get_par_name().name && name == &refs.name {
-                    return self.try_match_from_type(namespace, types.clone());
+                if data.refs.as_ref().unwrap().name == refs.get_par_name().name && head == refs.name {
+                    return match self.try_match_from_type(namespace, types.clone()) {
+                        types@Type { kind: TypeKind::Int32, .. } =>
+                            match tails {
+                                Some(_) => panic!("[ERROR] Cannot access Int32"),
+                                None => types
+                            }
+                        types@Type { kind: TypeKind::Data, .. } =>
+                            match tails {
+                                Some(tails) => self.try_match_from_data_member(namespace, &types, &tails),
+                                None => types
+                            },
+                        _ => panic!("[ERROR] Occur unknown error at DefinesManager::try_match_from_data_member")
+                    }
                 }
             }
         }
@@ -339,6 +345,16 @@ mod test {
     fn user_defined_type_mix_module_with_spawn() {
         let program = "
             data A {
+                a: B,
+                b: B
+            }
+
+            data B {
+                a: C,
+                b: C
+            }
+
+            data C {
                 a: i32,
                 b: i32
             }
@@ -350,7 +366,8 @@ mod test {
                     @spawn b: A {
                         use a;
                         use a.a, a.b;
-                        return a;
+                        use a.a.a, a.a.b, a.b.a, a.b.b;
+                        use a.a.a.a, a.a.a.b, a.a.b.a, a.a.b.b, a.b.a.a, a.b.a.b, a.b.b.a, a.b.b.b;
                     }
                 }
             }
@@ -373,7 +390,6 @@ mod test {
 
                     @spawn b: A {
                         use aaa;
-                        return aaa;
                     }
                 }
             }
@@ -395,9 +411,39 @@ mod test {
                     @return b
 
                     @spawn b: A {
-                        use a;
                         use a.c;
-                        return aaa;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn user_defind_type_mix_module_with_spawn_failure_3() {
+        let program = "
+            data A {
+                a: B,
+                b: B
+            }
+
+            data B {
+                a: C,
+                b: C
+            }
+
+            data C {
+                a: i32,
+                b: i32
+            }
+
+            module TestModule {
+                test(a: A) -> A {
+                    @return b
+
+                    @spawn b: A {
+                        use a.b.a.c;
                     }
                 }
             }
