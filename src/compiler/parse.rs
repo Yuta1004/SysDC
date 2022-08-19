@@ -183,16 +183,11 @@ impl<'a> Parser<'a> {
         let mut details = vec!();
         if self.tokenizer.expect(TokenKind::BracketBegin).is_some() {
             let mut namespace = namespace.clone();
-            loop {
-                match self.parse_annotation_spawn_detail(&namespace) {
-                    Some(new_details) => {
-                        let for_cmp = new_details[0].clone();
-                        details.extend(new_details);
-                        if let SysDCSpawnChild::Return{..} = for_cmp {
-                            break;
-                        }
-                    }
-                    None => panic!("[ERROR] Spawn hasn't return")
+            while let Some(new_details) = self.parse_annotation_spawn_detail(&namespace) {
+                let for_cmp = new_details[0].clone();
+                details.extend(new_details);
+                if let SysDCSpawnChild::Return{..} = for_cmp {
+                    break;
                 }
                 namespace = Name::from(&namespace, "_".to_string());
             }
