@@ -70,6 +70,7 @@ impl Checker {
                         let resolved_type = self.def_manager.try_match_from_name(&name, &name.name);
                         resolved_detail.push(SysDCSpawnChild::new_use(name, resolved_type));
                     }
+                    _ => {}
                 }
             }
             checked_spawns.push(SysDCSpawn::new(resolved_result, resolved_detail))

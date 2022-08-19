@@ -96,12 +96,21 @@ impl SysDCSpawn {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SysDCSpawnChild {
     Use { name: Name, types: Type },
-    // Process { name: Name, func: Name, args: Vec<(Name, Type)> }
+    LetTo { name: Name, func: Type, args: Vec<(Name, Type)> },
+    From { func: Type, args: Vec<(Name, Type)> }
 }
 
 impl SysDCSpawnChild {
     pub fn new_use(name: Name, types: Type) -> SysDCSpawnChild {
         SysDCSpawnChild::Use { name, types }
+    }
+
+    pub fn new_let_to(name: Name, func: Type, args: Vec<(Name, Type)>) -> SysDCSpawnChild {
+        SysDCSpawnChild::LetTo { name, func, args }
+    }
+
+    pub fn new_from(func: Type, args: Vec<(Name, Type)>) -> SysDCSpawnChild {
+        SysDCSpawnChild::From { func, args }
     }
 }
 

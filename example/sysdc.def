@@ -1,0 +1,35 @@
+data String {}
+
+data SysDCSystem {}
+
+data TokenList {}
+
+module Compiler {
+    compiile(program: String) -> SysDCSystem {
+        @return system
+
+        +use program
+        @spawn system: SysDCSystem {
+            let tokens = Tokenizer.tokenize(program);
+            from Parser.parse(tokens);
+        }
+    }
+}
+
+module Tokenizer {
+    tokenize(program: String) -> TokenList {
+        @return tokens
+
+        +use program
+        @spawn tokens: TokenList
+    }
+}
+
+module Parser {
+    parse(tokens: TokenList) -> SysDCSystem {
+        @return system
+
+        +use tokens
+        @spawn system: SysDCSystem
+    }
+}

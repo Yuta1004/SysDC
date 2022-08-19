@@ -155,7 +155,7 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        // <id>
+        // <id> <body: annotationによって変化>
         let annotation = self.tokenizer.request(TokenKind::Identifier).get_id();
         match annotation.as_str() {
             "spawn" => {
@@ -164,17 +164,35 @@ impl<'a> Parser<'a> {
                     panic!("[ERROR] Missing to specify the result of spawn");
                 }
 
-                let mut uses = vec!();
+                let mut details = vec!();
                 for (attr, var_list) in attributes {
                     for (name, types) in var_list {
                         match attr.as_str() {
-                            "use" => uses.push(SysDCSpawnChild::new_use(name, types)),
+                            "use" => details.push(SysDCSpawnChild::new_use(name, types)),
                             attr => panic!("[ERROR] Attribute \"{}\" is invalid on \"spawn\" attribute", attr)
                         }
                     }
                 }
 
-                Some(SysDCAnnotation::new_spawn(spawn_result.unwrap(), uses))
+                if self.tokenizer.expect(TokenKind::BracketBegin).is_some() {
+                    let mut namespace = namespace.clone();
+                    loop {
+                        match self.parse_spawn_detail(&namespace) {
+                            Some(SysDCSpawnChild::From{ func, args }) => {
+                                details.push(SysDCSpawnChild::new_from(func, args));
+                            },
+                            Some(detail) => {
+                                details.push(detail);
+                                break;
+                            },
+                            None => panic!("")
+                        }
+                        namespace = Name::from(&namespace, "_".to_string());
+                    }
+                    self.tokenizer.request(TokenKind::BracketEnd);
+                }
+
+                Some(SysDCAnnotation::new_spawn(spawn_result.unwrap(), details))
             },
             "return" => {
                 let returns = self.tokenizer.request(TokenKind::Identifier).get_id();
@@ -202,6 +220,39 @@ impl<'a> Parser<'a> {
         let var_list = parse_list!(self.parse_id_chain(namespace), TokenKind::Separater);
 
         Some((attribute, var_list))
+    }
+
+    /** 
+     * <spawn_detail> ::= ( let <id> = | from ) <id_chain> \( <id_chain_list, delimiter=','> \) ;
+     */
+    fn parse_spawn_detail(&mut self, namespace: &Name) -> Option<SysDCSpawnChild> {
+        // ( let <id> = | from )
+        let mut let_to = None;
+        if self.tokenizer.expect(TokenKind::Let).is_some() {
+            let_to = Some(Name::from(namespace, self.tokenizer.request(TokenKind::Identifier).get_id()));
+            self.tokenizer.request(TokenKind::Equal);
+        } else {
+            self.tokenizer.expect(TokenKind::From)?;
+        }
+
+        // <id_chain> 
+        let func = match self.parse_id_chain(namespace) {
+            Some((func, _)) => func.name,
+            None => panic!("[ERROR] Function Name is requested, but not found")
+        };
+       
+        // \( <id_chain_list, delimiter=',') \)
+        self.tokenizer.request(TokenKind::ParenthesisBegin);
+        let args = parse_list!(self.parse_id_chain(namespace), TokenKind::Separater);
+        self.tokenizer.request(TokenKind::ParenthesisEnd);
+
+        // ; \}
+        self.tokenizer.request(TokenKind::Semicolon);
+
+        match let_to {
+            Some(let_to) => Some(SysDCSpawnChild::new_let_to(let_to, Type::from(func), args)),
+            None => Some(SysDCSpawnChild::new_from(Type::from(func), args))
+        }
     }
 
     /**
