@@ -199,15 +199,15 @@ impl<'a> Parser<'a> {
         }
 
         // <var_list, delimiter=','>
-        let var_list = parse_list!(self.parse_var(namespace), TokenKind::Separater);
+        let var_list = parse_list!(self.parse_id_chain(namespace), TokenKind::Separater);
 
         Some((attribute, var_list))
     }
 
     /**
-     * <var> ::= <id_list, delimiter=.>
+     * <id_chain> ::= <id_list, delimiter=.>
      */
-    fn parse_var(&mut self, namespace: &Name) -> Option<(Name, Type)> {
+    fn parse_id_chain(&mut self, namespace: &Name) -> Option<(Name, Type)> {
         // <id_list, delimiter=,>
         let name_elems = parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Accessor);
         let var = name_elems.iter().map(|x| x.get_id()).collect::<Vec<String>>().join(".");
