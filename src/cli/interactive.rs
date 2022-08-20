@@ -46,6 +46,7 @@ impl InteractiveCmd {
         loop {
             match self.run_one_line() {
                 Ok(do_exit) => {
+                    println!();
                     if do_exit {
                         break
                     }
@@ -105,15 +106,9 @@ impl InteractiveCmd {
         let mut compiler = Compiler::new();
         for (unit_name, program) in plugin.run(args)? {
             println!("Load: {}", unit_name);
-            match compiler.add_unit(unit_name, program) {
-                Ok(()) => {},
-                Err(err) => println!("[ERROR] {}", err)
-            }
+            compiler.add_unit(unit_name, program)?;
         }
-        match compiler.generate_system() {
-            Ok(system) => self.system = Some(system),
-            Err(err) => println!("[ERROR] {}", err)
-        }
+        self.system = Some(compiler.generate_system()?);
         Ok(())
     }
 
