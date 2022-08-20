@@ -75,9 +75,9 @@ impl Checker {
                     }
                     SysDCSpawnChild::LetTo { name, func: (_, Type { kind: TypeKind::Unsolved(func), .. }), args } => {
                         let mut let_to_args = vec!();
-                        for ((arg_name, _), defined_type) in args.into_iter().zip(self.def_manager.get_args_type(&name, &func).iter()) {
+                        for ((arg_name, _), defined_type) in args.into_iter().zip(self.def_manager.get_args_type(&name, &func).into_iter()) {
                             let (arg_name, arg_type) = self.def_manager.resolve_from_name(arg_name.clone(), arg_name.name);
-                            if &arg_type != defined_type {
+                            if arg_type != defined_type {
                                 panic!("[ERROR] Argument \"{:?}\"'s type is expected \"{:?}\", but \"{:?}\"", arg_name, defined_type, arg_type);
                             }
                             let_to_args.push((arg_name, arg_type));
