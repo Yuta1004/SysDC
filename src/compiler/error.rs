@@ -2,6 +2,7 @@ use std::fmt;
 use std::fmt::{ Display, Formatter };
 use std::error::Error;
 
+use super::types::Type;
 use super::token::TokenKind;
 
 #[derive(Debug)]
@@ -18,7 +19,14 @@ pub enum CompileError {
     FunctionNameNotFound,
 
     /* 検査時に発生したエラー */
-    CheckError(String),
+    TypeUnmatch1(Type),
+    TypeUnmatch2(Type, Type),
+    NotFound(String),
+    NotDefined(String),
+    MemberNotDefinedInData(String, String),
+    FuncNotDefinedInModule(String, String),
+    MissingFunctionName,
+    IllegalAccess,
 
     /* 内部エラー */
     InternalError
@@ -38,7 +46,14 @@ impl Display for CompileError {
             CompileError::ResultOfSpawnNotSpecified => write!(f, "Missing to specify the result of spawn"),
             CompileError::FunctionNameNotFound => write!(f, "Function name is requested, but not found"),
 
-            CompileError::CheckError(msg) => write!(f, "{} (CompileError::CheckError)", msg),
+            CompileError::TypeUnmatch1(actual) => write!(f, "\"{:?}\" is defined, but type is unmatch", actual),
+            CompileError::TypeUnmatch2(required, actual) => write!(f, "\"{:?}\" is required, but \"{:?}\" exists", required, actual),
+            CompileError::NotFound(name) => write!(f, "Cannot find \"{}\"", name),
+            CompileError::NotDefined(name) => write!(f, "\"{}\" is not defined", name),
+            CompileError::MemberNotDefinedInData(member, data) => write!(f, "Member \"{}\" is not defined in Data \"{}\"", member, data),
+            CompileError::FuncNotDefinedInModule(func, module) => write!(f, "Function \"{}\" is not defined in Module \"{}\"", func, module),
+            CompileError::MissingFunctionName => write!(f, "Missing to specify the function"),
+            CompileError::IllegalAccess => write!(f, "Found illegal access"),
 
             CompileError::InternalError => write!(f, "Occur something in compiler")
         }

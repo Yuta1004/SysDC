@@ -62,9 +62,7 @@ impl Checker {
         let require_ret = self.def_manager.resolve_from_type(ret_name.clone(), ret_type)?;
         let ret = self.def_manager.resolve_from_name(ret_name.clone(), ret_name.name)?;
         if require_ret.1 != ret.1 {
-            return Err(Box::new(
-                CompileError::CheckError(format!("Function definition requires to return \"{:?}\", but \"{:?}\" is returned", require_ret.1, ret.1))
-            ));
+            return Err(Box::new(CompileError::TypeUnmatch2(require_ret.1, ret.1)));
         }
 
         let mut spawns = vec!();
@@ -80,27 +78,23 @@ impl Checker {
                     SysDCSpawnChild::Return(name, _) => {
                         let (name, types) = self.def_manager.resolve_from_name(name.clone(), name.name)?;
                         if types != required_types.1 {
-                            return Err(Box::new(
-                                CompileError::CheckError(format!("Spawn definition requires to return \"{:?}\", but \"{:?}\" is returned", required_types.1, types))
-                            ));
+                            return Err(Box::new(CompileError::TypeUnmatch2(required_types.1, types)));
                         }
                         details.push(SysDCSpawnChild::new_return(name, types));
                     }
                     SysDCSpawnChild::LetTo { name, func: (_, Type { kind: TypeKind::Unsolved(func), .. }), args } => {
                         let mut let_to_args = vec!();
-                        for ((arg_name, _), defined_type) in args.into_iter().zip(self.def_manager.get_args_type(&name, &func).unwrap().into_iter()) {
+                        for ((arg_name, _), required_type) in args.into_iter().zip(self.def_manager.get_args_type(&name, &func).unwrap().into_iter()) {
                             let (arg_name, arg_type) = self.def_manager.resolve_from_name(arg_name.clone(), arg_name.name)?;
-                            if arg_type != defined_type {
-                                return Err(Box::new(
-                                    CompileError::CheckError(format!("Argument \"{:?}\"'s type is expected \"{:?}\", but \"{:?}\"", arg_name, defined_type, arg_type))
-                                ));
+                            if arg_type != required_type {
+                                return Err(Box::new(CompileError::TypeUnmatch2(required_type, arg_type)));
                             }
                             let_to_args.push((arg_name, arg_type));
                         }
                         let resolved_func = self.def_manager.resolve_from_type(name.clone(), Type::from(func))?;
                         details.push(SysDCSpawnChild::new_let_to(name, resolved_func, let_to_args))
                     },
-                    _ => panic!("[ERROR] Occur unknown error at Checker::check_function")
+                    _ => return Err(Box::new(CompileError::InternalError))
                 }
             }
             spawns.push(SysDCSpawn::new(required_types, details))
@@ -148,20 +142,14 @@ impl DefinesManager {
             DefineKind::Module =>
                 match tails {
                     Some(tails) => Name::from(&found_def.refs, tails),
-                    None => return Err(Box::new(
-                        CompileError::CheckError(format!("Missing function name"))
-                    ))
+                    None => return Err(Box::new(CompileError::MissingFunctionName))
                 }
             DefineKind::Function(_) =>
                 match tails {
-                    Some(_) => return Err(Box::new(
-                        CompileError::CheckError(format!("Cannot nested access to Function"))
-                    )),
+                    Some(_) => return Err(Box::new(CompileError::IllegalAccess)),
                     None => Name::from(&namespace.get_par_name(true).get_par_name(true), head)
                 }
-            _ => return Err(Box::new(
-                CompileError::CheckError(format!("Function \"{}\" is not defined", name))
-            ))
+            _ => return Err(Box::new(CompileError::NotDefined(name.to_string())))
         };
         let func_name = func.get_global_name();
 
@@ -185,29 +173,21 @@ impl DefinesManager {
                 match found_def.kind {
                     DefineKind::Data =>
                         match tails {
-                            Some(_) => Err(Box::new(
-                                CompileError::CheckError(format!("Cannot nested access to Data"))
-                            )),
+                            Some(_) => Err(Box::new(CompileError::IllegalAccess)),
                             None => Ok((name, Type::new(TypeKind::Data, Some(found_def.refs))))
                         }
                     DefineKind::Module =>
                         match tails {
                             Some(tails) => self.resolve_from_module_func(name, found_def.refs.name, tails),
-                            None => Err(Box::new(
-                                CompileError::CheckError(format!("Missing function name"))
-                            ))
+                            None => Err(Box::new(CompileError::MissingFunctionName))
                         }
                     DefineKind::Function(_) => {
                         self.resolve_from_module_func(name.clone(), name.get_par_name(true).get_par_name(true).name, hint)
                     }
-                    _ => Err(Box::new(
-                        CompileError::CheckError(format!("\"{:?}\" is defined but type is unmatched", types))
-                    ))
+                    _ => Err(Box::new(CompileError::TypeUnmatch1(types)))
                 }
             },
-            _ => Err(Box::new(
-                CompileError::CheckError(format!("Called unmatch resolve function (from_type)"))
-            ))
+            _ => Err(Box::new(CompileError::InternalError))
         }
     }
 
@@ -222,9 +202,7 @@ impl DefinesManager {
                     None => Ok((found_def.refs, types))
                 }
             }
-            _ => Err(Box::new(
-                CompileError::CheckError(format!("Variable \"{}\" is not defined", nname))
-            ))
+            _ => Err(Box::new(CompileError::NotDefined(nname)))
         }
     }
 
@@ -236,9 +214,7 @@ impl DefinesManager {
                     return match self.resolve_from_type(name.clone(), types.clone())?.1 {
                         types@Type { kind: TypeKind::Int32, .. } =>
                             match tails {
-                                Some(_) => Err(Box::new(
-                                    CompileError::CheckError(format!("Cannot access Int32"))
-                                )),
+                                Some(_) => Err(Box::new(CompileError::IllegalAccess)),
                                 None => Ok((refs.clone(), types))
                             }
                         types@Type { kind: TypeKind::Data, .. } =>
@@ -246,14 +222,12 @@ impl DefinesManager {
                                 Some(tails) => self.resolve_from_data_member(name, types, tails),
                                 None => Ok((refs.clone(), types))
                             },
-                        _ => panic!("[ERROR] Occur unknown error at DefinesManager::resolve_from_data_member")
+                        _ => Err(Box::new(CompileError::InternalError))
                     }
                 }
             }
         }
-        Err(Box::new(
-            CompileError::CheckError(format!("Member \"{}\" is not defined in Data \"{}\"", member, data.refs.as_ref().unwrap().name))
-        ))
+        Err(Box::new(CompileError::MemberNotDefinedInData(member, data.refs.unwrap().name)))
     }
 
     fn resolve_from_module_func(&self, name: Name, module: String, func: String) -> Result<(Name, Type), Box<dyn Error>> {
@@ -264,16 +238,12 @@ impl DefinesManager {
                 }
             }
         }
-        Err(Box::new(
-            CompileError::CheckError(format!("Function \"{}\" is not defined in Module \"{}\"", func, module))
-        ))
+        Err(Box::new(CompileError::FuncNotDefinedInModule(func, module)))
     }
 
     fn find(&self, namespace: &Name, name: &String) -> Result<Define, Box<dyn Error>> {
         if namespace.namespace.len() == 0 {
-            return Err(Box::new(
-                CompileError::CheckError(format!("Cannot find the name \"{}\"", name))
-            ));
+            return Err(Box::new(CompileError::NotFound(name.to_string())));
         }
         for Define{ kind, refs } in &self.defines {
             if refs.namespace == namespace.namespace && &refs.name == name {
