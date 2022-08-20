@@ -25,9 +25,9 @@ impl Error for CommandError {}
 impl Display for CommandError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            CommandError::NotFoundError(text) => write!(f, "{} is not found (CommandError::NotFoundError)", text),
-            CommandError::SyntaxError(text) => write!(f, "{} (CommandError::SyntaxError)", text),
-            CommandError::RuntimeError(text) => write!(f, "{} (CommandError::RuntimeError)", text)
+            CommandError::NotFoundError(command) => write!(f, "Command \"{}\" is not found", command),
+            CommandError::SyntaxError(msg) => write!(f, "{}", msg),
+            CommandError::RuntimeError(msg) => write!(f, "{}", msg)
         }
     }
 }
@@ -85,11 +85,7 @@ impl InteractiveCmd {
                 self.save_system(subcmd)?;
                 Ok(false)
             }
-            _ => {
-                Err(Box::new(
-                    CommandError::NotFoundError(format!("Command \"{}\"", cmd))
-                ))
-            }
+            _ => Err(Box::new(CommandError::NotFoundError(cmd)))
         }
     }
 
@@ -124,9 +120,7 @@ impl InteractiveCmd {
 
         match &self.system {
             Some(s) => plugin.run(args, s),
-            None => Err(Box::new(
-                CommandError::RuntimeError("Must run \"in\" command before run \"out\" command".to_string())
-            ))
+            None => Err(Box::new(CommandError::RuntimeError("Must run \"in\" command before run \"out\" command".to_string())))
         }
     }
 
@@ -143,9 +137,7 @@ impl InteractiveCmd {
                 s.serialize(&mut Serializer::new(&mut buf))?;
                 buf
             },
-            None => return Err(Box::new(
-                CommandError::RuntimeError("Must run \"in\" command before run \"save\" command".to_string())
-            ))
+            None => return Err(Box::new(CommandError::RuntimeError("Must run \"in\" command before run \"save\" command".to_string())))
         };
 
         let mut f = File::create(&(filepath+".sysdc"))?;
@@ -159,9 +151,7 @@ impl InteractiveCmd {
         match splitted_text.len() {
             1 => {
                 if splitted_text[0].len() == 0 {
-                    return Err(Box::new(
-                        CommandError::SyntaxError("Usage: in/out/save <name> <args>".to_string())
-                    ));
+                    return Err(Box::new(CommandError::SyntaxError("Usage: in/out/save <name> <args>".to_string())));
                 }
                 Ok((splitted_text[0].clone(), "".to_string(), vec!()))
             },
