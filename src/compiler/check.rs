@@ -65,11 +65,11 @@ impl Checker {
             let mut details = vec!();
             for uses in detail {
                 match uses {
-                    SysDCSpawnChild::Use{ name, .. } => {
+                    SysDCSpawnChild::Use(name, _) => {
                         let (name, types) = self.def_manager.resolve_from_name(&name, &name.name);
                         details.push(SysDCSpawnChild::new_use(name, types));
                     }
-                    SysDCSpawnChild::Return { name, .. } => {
+                    SysDCSpawnChild::Return(name, _) => {
                         let (name, types) = self.def_manager.resolve_from_name(&name, &name.name);
                         details.push(SysDCSpawnChild::new_return(name, types));
                     }
