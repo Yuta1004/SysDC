@@ -1,9 +1,12 @@
 mod parse;
 mod token;
 mod check;
+mod error;
 pub mod name;
 pub mod types;
 pub mod structure;
+
+use std::error::Error;
 
 use name::Name;
 use parse::Parser;
@@ -20,16 +23,17 @@ impl Compiler {
         Compiler { units: vec!() }
     }
 
-    pub fn add_unit(&mut self, unit_name: String, program: String) {
+    pub fn add_unit(&mut self, unit_name: String, program: String) -> Result<(), Box<dyn Error>> {
         self.units.push(
             Parser::parse(
                 Tokenizer::new(&program),
                 Name::from(&Name::new_root(), unit_name)
-            )
+            )?
         );
+        Ok(())
     }
 
-    pub fn generate_system(self) -> SysDCSystem {
+    pub fn generate_system(self) -> Result<SysDCSystem, Box<dyn Error>> {
         Checker::check(SysDCSystem::new(self.units))
     }
 }
@@ -49,8 +53,8 @@ mod test {
             ("E", "data E {}")
         ];
         for (unit_name, program) in programs {
-            compiler.add_unit(unit_name.to_string(), program.to_string());
+            compiler.add_unit(unit_name.to_string(), program.to_string()).unwrap();
         }
-        compiler.generate_system();
+        compiler.generate_system().unwrap();
     }
 }

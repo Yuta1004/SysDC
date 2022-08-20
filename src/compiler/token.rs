@@ -1,3 +1,7 @@
+use std::error::Error;
+
+use super::error::CompileError;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     /* Reserved */
@@ -64,10 +68,12 @@ impl Token {
         Token { kind, orig_id }
     }
 
-    pub fn get_id(&self) -> String {
+    pub fn get_id(&self) -> Result<String, Box<dyn Error>> {
         match &self.orig_id {
-            Some(id) => id.clone(),
-            None => panic!("[ERROR] get_id called for token {:?}", self.kind)
+            Some(id) => Ok(id.clone()),
+            None => Err(Box::new(
+                CompileError::TokenizeError(format!("get_id called for token {:?}", self.kind))
+            ))
         }
     }
 }
@@ -94,33 +100,35 @@ impl<'a> Tokenizer<'a> {
         self.now_ref_pos != self.text.len()
     }
 
-    pub fn expect(&mut self, kind: TokenKind) -> Option<Token> {
-        if let Some(token) = self.tokenize() {
+    pub fn expect(&mut self, kind: TokenKind) -> Result<Option<Token>, Box<dyn Error>> {
+        if let Some(token) = self.tokenize()? {
             if token.kind == kind {
                 self.hold_token = None;
-                Some(token)
+                Ok(Some(token))
             } else {
                 self.hold_token = Some(token);
-                None
+                Ok(None)
             }
         } else {
-            None
+            Ok(None)
         }
     }
 
-    pub fn request(&mut self, kind: TokenKind) -> Token {
-        match self.expect(kind.clone()) {
-            Some(token) => token,
-            None => panic!("[ERROR] Token \"{:?}\" is requested, but not found.", kind)
+    pub fn request(&mut self, kind: TokenKind) -> Result<Token, Box<dyn Error>> {
+        match self.expect(kind.clone())? {
+            Some(token) => Ok(token),
+            None => Err(Box::new(
+                CompileError::TokenizeError(format!("Token \"{:?}\" is requested, but not found.", kind))
+            ))
         }
     }
 
-    fn tokenize(&mut self) -> Option<Token> {
+    fn tokenize(&mut self) -> Result<Option<Token>, Box<dyn Error>> {
         if !self.hold_token.is_none() {
-            return self.hold_token.clone();
+            return Ok(self.hold_token.clone());
         }
         if !self.has_token() {
-            return None;
+            return Ok(None);
         }
 
         let lead_ref_pos = self.now_ref_pos;
@@ -139,7 +147,9 @@ impl<'a> Tokenizer<'a> {
                 (CharType::SymbolAllow1, CharType::SymbolAllow2) => { self.now_ref_pos += 1; break },
 
                 // Ng(panic)
-                (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) => panic!("[ERROR] Discovered unregistered symbol."),
+                (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) => return Err(Box::new(
+                    CompileError::TokenizeError(format!("Discovered unregistered symbol.")
+                ))),
 
                 // Ok(force stop)
                 _ => break
@@ -151,7 +161,7 @@ impl<'a> Tokenizer<'a> {
         let discovered_word = self.clip_text(lead_ref_pos, self.now_ref_pos);
         let token = Token::from(discovered_word);
         self.skip_space();
-        Some(token)
+        Ok(Some(token))
     }
 
     fn skip_space(&mut self) {
@@ -241,14 +251,14 @@ mod test {
         #[test]
         #[should_panic]
         fn get_identifer_from_reserved_token() {
-            Token::from("->".to_string()).get_id();
+            Token::from("->".to_string()).get_id().unwrap();
         }
 
         #[test]
         fn get_identifer_from_identifer_token() {
-            let id = Token::from("test".to_string()).get_id();
+            let id = Token::from("test".to_string()).get_id().unwrap();
             assert_eq!(id, "test");
-            Token::from("test".to_string()).get_id();
+            Token::from("test".to_string()).get_id().unwrap();
         }
     }
 
@@ -335,7 +345,7 @@ mod test {
 
             let mut tokenizer = Tokenizer::new(&text);
             for token_kind in correct_token_kinds {
-                match tokenizer.expect(token_kind.clone()) {
+                match tokenizer.expect(token_kind.clone()).unwrap() {
                     Some(_) => {}
                     None => assert!(false, "{:?}", token_kind)
                 }
@@ -347,7 +357,7 @@ mod test {
         fn expect_all_ng() {
             let text = "data".to_string();
             let mut tokenizer =Tokenizer::new(&text);
-            assert!(tokenizer.expect(TokenKind::Allow).is_none());
+            assert!(tokenizer.expect(TokenKind::Allow).unwrap().is_none());
         }
 
         #[test]
@@ -362,7 +372,7 @@ mod test {
 
             let mut tokenizer = Tokenizer::new(&text);
             for token_kind in correct_token_kinds {
-                let token = tokenizer.request(token_kind.clone());
+                let token = tokenizer.request(token_kind.clone()).unwrap();
                 assert_eq!(token.kind, token_kind);
             }
             assert!(!tokenizer.has_token());
@@ -373,7 +383,7 @@ mod test {
         fn request_ng() {
             let text = "data".to_string();
             let mut tokenizer = Tokenizer::new(&text);
-            tokenizer.request(TokenKind::AtMark);
+            tokenizer.request(TokenKind::AtMark).unwrap();
         }
     }
 }

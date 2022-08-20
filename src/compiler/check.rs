@@ -1,4 +1,7 @@
+use std::error::Error;
+
 use super::name::Name;
+use super::error::CompileError;
 use super::types::{ Type, TypeKind };
 use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild  };
 
@@ -7,93 +10,94 @@ pub struct Checker {
 }
 
 impl Checker {
-    pub fn check(system: SysDCSystem) -> SysDCSystem {
+    pub fn check(system: SysDCSystem) -> Result<SysDCSystem, Box<dyn Error>> {
         let checker = Checker { def_manager: DefinesManager::new(&system) };
-        SysDCSystem::new(
-            system.units
-                .into_iter()
-                .map(|unit| checker.check_unit(unit))
-                .collect()
-        )
+
+        let mut units = vec!();
+        for unit in system.units {
+            units.push(checker.check_unit(unit)?);
+        }
+        Ok(SysDCSystem::new(units))
     }
 
-    fn check_unit(&self, unit: SysDCUnit) -> SysDCUnit {
-        SysDCUnit::new(
-            unit.name,
-            unit.data
-                .into_iter()
-                .map(|data| self.check_data(data))
-                .collect(),
-            unit.modules
-                .into_iter()
-                .map(|module| self.check_module(module))
-                .collect()
-        )
+    fn check_unit(&self, unit: SysDCUnit) -> Result<SysDCUnit, Box<dyn Error>> {
+        let (mut data, mut modules) = (vec!(), vec!());
+        for _data in unit.data {
+            data.push(self.check_data(_data)?);
+        }
+        for module in unit.modules {
+            modules.push(self.check_module(module)?);
+        }
+        Ok(SysDCUnit::new(unit.name, data, modules))
     }
 
-    fn check_data(&self, data: SysDCData) -> SysDCData {
-        SysDCData::new(
-            data.name,
-            data.member
-                .into_iter()
-                .map(|(name, types)| match types.kind {
+    fn check_data(&self, data: SysDCData) -> Result<SysDCData, Box<dyn Error>> {
+        let mut members = vec!();
+        for (name, types) in data.member {
+            members.push(
+                match types.kind {
                     TypeKind::Int32 => (name, types),
-                    _ => self.def_manager.resolve_from_type(name, types)
-                })
-                .collect()
-        )
+                    _ => self.def_manager.resolve_from_type(name, types)?
+                }
+            )
+        }
+        Ok(SysDCData::new(data.name, members))
     }
 
-    fn check_module(&self, module: SysDCModule) -> SysDCModule {
-        SysDCModule::new(
-            module.name,
-            module.functions
-                .into_iter()
-                .map(|func| self.check_function(func))
-                .collect()
-        )
+    fn check_module(&self, module: SysDCModule) -> Result<SysDCModule, Box<dyn Error>> {
+        let mut functions = vec!();
+        for func in module.functions {
+            functions.push(self.check_function(func)?)
+        }
+        Ok(SysDCModule::new(module.name, functions))
     }
 
-    fn check_function(&self, func: SysDCFunction) -> SysDCFunction {
-        let args = func.args
-            .into_iter()
-            .map(|(name, types)| self.def_manager.resolve_from_type(name, types))
-            .collect::<Vec<(Name, Type)>>();
+    fn check_function(&self, func: SysDCFunction) -> Result<SysDCFunction, Box<dyn Error>> {
+        let mut args = vec!();
+        for (name, types) in func.args {
+            args.push(self.def_manager.resolve_from_type(name, types)?);
+        }
 
         let (ret_name, ret_type) = func.returns.unwrap();
-        let require_ret = self.def_manager.resolve_from_type(ret_name.clone(), ret_type);
-        let ret = self.def_manager.resolve_from_name(ret_name.clone(), ret_name.name);
+        let require_ret = self.def_manager.resolve_from_type(ret_name.clone(), ret_type)?;
+        let ret = self.def_manager.resolve_from_name(ret_name.clone(), ret_name.name)?;
         if require_ret.1 != ret.1 {
-            panic!("[ERROR] Function definition requires to return \"{:?}\", but \"{:?}\" is returned", require_ret.1, ret.1);
+            return Err(Box::new(
+                CompileError::CheckError(format!("Function definition requires to return \"{:?}\", but \"{:?}\" is returned", require_ret.1, ret.1))
+            ));
         }
 
         let mut spawns = vec!();
         for SysDCSpawn { result: (name, _), detail } in func.spawns {
-            let required_types = self.def_manager.resolve_from_name(name.clone(), name.name);
+            let required_types = self.def_manager.resolve_from_name(name.clone(), name.name)?;
             let mut details = vec!();
             for uses in detail {
                 match uses {
                     SysDCSpawnChild::Use(name, _) => {
-                        let (name, types) = self.def_manager.resolve_from_name(name.clone(), name.name);
+                        let (name, types) = self.def_manager.resolve_from_name(name.clone(), name.name)?;
                         details.push(SysDCSpawnChild::new_use(name, types));
                     }
                     SysDCSpawnChild::Return(name, _) => {
-                        let (name, types) = self.def_manager.resolve_from_name(name.clone(), name.name);
+                        let (name, types) = self.def_manager.resolve_from_name(name.clone(), name.name)?;
                         if types != required_types.1 {
-                            panic!("[ERROR] Spawn definition requires to return \"{:?}\", but \"{:?}\" is returned", required_types.1, types);
+                            return Err(Box::new(
+                                CompileError::CheckError(format!("Spawn definition requires to return \"{:?}\", but \"{:?}\" is returned", required_types.1, types))
+                            ));
                         }
                         details.push(SysDCSpawnChild::new_return(name, types));
                     }
                     SysDCSpawnChild::LetTo { name, func: (_, Type { kind: TypeKind::Unsolved(func), .. }), args } => {
                         let mut let_to_args = vec!();
-                        for ((arg_name, _), defined_type) in args.into_iter().zip(self.def_manager.get_args_type(&name, &func).into_iter()) {
-                            let (arg_name, arg_type) = self.def_manager.resolve_from_name(arg_name.clone(), arg_name.name);
+                        for ((arg_name, _), defined_type) in args.into_iter().zip(self.def_manager.get_args_type(&name, &func).unwrap().into_iter()) {
+                            let (arg_name, arg_type) = self.def_manager.resolve_from_name(arg_name.clone(), arg_name.name)?;
                             if arg_type != defined_type {
-                                panic!("[ERROR] Argument \"{:?}\"'s type is expected \"{:?}\", but \"{:?}\"", arg_name, defined_type, arg_type);
+                                return Err(Box::new(
+                                    CompileError::CheckError(format!("Argument \"{:?}\"'s type is expected \"{:?}\", but \"{:?}\"", arg_name, defined_type, arg_type))
+                                ));
                             }
                             let_to_args.push((arg_name, arg_type));
                         }
-                        let resolved_func = self.def_manager.resolve_from_type(name.clone(), Type::from(func));
+                        let resolved_func = self.def_manager.resolve_from_type(name.clone(), Type::from(func))?;
                         details.push(SysDCSpawnChild::new_let_to(name, resolved_func, let_to_args))
                     },
                     _ => panic!("[ERROR] Occur unknown error at Checker::check_function")
@@ -102,7 +106,7 @@ impl Checker {
             spawns.push(SysDCSpawn::new(required_types, details))
         }
 
-        SysDCFunction::new(func.name, args, ret, spawns)
+        Ok(SysDCFunction::new(func.name, args, ret, spawns))
     }
 }
 
@@ -137,21 +141,27 @@ impl DefinesManager {
         DefinesManager { defines: DefinesManager::listup_defines(system) }
     }
 
-    pub fn get_args_type(&self, namespace: &Name, name: &String) -> Vec<Type> {
+    pub fn get_args_type(&self, namespace: &Name, name: &String) -> Result<Vec<Type>, Box<dyn Error>> {
         let (head, tails) = DefinesManager::split_name(name);
-        let found_def = self.find(namespace, &head);
+        let found_def = self.find(namespace, &head)?;
         let func = match &found_def.kind {
             DefineKind::Module =>
                 match tails {
                     Some(tails) => Name::from(&found_def.refs, tails),
-                    None => panic!("[ERROR] Missing function name")
+                    None => return Err(Box::new(
+                        CompileError::CheckError(format!("Missing function name"))
+                    ))
                 }
             DefineKind::Function(_) =>
                 match tails {
-                    Some(_) => panic!("[ERROR] Cannot nested access to Function"),
+                    Some(_) => return Err(Box::new(
+                        CompileError::CheckError(format!("Cannot nested access to Function"))
+                    )),
                     None => Name::from(&namespace.get_par_name(true).get_par_name(true), head)
                 }
-            _ => panic!("[ERROR] Function \"{}\" is not defined", name)
+            _ => return Err(Box::new(
+                CompileError::CheckError(format!("Function \"{}\" is not defined", name))
+            ))
         };
         let func_name = func.get_global_name();
 
@@ -159,97 +169,115 @@ impl DefinesManager {
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Argument(types) = kind {
                 if &refs.namespace == &func_name {
-                    args.push(self.resolve_from_type(func.clone(), types.clone()).1);
+                    args.push(self.resolve_from_type(func.clone(), types.clone())?.1);
                 }
             }
         }
-        args
+        Ok(args)
     }
 
-    pub fn resolve_from_type(&self, name: Name, types: Type) -> (Name, Type) {
+    pub fn resolve_from_type(&self, name: Name, types: Type) -> Result<(Name, Type), Box<dyn Error>> {
         match types.kind.clone() {
-            TypeKind::Int32 => (name, types),
+            TypeKind::Int32 => Ok((name, types)),
             TypeKind::Unsolved(hint) => {
                 let (head, tails) = DefinesManager::split_name(&hint);
-                let found_def = self.find(&name, &head);
+                let found_def = self.find(&name, &head)?;
                 match found_def.kind {
                     DefineKind::Data =>
                         match tails {
-                            Some(_) => panic!("[ERROR] Cannot nested access to Data"),
-                            None => (name, Type::new(TypeKind::Data, Some(found_def.refs)))
+                            Some(_) => Err(Box::new(
+                                CompileError::CheckError(format!("Cannot nested access to Data"))
+                            )),
+                            None => Ok((name, Type::new(TypeKind::Data, Some(found_def.refs))))
                         }
                     DefineKind::Module =>
                         match tails {
                             Some(tails) => self.resolve_from_module_func(name, found_def.refs.name, tails),
-                            None => panic!("[ERROR] Missing function name")
+                            None => Err(Box::new(
+                                CompileError::CheckError(format!("Missing function name"))
+                            ))
                         }
                     DefineKind::Function(_) => {
                         self.resolve_from_module_func(name.clone(), name.get_par_name(true).get_par_name(true).name, hint)
                     }
-                    _ => panic!("[ERROR] \"{:?}\" is defined but type is unmatched", types)
+                    _ => Err(Box::new(
+                        CompileError::CheckError(format!("\"{:?}\" is defined but type is unmatched", types))
+                    ))
                 }
             },
-            _ => panic!("[ERROR] Called unmatch resolve function (from_type)")
+            _ => Err(Box::new(
+                CompileError::CheckError(format!("Called unmatch resolve function (from_type)"))
+            ))
         }
     }
 
-    pub fn resolve_from_name(&self, name: Name, nname: String) -> (Name, Type) {
+    pub fn resolve_from_name(&self, name: Name, nname: String) -> Result<(Name, Type), Box<dyn Error>> {
         let (head, tails) = DefinesManager::split_name(&nname);
-        let found_def = self.find(&name, &head);
+        let found_def = self.find(&name, &head)?;
         match found_def.kind {
             DefineKind::Variable(types) => {
-                let types = self.resolve_from_type(name.clone(), types).1;
+                let types = self.resolve_from_type(name.clone(), types)?.1;
                 match tails {
                     Some(tails) => self.resolve_from_data_member(name, types, tails),
-                    None => (found_def.refs, types)
+                    None => Ok((found_def.refs, types))
                 }
             }
-            _ => panic!("[ERROR] Variable \"{}\" is not defined", nname)
+            _ => Err(Box::new(
+                CompileError::CheckError(format!("Variable \"{}\" is not defined", nname))
+            ))
         }
     }
 
-    fn resolve_from_data_member(&self, name: Name, data: Type, member: String) -> (Name, Type) {
+    fn resolve_from_data_member(&self, name: Name, data: Type, member: String) -> Result<(Name, Type), Box<dyn Error>> {
         let (head, tails) = DefinesManager::split_name(&member);
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
                 if data.refs.as_ref().unwrap().name == refs.get_par_name(true).name && head == refs.name {
-                    return match self.resolve_from_type(name.clone(), types.clone()).1 {
+                    return match self.resolve_from_type(name.clone(), types.clone())?.1 {
                         types@Type { kind: TypeKind::Int32, .. } =>
                             match tails {
-                                Some(_) => panic!("[ERROR] Cannot access Int32"),
-                                None => (refs.clone(), types)
+                                Some(_) => Err(Box::new(
+                                    CompileError::CheckError(format!("Cannot access Int32"))
+                                )),
+                                None => Ok((refs.clone(), types))
                             }
                         types@Type { kind: TypeKind::Data, .. } =>
                             match tails {
                                 Some(tails) => self.resolve_from_data_member(name, types, tails),
-                                None => (refs.clone(), types)
+                                None => Ok((refs.clone(), types))
                             },
                         _ => panic!("[ERROR] Occur unknown error at DefinesManager::resolve_from_data_member")
                     }
                 }
             }
         }
-        panic!("[ERROR] Member \"{}\" is not defined in Data \"{}\"", member, data.refs.as_ref().unwrap().name);
+        Err(Box::new(
+            CompileError::CheckError(format!("Member \"{}\" is not defined in Data \"{}\"", member, data.refs.as_ref().unwrap().name))
+        ))
     }
 
-    fn resolve_from_module_func(&self, name: Name, module: String, func: String) -> (Name, Type) {
+    fn resolve_from_module_func(&self, name: Name, module: String, func: String) -> Result<(Name, Type), Box<dyn Error>> {
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Function(types) = kind {
                 if module == refs.get_par_name(true).name && func == refs.name {
-                    return (refs.clone(), self.resolve_from_type(name, types.clone()).1);
+                    return Ok((refs.clone(), self.resolve_from_type(name, types.clone())?.1));
                 }
             }
         }
-        panic!("[ERROR] Function \"{}\" is not defined in Module \"{}\"", func, module);
+        Err(Box::new(
+            CompileError::CheckError(format!("Function \"{}\" is not defined in Module \"{}\"", func, module))
+        ))
     }
 
-    fn find(&self, namespace: &Name, name: &String) -> Define {
+    fn find(&self, namespace: &Name, name: &String) -> Result<Define, Box<dyn Error>> {
         if namespace.namespace.len() == 0 {
-            panic!("[ERROR] Cannot find the name \"{}\"", name);
+            return Err(Box::new(
+                CompileError::CheckError(format!("Cannot find the name \"{}\"", name))
+            ));
         }
         for Define{ kind, refs } in &self.defines {
             if refs.namespace == namespace.namespace && &refs.name == name {
-                return Define::new(kind.clone(), refs.clone())
+                return Ok(Define::new(kind.clone(), refs.clone()))
             }
         }
         self.find(&namespace.get_par_name(false), name)
@@ -830,7 +858,7 @@ mod test {
 
     fn check(program: &str) {
         let mut compiler = Compiler::new();
-        compiler.add_unit("test".to_string(), program.to_string());
-        compiler.generate_system();
+        compiler.add_unit("test".to_string(), program.to_string()).unwrap();
+        compiler.generate_system().unwrap();
     }
 }
