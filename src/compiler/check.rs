@@ -55,47 +55,46 @@ impl Checker {
     }
 
     fn check_function(&self, func: SysDCFunction) -> SysDCFunction {
-        let checked_args = func.args
+        let args = func.args
             .into_iter()
             .map(|(name, types)| self.def_manager.resolve_from_type(&name, types))
             .collect::<Vec<(Name, Type)>>();
 
-        let mut checked_spawns = vec!();
+        let mut spawns = vec!();
         for SysDCSpawn { result: (name, types), detail } in func.spawns {
-            let resolved_result = self.def_manager.resolve_from_type(&name, types);
-            let mut resolved_detail = vec!();
+            let mut details = vec!();
             for uses in detail {
                 match uses {
                     SysDCSpawnChild::Use{ name, .. } => {
-                        let (resolved_name, resolved_type) = self.def_manager.resolve_from_name(&name, &name.name);
-                        resolved_detail.push(SysDCSpawnChild::new_use(resolved_name, resolved_type));
+                        let (name, types) = self.def_manager.resolve_from_name(&name, &name.name);
+                        details.push(SysDCSpawnChild::new_use(name, types));
                     }
                     SysDCSpawnChild::Return { name, .. } => {
-                        let (resolved_name, resolved_type) = self.def_manager.resolve_from_name(&name, &name.name);
-                        resolved_detail.push(SysDCSpawnChild::new_return(resolved_name, resolved_type));
+                        let (name, types) = self.def_manager.resolve_from_name(&name, &name.name);
+                        details.push(SysDCSpawnChild::new_return(name, types));
                     }
                     SysDCSpawnChild::LetTo { name, func: (_, Type { kind: TypeKind::Unsolved(func), .. }), args } => {
-                        let mut resolved_args = vec!();
+                        let mut let_to_args = vec!();
                         for ((arg_name, _), defined_type) in args.iter().zip(self.def_manager.get_args_type(&name, &func).iter()) {
                             let (arg_name, arg_type) = self.def_manager.resolve_from_name(arg_name, &arg_name.name);
                             if &arg_type != defined_type {
                                 panic!("[ERROR] Argument \"{:?}\"'s type is expected \"{:?}\", but \"{:?}\"", arg_name, defined_type, arg_type);
                             }
-                            resolved_args.push((arg_name.clone(), arg_type));
+                            let_to_args.push((arg_name.clone(), arg_type));
                         }
                         let resolved_func = self.def_manager.resolve_from_type(&name, Type::from(func));
-                        resolved_detail.push(SysDCSpawnChild::new_let_to(name, resolved_func, resolved_args))
+                        details.push(SysDCSpawnChild::new_let_to(name, resolved_func, let_to_args))
                     },
                     _ => panic!("[ERROR] Occur unknown error at Checker::check_function")
                 }
             }
-            checked_spawns.push(SysDCSpawn::new(resolved_result, resolved_detail))
+            spawns.push(SysDCSpawn::new(self.def_manager.resolve_from_type(&name, types), details))
         }
 
         let (ret_name, ret_type) = func.returns.unwrap();
         let resolved_ret = self.def_manager.resolve_from_type(&ret_name, ret_type);
 
-        SysDCFunction::new(func.name, checked_args, resolved_ret, checked_spawns)
+        SysDCFunction::new(func.name, args, resolved_ret, spawns)
     }
 }
 
