@@ -11,7 +11,11 @@ pub enum CompileError {
     FoundUnregisteredSymbol,
 
     /* パース時に発生したエラー */
-    ParseError(String),
+    UnexpectedEOF,
+    ReturnExistsMultiple,
+    ReturnNotExists,
+    ResultOfSpawnNotSpecified,
+    FunctionNameNotFound,
 
     /* 検査時に発生したエラー */
     CheckError(String),
@@ -28,7 +32,12 @@ impl Display for CompileError {
             CompileError::RequestedTokenNotFound(kind) => write!(f, "Token \"{:?}\" is requested, but not found", kind),
             CompileError::FoundUnregisteredSymbol => write!(f, "Found unregistered symbol"),
 
-            CompileError::ParseError(msg) => write!(f, "{} (CompileError::ParseError)", msg),
+            CompileError::UnexpectedEOF => write!(f, "Expected Data or Module definition, but not found"),
+            CompileError::ReturnExistsMultiple => write!(f, "Annotation \"return\" exists multiple"),
+            CompileError::ReturnNotExists => write!(f, "Annotation \"return\" not existed"),
+            CompileError::ResultOfSpawnNotSpecified => write!(f, "Missing to specify the result of spawn"),
+            CompileError::FunctionNameNotFound => write!(f, "Function name is requested, but not found"),
+
             CompileError::CheckError(msg) => write!(f, "{} (CompileError::CheckError)", msg),
 
             CompileError::InternalError => write!(f, "Occur something in compiler")

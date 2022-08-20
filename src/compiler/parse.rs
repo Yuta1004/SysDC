@@ -50,9 +50,7 @@ impl<'a> Parser<'a> {
         let mut modules = vec!();
         while self.tokenizer.has_token() {
             match (self.parse_data(&namespace)?, self.parse_module(&namespace)?) {
-                (None, None) => return Err(Box::new(
-                    CompileError::ParseError(format!("Data/Module not found, but tokens remain"))
-                )),
+                (None, None) => return Err(Box::new(CompileError::UnexpectedEOF)),
                 (d, m) => {
                     if d.is_some() { data.push(d.unwrap()); }
                     if m.is_some() { modules.push(m.unwrap()); }
@@ -140,9 +138,7 @@ impl<'a> Parser<'a> {
             match annotation {
                 SysDCAnnotation::Return(ret) => {
                     if returns.is_some() {
-                        return Err(Box::new(
-                            CompileError::ParseError(format!("Annotation \"return\" is multiple defined"))
-                        ));
+                        return Err(Box::new(CompileError::ReturnExistsMultiple));
                     }
                     returns = Some(ret)
                 }
@@ -150,9 +146,7 @@ impl<'a> Parser<'a> {
             }
         }
         if returns.is_none() {
-            return Err(Box::new(
-                CompileError::ParseError(format!("Annotation \"return\" is not defined"))
-            ));
+            return Err(Box::new(CompileError::ReturnNotExists));
         }
         Ok((returns.unwrap(), spawns))
     }
@@ -199,9 +193,7 @@ impl<'a> Parser<'a> {
         // <id_type_mapping>
         let spawn_result = self.parse_id_type_mapping(namespace)?;
         if spawn_result.is_none() {
-            return Err(Box::new(
-                CompileError::ParseError(format!("Missing to specify the result of spawn"))
-            ));
+            return Err(Box::new(CompileError::ResultOfSpawnNotSpecified));
         }
 
         // ( \{ { <annotation_spawn_detail > } \} )
@@ -241,9 +233,7 @@ impl<'a> Parser<'a> {
             // <id_chain> 
             let func = match self.parse_id_chain(namespace)? {
                 Some((func, _)) => func.name,
-                None => return Err(Box::new(
-                    CompileError::ParseError(format!("Function Name is requested, but not found"))
-                ))
+                None => return Err(Box::new(CompileError::FunctionNameNotFound))
             };
         
             // \( <id_chain_list, delimiter=',') \)
@@ -274,9 +264,7 @@ impl<'a> Parser<'a> {
                     self.tokenizer.request(TokenKind::Semicolon)?;
                     return Ok(Some(vec!(SysDCSpawnChild::new_return(name, Type::new_unsovled_nohint()))));
                 },
-                None => return Err(Box::new(
-                    CompileError::ParseError(format!("[ERROR] \"return\" needs variable name"))
-                ))
+                None => return Err(Box::new(CompileError::ResultOfSpawnNotSpecified))
             }
         }
 
