@@ -71,9 +71,7 @@ impl Token {
     pub fn get_id(&self) -> Result<String, Box<dyn Error>> {
         match &self.orig_id {
             Some(id) => Ok(id.clone()),
-            None => Err(Box::new(
-                CompileError::TokenizeError(format!("get_id called for token {:?}", self.kind))
-            ))
+            None => Err(Box::new(CompileError::InternalError))
         }
     }
 }
@@ -117,9 +115,7 @@ impl<'a> Tokenizer<'a> {
     pub fn request(&mut self, kind: TokenKind) -> Result<Token, Box<dyn Error>> {
         match self.expect(kind.clone())? {
             Some(token) => Ok(token),
-            None => Err(Box::new(
-                CompileError::TokenizeError(format!("Token \"{:?}\" is requested, but not found.", kind))
-            ))
+            None => Err(Box::new(CompileError::RequestedTokenNotFound(kind)))
         }
     }
 
@@ -147,9 +143,7 @@ impl<'a> Tokenizer<'a> {
                 (CharType::SymbolAllow1, CharType::SymbolAllow2) => { self.now_ref_pos += 1; break },
 
                 // Ng(panic)
-                (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) => return Err(Box::new(
-                    CompileError::TokenizeError(format!("Discovered unregistered symbol.")
-                ))),
+                (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) => return Err(Box::new(CompileError::FoundUnregisteredSymbol)),
 
                 // Ok(force stop)
                 _ => break
