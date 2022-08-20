@@ -20,12 +20,13 @@ impl Compiler {
         Compiler { units: vec!() }
     }
 
-    pub fn add_unit(&mut self, unit_name: String, program: &String) {
-        let name = Name::from(&Name::new_root(), unit_name);
-        let tokenizer = Tokenizer::new(program);
-        let mut parser = Parser::new(tokenizer);
-        let unit = parser.parse(name);
-        self.units.push(unit);
+    pub fn add_unit(&mut self, unit_name: String, program: String) {
+        self.units.push(
+            Parser::parse(
+                Tokenizer::new(&program),
+                Name::from(&Name::new_root(), unit_name)
+            )
+        );
     }
 
     pub fn generate_system(self) -> SysDCSystem {
@@ -48,7 +49,7 @@ mod test {
             ("E", "data E {}")
         ];
         for (unit_name, program) in programs {
-            compiler.add_unit(unit_name.to_string(), &program.to_string());
+            compiler.add_unit(unit_name.to_string(), program.to_string());
         }
         compiler.generate_system();
     }
