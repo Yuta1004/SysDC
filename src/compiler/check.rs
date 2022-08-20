@@ -38,7 +38,7 @@ impl Checker {
                 .into_iter()
                 .map(|(name, types)| match types.kind {
                     TypeKind::Int32 => (name, types),
-                    _ => self.def_manager.try_match_from_type(&name, types)
+                    _ => self.def_manager.resolve_from_type(&name, types)
                 })
                 .collect()
         )
@@ -57,33 +57,33 @@ impl Checker {
     fn check_function(&self, func: SysDCFunction) -> SysDCFunction {
         let checked_args = func.args
             .into_iter()
-            .map(|(name, types)| self.def_manager.try_match_from_type(&name, types))
+            .map(|(name, types)| self.def_manager.resolve_from_type(&name, types))
             .collect::<Vec<(Name, Type)>>();
 
         let mut checked_spawns = vec!();
         for SysDCSpawn { result: (name, types), detail } in func.spawns {
-            let resolved_result = self.def_manager.try_match_from_type(&name, types);
+            let resolved_result = self.def_manager.resolve_from_type(&name, types);
             let mut resolved_detail = vec!();
             for uses in detail {
                 match uses {
                     SysDCSpawnChild::Use{ name, .. } => {
-                        let (resolved_name, resolved_type) = self.def_manager.try_match_from_name(&name, &name.name);
+                        let (resolved_name, resolved_type) = self.def_manager.resolve_from_name(&name, &name.name);
                         resolved_detail.push(SysDCSpawnChild::new_use(resolved_name, resolved_type));
                     }
                     SysDCSpawnChild::Return { name, .. } => {
-                        let (resolved_name, resolved_type) = self.def_manager.try_match_from_name(&name, &name.name);
+                        let (resolved_name, resolved_type) = self.def_manager.resolve_from_name(&name, &name.name);
                         resolved_detail.push(SysDCSpawnChild::new_return(resolved_name, resolved_type));
                     }
                     SysDCSpawnChild::LetTo { name, func: (_, Type { kind: TypeKind::Unsolved(func), .. }), args } => {
                         let mut resolved_args = vec!();
                         for ((arg_name, _), defined_type) in args.iter().zip(self.def_manager.get_args_type(&name, &func).iter()) {
-                            let (arg_name, arg_type) = self.def_manager.try_match_from_name(arg_name, &arg_name.name);
+                            let (arg_name, arg_type) = self.def_manager.resolve_from_name(arg_name, &arg_name.name);
                             if &arg_type != defined_type {
                                 panic!("[ERROR] Argument \"{:?}\"'s type is expected \"{:?}\", but \"{:?}\"", arg_name, defined_type, arg_type);
                             }
                             resolved_args.push((arg_name.clone(), arg_type));
                         }
-                        let resolved_func = self.def_manager.try_match_from_type(&name, Type::from(func));
+                        let resolved_func = self.def_manager.resolve_from_type(&name, Type::from(func));
                         resolved_detail.push(SysDCSpawnChild::new_let_to(name, resolved_func, resolved_args))
                     },
                     _ => panic!("[ERROR] Occur unknown error at Checker::check_function")
@@ -93,7 +93,7 @@ impl Checker {
         }
 
         let (ret_name, ret_type) = func.returns.unwrap();
-        let resolved_ret = self.def_manager.try_match_from_type(&ret_name, ret_type);
+        let resolved_ret = self.def_manager.resolve_from_type(&ret_name, ret_type);
 
         SysDCFunction::new(func.name, checked_args, resolved_ret, checked_spawns)
     }
@@ -151,14 +151,14 @@ impl DefinesManager {
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Argument(types) = kind {
                 if refs.namespace == func.get_global_name() {
-                    args.push(self.try_match_from_type(&func, types.clone()).1);
+                    args.push(self.resolve_from_type(&func, types.clone()).1);
                 }
             }
         }
         args
     }
 
-    pub fn try_match_from_type(&self, name: &Name, types: Type) -> (Name, Type) {
+    pub fn resolve_from_type(&self, name: &Name, types: Type) -> (Name, Type) {
         match &types.kind {
             TypeKind::Int32 => (name.clone(), types),
             TypeKind::Unsolved(hint) => {
@@ -172,27 +172,27 @@ impl DefinesManager {
                         }
                     DefineKind::Module =>
                         match tails {
-                            Some(tails) => self.try_match_from_module_func(name, &found_def.refs.name, &tails),
+                            Some(tails) => self.resolve_from_module_func(name, &found_def.refs.name, &tails),
                             None => panic!("[ERROR] Missing function name")
                         }
                     DefineKind::Function(_) => {
-                        self.try_match_from_module_func(name, &name.get_par_name(true).get_par_name(true).name, hint)
+                        self.resolve_from_module_func(name, &name.get_par_name(true).get_par_name(true).name, hint)
                     }
                     _ => panic!("[ERROR] \"{:?}\" is defined but type is unmatched", types)
                 }
             },
-            _ => panic!("[ERROR] Called unmatch try_match function (from_type)")
+            _ => panic!("[ERROR] Called unmatch resolve function (from_type)")
         }
     }
 
-    pub fn try_match_from_name(&self, name: &Name, nname: &String) -> (Name, Type) {
+    pub fn resolve_from_name(&self, name: &Name, nname: &String) -> (Name, Type) {
         let (head, tails) = DefinesManager::split_name(nname);
         let found_def = self.find(name, &head);
         match found_def.kind {
             DefineKind::Variable(types) => {
-                let types = self.try_match_from_type(name, types).1;
+                let types = self.resolve_from_type(name, types).1;
                 match tails {
-                    Some(tails) => self.try_match_from_data_member(name, &types, &tails),
+                    Some(tails) => self.resolve_from_data_member(name, &types, &tails),
                     None => (found_def.refs.clone(), types)
                 }
             }
@@ -200,12 +200,12 @@ impl DefinesManager {
         }
     }
 
-    fn try_match_from_data_member(&self, name: &Name, data: &Type, member: &String) -> (Name, Type) {
+    fn resolve_from_data_member(&self, name: &Name, data: &Type, member: &String) -> (Name, Type) {
         let (head, tails) = DefinesManager::split_name(member);
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
                 if data.refs.as_ref().unwrap().name == refs.get_par_name(true).name && head == refs.name {
-                    return match self.try_match_from_type(name, types.clone()).1 {
+                    return match self.resolve_from_type(name, types.clone()).1 {
                         types@Type { kind: TypeKind::Int32, .. } =>
                             match tails {
                                 Some(_) => panic!("[ERROR] Cannot access Int32"),
@@ -213,10 +213,10 @@ impl DefinesManager {
                             }
                         types@Type { kind: TypeKind::Data, .. } =>
                             match tails {
-                                Some(tails) => self.try_match_from_data_member(name, &types, &tails),
+                                Some(tails) => self.resolve_from_data_member(name, &types, &tails),
                                 None => (refs.clone(), types)
                             },
-                        _ => panic!("[ERROR] Occur unknown error at DefinesManager::try_match_from_data_member")
+                        _ => panic!("[ERROR] Occur unknown error at DefinesManager::resolve_from_data_member")
                     }
                 }
             }
@@ -224,7 +224,7 @@ impl DefinesManager {
         panic!("[ERROR] Member \"{}\" is not defined in Data \"{}\"", member, data.refs.as_ref().unwrap().name);
     }
 
-    fn try_match_from_module_func(&self, namespace: &Name, module: &String, func: &String) -> (Name, Type) {
+    fn resolve_from_module_func(&self, namespace: &Name, module: &String, func: &String) -> (Name, Type) {
         let (head, tails) = DefinesManager::split_name(func);
         if tails.is_some() {
             panic!("[ERROR] Cannot access Function \"{}\" to Function \"{}\"", head, tails.unwrap());
@@ -233,7 +233,7 @@ impl DefinesManager {
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Function(types) = kind {
                 if module == &refs.get_par_name(true).name && head == refs.name {
-                    return (refs.clone(), self.try_match_from_type(namespace, types.clone()).1);
+                    return (refs.clone(), self.resolve_from_type(namespace, types.clone()).1);
                 }
             }
         }
