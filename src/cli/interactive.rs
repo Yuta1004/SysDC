@@ -106,7 +106,7 @@ impl InteractiveCmd {
         let mut compiler = Compiler::new();
         for (unit_name, program) in plugin.run(args)? {
             println!("Load: {}", unit_name);
-            compiler.add_unit(unit_name, &program);
+            compiler.add_unit(unit_name, program);
         }
         self.system = Some(compiler.generate_system());
         Ok(())

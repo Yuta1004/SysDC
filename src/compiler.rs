@@ -20,10 +20,10 @@ impl Compiler {
         Compiler { units: vec!() }
     }
 
-    pub fn add_unit(&mut self, unit_name: String, program: &String) {
+    pub fn add_unit(&mut self, unit_name: String, program: String) {
         self.units.push(
             Parser::parse(
-                Tokenizer::new(program),
+                Tokenizer::new(&program),
                 Name::from(&Name::new_root(), unit_name)
             )
         );
@@ -49,7 +49,7 @@ mod test {
             ("E", "data E {}")
         ];
         for (unit_name, program) in programs {
-            compiler.add_unit(unit_name.to_string(), &program.to_string());
+            compiler.add_unit(unit_name.to_string(), program.to_string());
         }
         compiler.generate_system();
     }
