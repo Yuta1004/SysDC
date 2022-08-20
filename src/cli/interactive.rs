@@ -16,8 +16,8 @@ use crate::plugin::PluginManager;
 #[derive(Debug)]
 enum CommandError {
     NotFound(String),
-    Syntax(String),
-    Runtime(String)
+    Syntax,
+    SystemIsNotSetted
 }
 
 impl Error for CommandError {}
@@ -26,8 +26,8 @@ impl Display for CommandError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
             CommandError::NotFound(command) => write!(f, "Command \"{}\" is not found", command),
-            CommandError::Syntax(msg) => write!(f, "{}", msg),
-            CommandError::Runtime(msg) => write!(f, "{}", msg)
+            CommandError::Syntax => write!(f, "Usage: in/out/load/save <name> <args>"),
+            CommandError::SystemIsNotSetted => write!(f, "Must run \"in\" command before run command")
         }
     }
 }
@@ -104,7 +104,7 @@ impl InteractiveCmd {
         let plugin = self.plugin_manager.get_type_out(&name)?;
         match &self.system {
             Some(s) => plugin.run(args, s),
-            None => Err(Box::new(CommandError::Runtime("Must run \"in\" command before run \"out\" command".to_string())))
+            None => Err(Box::new(CommandError::SystemIsNotSetted))
         }
     }
 
@@ -121,7 +121,7 @@ impl InteractiveCmd {
                 s.serialize(&mut Serializer::new(&mut buf))?;
                 buf
             },
-            None => return Err(Box::new(CommandError::Runtime("Must run \"in\" command before run \"save\" command".to_string())))
+            None => return Err(Box::new(CommandError::SystemIsNotSetted))
         };
 
         let mut f = File::create(&(filepath+".sysdc"))?;
@@ -135,7 +135,7 @@ impl InteractiveCmd {
         match splitted_text.len() {
             1 => {
                 if splitted_text[0].len() == 0 {
-                    return Err(Box::new(CommandError::Syntax("Usage: in/out/save <name> <args>".to_string())));
+                    return Err(Box::new(CommandError::Syntax));
                 }
                 Ok((splitted_text[0].clone(), "".to_string(), vec!()))
             },
