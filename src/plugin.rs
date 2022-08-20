@@ -19,8 +19,9 @@ pub trait OutputPlugin {
 
 #[derive(Debug)]
 pub enum PluginError {
-    RuntimeError(String),
-    UnknownError
+    NotFound(String),
+    Runtime(String),
+    Unknown
 }
 
 impl Error for PluginError {}
@@ -28,8 +29,9 @@ impl Error for PluginError {}
 impl Display for PluginError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            PluginError::RuntimeError(msg) => write!(f, "{} (PluginError::RuntimeError)", msg),
-            PluginError::UnknownError => write!(f, "UnknownError (PluginError::UnknownError)")
+            PluginError::NotFound(name) => write!(f, "Plugin \"{}\" not found", name),
+            PluginError::Runtime(msg) => write!(f, "{}", msg),
+            PluginError::Unknown => write!(f, "Occured unknown error at running plugin")
         }
     }
 }
@@ -45,22 +47,22 @@ impl PluginManager {
         PluginManager { in_plugins, out_plugins }
     }
 
-    pub fn get_type_in(&self, name: &String) -> Option<&Box<dyn InputPlugin>> {
+    pub fn get_type_in(&self, name: &String) -> Result<&Box<dyn InputPlugin>, Box<dyn Error>> {
         for plugin in &self.in_plugins {
             if plugin.get_name() == name {
-                return Some(plugin);
+                return Ok(plugin);
             }
         }
-        None
+        Err(Box::new(PluginError::NotFound(name.to_string())))
     }
 
-    pub fn get_type_out(&self, name: &String) -> Option<&Box<dyn OutputPlugin>> {
+    pub fn get_type_out(&self, name: &String) -> Result<&Box<dyn OutputPlugin>, Box<dyn Error>> {
         for plugin in &self.out_plugins {
             if plugin.get_name() == name {
-                return Some(plugin);
+                return Ok(plugin);
             }
         }
-        None
+        Err(Box::new(PluginError::NotFound(name.to_string())))
     }
 
     fn load_default_plugins() -> (Vec<Box<dyn InputPlugin>>, Vec<Box<dyn OutputPlugin>>) {
@@ -85,7 +87,7 @@ mod test {
     fn test_in_debug() {
         let plugin_manager = PluginManager::new();
         let plugin = plugin_manager.get_type_in(&"debug".to_string());
-        assert!(plugin.is_some());
+        assert!(plugin.is_ok());
         plugin.unwrap().run(vec!()).unwrap();
     }
 
@@ -99,7 +101,7 @@ mod test {
     fn test_out_debug() {
         let plugin_manager = PluginManager::new();
         let plugin = plugin_manager.get_type_out(&"debug".to_string());
-        assert!(plugin.is_some());
+        assert!(plugin.is_ok());
         plugin.unwrap().run(vec!(), &SysDCSystem::new(vec!())).unwrap();
     }
 

@@ -4,6 +4,7 @@ use std::fs;
 use std::fs::File;
 use std::fmt;
 use std::fmt::{ Display, Formatter };
+use std::process;
 use std::error::Error;
 
 use serde::Serialize;
@@ -15,9 +16,9 @@ use crate::plugin::PluginManager;
 
 #[derive(Debug)]
 enum CommandError {
-    NotFoundError(String),
-    SyntaxError(String),
-    RuntimeError(String)
+    NotFound(String),
+    Syntax,
+    SystemIsNotSetted
 }
 
 impl Error for CommandError {}
@@ -25,9 +26,9 @@ impl Error for CommandError {}
 impl Display for CommandError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            CommandError::NotFoundError(text) => write!(f, "{} is not found (CommandError::NotFoundError)", text),
-            CommandError::SyntaxError(text) => write!(f, "{} (CommandError::SyntaxError)", text),
-            CommandError::RuntimeError(text) => write!(f, "{} (CommandError::RuntimeError)", text)
+            CommandError::NotFound(command) => write!(f, "Command \"{}\" is not found", command),
+            CommandError::Syntax => write!(f, "Usage: in/out/load/save <name> <args>"),
+            CommandError::SystemIsNotSetted => write!(f, "Must run \"in\" command before run command")
         }
     }
 }
@@ -45,18 +46,13 @@ impl InteractiveCmd {
     pub fn run(&mut self) {
         loop {
             match self.run_one_line() {
-                Ok(do_exit) => {
-                    println!("Ok\n");
-                    if do_exit {
-                        break
-                    }
-                },
+                Ok(_) => println!(),
                 Err(e) => println!("[ERROR] {}\n", e)
             }
         }
     }
 
-    fn run_one_line(&mut self) -> Result<bool, Box<dyn Error>> {
+    fn run_one_line(&mut self) -> Result<(), Box<dyn Error>> {
         print!("> ");
         io::stdout().flush().unwrap(); 
 
@@ -65,68 +61,37 @@ impl InteractiveCmd {
         let (cmd, subcmd, args) = InteractiveCmd::parse_input(text.trim().to_string())?;
 
         match cmd.as_str() {
-            "exit" => {
-                println!("Bye...");
-                Ok(true)
-            },
-            "in" => {
-                self.run_mode_in(subcmd, args)?;
-                Ok(false)
-            },
-            "out" => {
-                self.run_mode_out(subcmd, args)?;
-                Ok(false)
-            },
-            "load" => {
-                self.load_system(subcmd)?;
-                Ok(false)
-            }
-            "save" => {
-                self.save_system(subcmd)?;
-                Ok(false)
-            }
-            _ => {
-                Err(Box::new(
-                    CommandError::NotFoundError(format!("Command \"{}\"", cmd))
-                ))
-            }
+            "exit" => self.exit_interactive_mode(),
+            "in" => self.run_mode_in(subcmd, args)?,
+            "out" => self.run_mode_out(subcmd, args)?,
+            "load" => self.load_system(subcmd)?,
+            "save" => self.save_system(subcmd)?,
+            _ => return Err(Box::new(CommandError::NotFound(cmd)))
         }
+        Ok(())
+    }
+
+    fn exit_interactive_mode(&mut self) {
+        println!("Bye..");
+        process::exit(0);
     }
 
     fn run_mode_in(&mut self, name: String, args: Vec<String>) -> Result<(), Box<dyn Error>> {
-        let plugin = match self.plugin_manager.get_type_in(&name) {
-            Some(plugin) => plugin,
-            None => {
-                return Err(Box::new(
-                    CommandError::NotFoundError(format!("Plugin \"{}\"", name))
-                ));
-            }
-        };
-
+        let plugin = self.plugin_manager.get_type_in(&name)?;
         let mut compiler = Compiler::new();
         for (unit_name, program) in plugin.run(args)? {
             println!("Load: {}", unit_name);
-            compiler.add_unit(unit_name, program);
+            compiler.add_unit(unit_name, program)?;
         }
-        self.system = Some(compiler.generate_system());
+        self.system = Some(compiler.generate_system()?);
         Ok(())
     }
 
     fn run_mode_out(&self, name: String, args: Vec<String>) -> Result<(), Box<dyn Error>> {
-        let plugin = match self.plugin_manager.get_type_out(&name) {
-            Some(plugin) => plugin,
-            None => {
-                return Err(Box::new(
-                    CommandError::NotFoundError(format!("Plugin \"{}\"", name))
-                ));
-            }
-        };
-
+        let plugin = self.plugin_manager.get_type_out(&name)?;
         match &self.system {
             Some(s) => plugin.run(args, s),
-            None => Err(Box::new(
-                CommandError::RuntimeError("Must run \"in\" command before run \"out\" command".to_string())
-            ))
+            None => Err(Box::new(CommandError::SystemIsNotSetted))
         }
     }
 
@@ -143,9 +108,7 @@ impl InteractiveCmd {
                 s.serialize(&mut Serializer::new(&mut buf))?;
                 buf
             },
-            None => return Err(Box::new(
-                CommandError::RuntimeError("Must run \"in\" command before run \"save\" command".to_string())
-            ))
+            None => return Err(Box::new(CommandError::SystemIsNotSetted))
         };
 
         let mut f = File::create(&(filepath+".sysdc"))?;
@@ -159,9 +122,7 @@ impl InteractiveCmd {
         match splitted_text.len() {
             1 => {
                 if splitted_text[0].len() == 0 {
-                    return Err(Box::new(
-                        CommandError::SyntaxError("Usage: in/out/save <name> <args>".to_string())
-                    ));
+                    return Err(Box::new(CommandError::Syntax));
                 }
                 Ok((splitted_text[0].clone(), "".to_string(), vec!()))
             },
