@@ -33,15 +33,16 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(tokenizer: Tokenizer<'a>) -> Parser<'a> {
-        Parser { tokenizer }
+    pub fn parse(tokenizer: Tokenizer<'a>, namespace: Name) -> SysDCUnit {
+        let mut parser = Parser { tokenizer };
+        parser.parse_root(namespace)
     }
 
     /**
      * <root> ::= { <sentence> }
      * <sentence> ::= { <data> | <module> }
      */
-    pub fn parse(&mut self, namespace: Name) -> SysDCUnit {
+    fn parse_root(&mut self, namespace: Name) -> SysDCUnit {
         let mut data = vec!();
         let mut modules = vec!();
         while self.tokenizer.has_token() {
@@ -650,7 +651,6 @@ mod test {
     fn parse(program: &str) -> SysDCUnit {
         let program = program.to_string();
         let tokenizer = Tokenizer::new(&program);
-        let mut parser = Parser::new(tokenizer);
-        parser.parse(generate_name_for_test())
+        Parser::parse(tokenizer, generate_name_for_test())
     }
 }

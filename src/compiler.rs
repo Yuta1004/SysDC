@@ -21,11 +21,12 @@ impl Compiler {
     }
 
     pub fn add_unit(&mut self, unit_name: String, program: &String) {
-        let name = Name::from(&Name::new_root(), unit_name);
-        let tokenizer = Tokenizer::new(program);
-        let mut parser = Parser::new(tokenizer);
-        let unit = parser.parse(name);
-        self.units.push(unit);
+        self.units.push(
+            Parser::parse(
+                Tokenizer::new(program),
+                Name::from(&Name::new_root(), unit_name)
+            )
+        );
     }
 
     pub fn generate_system(self) -> SysDCSystem {
