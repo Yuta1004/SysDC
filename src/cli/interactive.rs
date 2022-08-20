@@ -4,6 +4,7 @@ use std::fs;
 use std::fs::File;
 use std::fmt;
 use std::fmt::{ Display, Formatter };
+use std::process;
 use std::error::Error;
 
 use serde::Serialize;
@@ -45,18 +46,13 @@ impl InteractiveCmd {
     pub fn run(&mut self) {
         loop {
             match self.run_one_line() {
-                Ok(do_exit) => {
-                    println!();
-                    if do_exit {
-                        break
-                    }
-                },
+                Ok(_) => println!(),
                 Err(e) => println!("[ERROR] {}\n", e)
             }
         }
     }
 
-    fn run_one_line(&mut self) -> Result<bool, Box<dyn Error>> {
+    fn run_one_line(&mut self) -> Result<(), Box<dyn Error>> {
         print!("> ");
         io::stdout().flush().unwrap(); 
 
@@ -65,28 +61,19 @@ impl InteractiveCmd {
         let (cmd, subcmd, args) = InteractiveCmd::parse_input(text.trim().to_string())?;
 
         match cmd.as_str() {
-            "exit" => {
-                println!("Bye...");
-                Ok(true)
-            },
-            "in" => {
-                self.run_mode_in(subcmd, args)?;
-                Ok(false)
-            },
-            "out" => {
-                self.run_mode_out(subcmd, args)?;
-                Ok(false)
-            },
-            "load" => {
-                self.load_system(subcmd)?;
-                Ok(false)
-            }
-            "save" => {
-                self.save_system(subcmd)?;
-                Ok(false)
-            }
-            _ => Err(Box::new(CommandError::NotFound(cmd)))
+            "exit" => self.exit_interactive_mode(),
+            "in" => self.run_mode_in(subcmd, args)?,
+            "out" => self.run_mode_out(subcmd, args)?,
+            "load" => self.load_system(subcmd)?,
+            "save" => self.save_system(subcmd)?,
+            _ => return Err(Box::new(CommandError::NotFound(cmd)))
         }
+        Ok(())
+    }
+
+    fn exit_interactive_mode(&mut self) {
+        println!("Bye..");
+        process::exit(0);
     }
 
     fn run_mode_in(&mut self, name: String, args: Vec<String>) -> Result<(), Box<dyn Error>> {
