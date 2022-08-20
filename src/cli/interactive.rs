@@ -46,7 +46,6 @@ impl InteractiveCmd {
         loop {
             match self.run_one_line() {
                 Ok(do_exit) => {
-                    println!("Ok\n");
                     if do_exit {
                         break
                     }
