@@ -225,14 +225,9 @@ impl DefinesManager {
     }
 
     fn resolve_from_module_func(&self, name: Name, module: String, func: String) -> (Name, Type) {
-        let (head, tails) = DefinesManager::split_name(&func);
-        if tails.is_some() {
-            panic!("[ERROR] Cannot access Function \"{}\" to Function \"{}\"", head, tails.unwrap());
-        }
-
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Function(types) = kind {
-                if module == refs.get_par_name(true).name && head == refs.name {
+                if module == refs.get_par_name(true).name && func == refs.name {
                     return (refs.clone(), self.resolve_from_type(name, types.clone()).1);
                 }
             }
