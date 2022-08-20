@@ -96,7 +96,7 @@ impl SysDCSpawn {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SysDCSpawnChild {
     Use { name: Name, types: Type },
-    LetTo { name: Name, func: Type, args: Vec<(Name, Type)> },
+    LetTo { name: Name, func: (Name, Type), args: Vec<(Name, Type)> },
     Return { name: Name, types: Type }
 }
 
@@ -105,7 +105,7 @@ impl SysDCSpawnChild {
         SysDCSpawnChild::Use { name, types }
     }
 
-    pub fn new_let_to(name: Name, func: Type, args: Vec<(Name, Type)>) -> SysDCSpawnChild {
+    pub fn new_let_to(name: Name, func: (Name, Type), args: Vec<(Name, Type)>) -> SysDCSpawnChild {
         SysDCSpawnChild::LetTo { name, func, args }
     }
 

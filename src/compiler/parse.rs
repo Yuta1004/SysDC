@@ -227,7 +227,7 @@ impl<'a> Parser<'a> {
             // ;
             self.tokenizer.request(TokenKind::Semicolon);
 
-            return Some(vec!(SysDCSpawnChild::new_let_to(let_to, Type::from(func), args)));
+            return Some(vec!(SysDCSpawnChild::new_let_to(let_to, (Name::new_root(), Type::from(func)), args)));
         }
 
         // use
@@ -506,7 +506,11 @@ mod test {
                 SysDCSpawnChild::new_use(name_func_spawn_use_box_y, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
-                SysDCSpawnChild::new_let_to(name_func_spawn_let_name, Type::from("UnknownModule.func".to_string()), vec!((name_func_spawn_let_arg_dx, Type::new_unsovled_nohint()))),
+                SysDCSpawnChild::new_let_to(
+                    name_func_spawn_let_name,
+                    (Name::new_root(), Type::from("UnknownModule.func".to_string())),
+                    vec!((name_func_spawn_let_arg_dx, Type::new_unsovled_nohint()))
+                ),
                 SysDCSpawnChild::new_return(name_func_spawn_ret, Type::new_unsovled_nohint())
             ))
         );
@@ -611,7 +615,11 @@ mod test {
                 SysDCSpawnChild::new_use(name_func_spawn_use_box_y, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
-                SysDCSpawnChild::new_let_to(name_func_spawn_let_name, Type::from("UnknownModule.func".to_string()), vec!((name_func_spawn_let_arg_dx, Type::new_unsovled_nohint()))),
+                SysDCSpawnChild::new_let_to(
+                    name_func_spawn_let_name,
+                    (Name::new_root(), Type::from("UnknownModule.func".to_string())),
+                    vec!((name_func_spawn_let_arg_dx, Type::new_unsovled_nohint()))
+                ),
                 SysDCSpawnChild::new_return(name_func_spawn_ret, Type::new_unsovled_nohint())
             ))
         );
