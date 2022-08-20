@@ -90,15 +90,7 @@ impl InteractiveCmd {
     }
 
     fn run_mode_in(&mut self, name: String, args: Vec<String>) -> Result<(), Box<dyn Error>> {
-        let plugin = match self.plugin_manager.get_type_in(&name) {
-            Some(plugin) => plugin,
-            None => {
-                return Err(Box::new(
-                    CommandError::NotFoundError(format!("Plugin \"{}\"", name))
-                ));
-            }
-        };
-
+        let plugin = self.plugin_manager.get_type_in(&name)?;
         let mut compiler = Compiler::new();
         for (unit_name, program) in plugin.run(args)? {
             println!("Load: {}", unit_name);
@@ -109,15 +101,7 @@ impl InteractiveCmd {
     }
 
     fn run_mode_out(&self, name: String, args: Vec<String>) -> Result<(), Box<dyn Error>> {
-        let plugin = match self.plugin_manager.get_type_out(&name) {
-            Some(plugin) => plugin,
-            None => {
-                return Err(Box::new(
-                    CommandError::NotFoundError(format!("Plugin \"{}\"", name))
-                ));
-            }
-        };
-
+        let plugin = self.plugin_manager.get_type_out(&name)?;
         match &self.system {
             Some(s) => plugin.run(args, s),
             None => Err(Box::new(CommandError::RuntimeError("Must run \"in\" command before run \"out\" command".to_string())))
