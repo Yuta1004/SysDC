@@ -39,11 +39,9 @@ impl Debug for Type {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match &self.kind {
             TypeKind::Int32 => write!(f, "Int32"),
+            TypeKind::Data => write!(f, "{:?}", self.refs.clone().unwrap()),
             TypeKind::Unsolved(hint) => write!(f, "{}", hint),
             TypeKind::UnsolvedNoHint => write!(f, "UnsolvedNoHint"),
-            _ => {
-                write!(f, "{:?}:{:?}", self.kind, self.refs)
-            }
         }
     }
 }

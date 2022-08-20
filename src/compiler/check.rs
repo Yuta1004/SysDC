@@ -38,7 +38,7 @@ impl Checker {
                 .into_iter()
                 .map(|(name, types)| match types.kind {
                     TypeKind::Int32 => (name, types),
-                    _ => (name.clone(), self.def_manager.try_match_from_type(&name, types))
+                    _ => self.def_manager.resolve_from_type(name, types)
                 })
                 .collect()
         )
@@ -55,41 +55,64 @@ impl Checker {
     }
 
     fn check_function(&self, func: SysDCFunction) -> SysDCFunction {
-        let checked_args = func.args
+        let args = func.args
             .into_iter()
-            .map(|(name, types)| (name.clone(), self.def_manager.try_match_from_type(&name, types)))
+            .map(|(name, types)| self.def_manager.resolve_from_type(name, types))
             .collect::<Vec<(Name, Type)>>();
 
-        let mut checked_spawns = vec!();
-        for SysDCSpawn { result: (name, types), detail } in func.spawns {
-            let resolved_result = (name.clone(), self.def_manager.try_match_from_type(&name, types));
-            let mut resolved_detail = vec!();
-            for uses in detail {
-                match uses {
-                    SysDCSpawnChild::Use{ name, types: _ } => {
-                        let resolved_type = self.def_manager.try_match_from_name(&name, &name.name);
-                        resolved_detail.push(SysDCSpawnChild::new_use(name, resolved_type));
-                    }
-                    _ => {}
-                }
-            }
-            checked_spawns.push(SysDCSpawn::new(resolved_result, resolved_detail))
+        let (ret_name, ret_type) = func.returns.unwrap();
+        let require_ret = self.def_manager.resolve_from_type(ret_name.clone(), ret_type);
+        let ret = self.def_manager.resolve_from_name(ret_name.clone(), ret_name.name);
+        if require_ret.1 != ret.1 {
+            panic!("[ERROR] Function definition requires to return \"{:?}\", but \"{:?}\" is returned", require_ret.1, ret.1);
         }
 
-        let (ret_name, ret_type) = func.returns.unwrap();
-        let resolved_ret_type = self.def_manager.try_match_from_type(&ret_name, ret_type);
-        let resolved_ret = (ret_name, resolved_ret_type);
+        let mut spawns = vec!();
+        for SysDCSpawn { result: (name, _), detail } in func.spawns {
+            let required_types = self.def_manager.resolve_from_name(name.clone(), name.name);
+            let mut details = vec!();
+            for uses in detail {
+                match uses {
+                    SysDCSpawnChild::Use(name, _) => {
+                        let (name, types) = self.def_manager.resolve_from_name(name.clone(), name.name);
+                        details.push(SysDCSpawnChild::new_use(name, types));
+                    }
+                    SysDCSpawnChild::Return(name, _) => {
+                        let (name, types) = self.def_manager.resolve_from_name(name.clone(), name.name);
+                        if types != required_types.1 {
+                            panic!("[ERROR] Spawn definition requires to return \"{:?}\", but \"{:?}\" is returned", required_types.1, types);
+                        }
+                        details.push(SysDCSpawnChild::new_return(name, types));
+                    }
+                    SysDCSpawnChild::LetTo { name, func: (_, Type { kind: TypeKind::Unsolved(func), .. }), args } => {
+                        let mut let_to_args = vec!();
+                        for ((arg_name, _), defined_type) in args.into_iter().zip(self.def_manager.get_args_type(&name, &func).into_iter()) {
+                            let (arg_name, arg_type) = self.def_manager.resolve_from_name(arg_name.clone(), arg_name.name);
+                            if arg_type != defined_type {
+                                panic!("[ERROR] Argument \"{:?}\"'s type is expected \"{:?}\", but \"{:?}\"", arg_name, defined_type, arg_type);
+                            }
+                            let_to_args.push((arg_name, arg_type));
+                        }
+                        let resolved_func = self.def_manager.resolve_from_type(name.clone(), Type::from(func));
+                        details.push(SysDCSpawnChild::new_let_to(name, resolved_func, let_to_args))
+                    },
+                    _ => panic!("[ERROR] Occur unknown error at Checker::check_function")
+                }
+            }
+            spawns.push(SysDCSpawn::new(required_types, details))
+        }
 
-        SysDCFunction::new(func.name, checked_args, resolved_ret, checked_spawns)
+        SysDCFunction::new(func.name, args, ret, spawns)
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum DefineKind {
     Data,
-    DataMember,
+    DataMember(Type),
     Module,
-    Function,
+    Function(Type),
+    Argument(Type),
     Variable(Type)
 }
 
@@ -114,26 +137,110 @@ impl DefinesManager {
         DefinesManager { defines: DefinesManager::listup_defines(system) }
     }
 
-    pub fn try_match_from_type(&self, namespace: &Name, child: Type) -> Type {
-        match &child.kind {
-            TypeKind::Int32 => child,
+    pub fn get_args_type(&self, namespace: &Name, name: &String) -> Vec<Type> {
+        let (head, tails) = DefinesManager::split_name(name);
+        let found_def = self.find(namespace, &head);
+        let func = match &found_def.kind {
+            DefineKind::Module =>
+                match tails {
+                    Some(tails) => Name::from(&found_def.refs, tails),
+                    None => panic!("[ERROR] Missing function name")
+                }
+            DefineKind::Function(_) =>
+                match tails {
+                    Some(_) => panic!("[ERROR] Cannot nested access to Function"),
+                    None => Name::from(&namespace.get_par_name(true).get_par_name(true), head)
+                }
+            _ => panic!("[ERROR] Function \"{}\" is not defined", name)
+        };
+        let func_name = func.get_global_name();
+
+        let mut args = vec!();
+        for Define { kind, refs } in &self.defines {
+            if let DefineKind::Argument(types) = kind {
+                if &refs.namespace == &func_name {
+                    args.push(self.resolve_from_type(func.clone(), types.clone()).1);
+                }
+            }
+        }
+        args
+    }
+
+    pub fn resolve_from_type(&self, name: Name, types: Type) -> (Name, Type) {
+        match types.kind.clone() {
+            TypeKind::Int32 => (name, types),
             TypeKind::Unsolved(hint) => {
-                let found_def = self.find(namespace, hint);
+                let (head, tails) = DefinesManager::split_name(&hint);
+                let found_def = self.find(&name, &head);
                 match found_def.kind {
-                    DefineKind::Data => Type::new(TypeKind::Data, Some(found_def.refs)),
-                    _ => panic!("[ERROR] \"{:?}\" is defined but type is unmatched", child)
+                    DefineKind::Data =>
+                        match tails {
+                            Some(_) => panic!("[ERROR] Cannot nested access to Data"),
+                            None => (name, Type::new(TypeKind::Data, Some(found_def.refs)))
+                        }
+                    DefineKind::Module =>
+                        match tails {
+                            Some(tails) => self.resolve_from_module_func(name, found_def.refs.name, tails),
+                            None => panic!("[ERROR] Missing function name")
+                        }
+                    DefineKind::Function(_) => {
+                        self.resolve_from_module_func(name.clone(), name.get_par_name(true).get_par_name(true).name, hint)
+                    }
+                    _ => panic!("[ERROR] \"{:?}\" is defined but type is unmatched", types)
                 }
             },
-            _ => panic!("[ERROR] Called unmatch try_match function (from_type)")
+            _ => panic!("[ERROR] Called unmatch resolve function (from_type)")
         }
     }
 
-    pub fn try_match_from_name(&self, namespace: &Name, name: &String) -> Type {
-        let found_def = self.find(namespace, name);
+    pub fn resolve_from_name(&self, name: Name, nname: String) -> (Name, Type) {
+        let (head, tails) = DefinesManager::split_name(&nname);
+        let found_def = self.find(&name, &head);
         match found_def.kind {
-            DefineKind::Variable(types) => self.try_match_from_type(namespace, types),
-            _ => panic!("[ERROR] Variable \"{}\" is not defined", name)
+            DefineKind::Variable(types) => {
+                let types = self.resolve_from_type(name.clone(), types).1;
+                match tails {
+                    Some(tails) => self.resolve_from_data_member(name, types, tails),
+                    None => (found_def.refs, types)
+                }
+            }
+            _ => panic!("[ERROR] Variable \"{}\" is not defined", nname)
         }
+    }
+
+    fn resolve_from_data_member(&self, name: Name, data: Type, member: String) -> (Name, Type) {
+        let (head, tails) = DefinesManager::split_name(&member);
+        for Define { kind, refs } in &self.defines {
+            if let DefineKind::DataMember(types) = kind {
+                if data.refs.as_ref().unwrap().name == refs.get_par_name(true).name && head == refs.name {
+                    return match self.resolve_from_type(name.clone(), types.clone()).1 {
+                        types@Type { kind: TypeKind::Int32, .. } =>
+                            match tails {
+                                Some(_) => panic!("[ERROR] Cannot access Int32"),
+                                None => (refs.clone(), types)
+                            }
+                        types@Type { kind: TypeKind::Data, .. } =>
+                            match tails {
+                                Some(tails) => self.resolve_from_data_member(name, types, tails),
+                                None => (refs.clone(), types)
+                            },
+                        _ => panic!("[ERROR] Occur unknown error at DefinesManager::resolve_from_data_member")
+                    }
+                }
+            }
+        }
+        panic!("[ERROR] Member \"{}\" is not defined in Data \"{}\"", member, data.refs.as_ref().unwrap().name);
+    }
+
+    fn resolve_from_module_func(&self, name: Name, module: String, func: String) -> (Name, Type) {
+        for Define { kind, refs } in &self.defines {
+            if let DefineKind::Function(types) = kind {
+                if module == refs.get_par_name(true).name && func == refs.name {
+                    return (refs.clone(), self.resolve_from_type(name, types.clone()).1);
+                }
+            }
+        }
+        panic!("[ERROR] Function \"{}\" is not defined in Module \"{}\"", func, module);
     }
 
     fn find(&self, namespace: &Name, name: &String) -> Define {
@@ -145,7 +252,15 @@ impl DefinesManager {
                 return Define::new(kind.clone(), refs.clone())
             }
         }
-        self.find(&namespace.get_par_name(), name)
+        self.find(&namespace.get_par_name(false), name)
+    }
+
+    fn split_name(hint: &String) -> (String, Option<String>) {
+        let splitted_hint = hint.split(".").collect::<Vec<&str>>();
+        match splitted_hint.len() {
+            1 => (splitted_hint[0].to_string(), None),
+            _ => (splitted_hint[0].to_string(), Some(splitted_hint[1..].join(".")))
+        }
     }
 
     fn listup_defines(system: &SysDCSystem) -> Vec<Define> {
@@ -183,7 +298,7 @@ impl DefinesManager {
     fn listup_defines_data(data: &SysDCData) -> Vec<Define> {
         data.member
             .iter()
-            .map(|(name, _)| Define::new(DefineKind::DataMember, name.clone()))
+            .map(|(name, types)| Define::new(DefineKind::DataMember(types.clone()), name.clone()))
             .collect::<Vec<Define>>()
     }
 
@@ -191,7 +306,7 @@ impl DefinesManager {
         module.functions
             .iter()
             .flat_map(|func| { 
-                let mut d = vec!(Define::new(DefineKind::Function, func.name.clone()));
+                let mut d = vec!(Define::new(DefineKind::Function(func.returns.as_ref().unwrap().1.clone()), func.name.clone()));
                 d.extend(DefinesManager::listup_defines_function(func));
                 d
             })
@@ -203,16 +318,34 @@ impl DefinesManager {
         defined.extend(
             func.args
                 .iter()
-                .map(|(name, types)| Define::new(DefineKind::Variable(types.clone()), name.clone()))
+                .flat_map(|(name, types)| vec!(
+                    Define::new(DefineKind::Variable(types.clone()), name.clone()),
+                    Define::new(DefineKind::Argument(types.clone()), name.clone())
+                ))
                 .collect::<Vec<Define>>()
         );
         defined.extend(
             func.spawns
                 .iter()
-                .map(|SysDCSpawn { result: (name, types), detail: _}| Define::new(DefineKind::Variable(types.clone()), name.clone()))
+                .flat_map(|spawn@SysDCSpawn { result: (name, types), .. }| {
+                    let mut d = vec!(Define::new(DefineKind::Variable(types.clone()), name.clone()));
+                    d.extend(DefinesManager::listup_defines_function_spawn_details(spawn));
+                    d
+                })
                 .collect::<Vec<Define>>()
         );
         defined
+    }
+
+    fn listup_defines_function_spawn_details(spawn: &SysDCSpawn) -> Vec<Define> {
+        let SysDCSpawn { detail: details, .. } = spawn;
+        details
+            .iter()
+            .flat_map(|detail| match detail {
+                SysDCSpawnChild::LetTo { name, func: (_, func), ..} => vec!(Define::new(DefineKind::Variable(func.clone()), name.clone())),
+                _ => vec!()
+            })
+            .collect()
     }
 }
 
@@ -291,6 +424,16 @@ mod test {
     fn user_defined_type_mix_module_with_spawn() {
         let program = "
             data A {
+                a: B,
+                b: B
+            }
+
+            data B {
+                a: C,
+                b: C
+            }
+
+            data C {
                 a: i32,
                 b: i32
             }
@@ -301,7 +444,9 @@ mod test {
 
                     @spawn b: A {
                         use a;
-                        return a;
+                        use a.a, a.b;
+                        use a.a.a, a.a.b, a.b.a, a.b.b;
+                        use a.a.a.a, a.a.a.b, a.a.b.a, a.a.b.b, a.b.a.a, a.b.a.b, a.b.b.a, a.b.b.b;
                     }
                 }
             }
@@ -311,7 +456,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn user_defind_type_mix_module_with_spawn_failure() {
+    fn user_defind_type_mix_module_with_spawn_failure_1() {
         let program = "
             data A {
                 a: i32,
@@ -324,8 +469,359 @@ mod test {
 
                     @spawn b: A {
                         use aaa;
-                        return aaa;
                     }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn user_defind_type_mix_module_with_spawn_failure_2() {
+        let program = "
+            data A {
+                a: i32,
+                b: i32
+            }
+
+            module TestModule {
+                test(a: A) -> A {
+                    @return b
+
+                    @spawn b: A {
+                        use a.c;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn user_defind_type_mix_module_with_spawn_failure_3() {
+        let program = "
+            data A {
+                a: B,
+                b: B
+            }
+
+            data B {
+                a: C,
+                b: C
+            }
+
+            data C {
+                a: i32,
+                b: i32
+            }
+
+            module TestModule {
+                test(a: A) -> A {
+                    @return b
+
+                    @spawn b: A {
+                        use a.b.a.c;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn let_by_user_defined_function_using_completed_name_1() {
+        let program = "
+            data A {}
+
+            module AModule {
+                new() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+            }
+
+            module TestModule {
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let b = AModule.new();
+                        return b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn let_by_user_defined_function_using_completed_name_2() {
+        let program = "
+            data A {}
+
+            module TestModule {
+                new() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let b = TestModule.new();
+                        return b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn let_by_user_defined_function_using_uncompleted_name() {
+        let program = "
+            data A {}
+
+            module TestModule {
+                new() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let b = new();
+                        return b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn let_by_user_defined_function_using_completed_name_failure() {
+        let program = "
+            data A {}
+
+            module TestModule {
+                new() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let b = TestModule.new2();
+                        return b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn let_by_user_defined_function_using_uncompleted_name_failure() {
+        let program = "
+            data A {}
+
+            module TestModule {
+                new() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let b = new2();
+                        return b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn argument_check_ok() {
+        let program = "
+            data A {}
+            data B {}
+            data C {}
+            
+            module TestModule {
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let tmp1 = genA();
+                        let tmp2 = genB(tmp1);
+                        let tmp3 = genC(tmp1, tmp2);
+                    }
+                }
+
+                genA() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+
+                genB(a: A) -> B {
+                    @return b
+
+                    @spawn b: B {
+                        use a;
+                    }
+                }
+
+                genC(a: A, b: B) -> C {
+                    @return c
+
+                    @spawn c: C {
+                        use a, b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn argument_check_ng() {
+        let program = "
+            data A {}
+            data B {}
+            data C {}
+            
+            module TestModule {
+                test() -> A {
+                    @return a
+
+                    @spawn a: A {
+                        let tmp1 = genA();
+                        let tmp2 = genB(tmp1);
+                        let tmp3 = genC(tmp1, tmp1);
+                    }
+                }
+
+                genA() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+
+                genB(a: A) -> B {
+                    @return b
+
+                    @spawn b: B {
+                        use a;
+                    }
+                }
+
+                genC(a: A, b: B) -> C {
+                    @return c
+
+                    @spawn c: C {
+                        use a, b;
+                    }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn return_check_ok() {
+        let program = "
+            module TestModule {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: i32
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn return_check_ng() {
+        let program = "
+            data A {}
+
+            module TestModule {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: A
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn in_spawn_return_check_ok() {
+        let program = "
+            module TestModule {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: i32 {
+                        let b = gen_i32();
+                        return b;
+                    }
+                }
+
+                gen_i32() -> i32 {
+                    @return a
+
+                    @spawn a: i32
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn in_spawn_return_check_ng() {
+        let program = "
+            data A {}
+
+            module TestModule {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: i32 {
+                        let b = gen_A();
+                        return b;
+                    }
+                }
+
+                gen_A() -> A {
+                    @return a
+
+                    @spawn a: A
                 }
             }
         ";

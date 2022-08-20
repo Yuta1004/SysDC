@@ -29,24 +29,27 @@ impl InputPlugin for DebugPlugin {
                 new(x: i32, y: i32, w: i32, h: i32) -> Box {
                     @return box
 
-                    +use x, y, w, h
-                    @spawn box: Box
+                    @spawn box: Box {
+                        use x, y, w, h;
+                    }
                 }
 
                 move(box: Box, dx: i32, dy: i32) -> Box {
                     @return movedBox
 
-                    +use box
-                    +use dx, dy
-                    @spawn movedBox: Box
+                    @spawn movedBox: Box {
+                        use box.x, box.y;
+                        use dx, dy;
+                    }
                 }
 
                 changeSize(box: Box, w: i32, h: i32) -> Box {
                     @return changedBox
 
-                    +use box
-                    +use w, h
-                    @spawn changedBox: Box
+                    @spawn changedBox: Box {
+                        use box.w, box.h;
+                        use w, h;
+                    }
                 }
             }
         ".to_string();
