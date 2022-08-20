@@ -61,7 +61,11 @@ impl Checker {
             .collect::<Vec<(Name, Type)>>();
 
         let (ret_name, ret_type) = func.returns.unwrap();
-        let ret = self.def_manager.resolve_from_type(ret_name, ret_type);
+        let require_ret = self.def_manager.resolve_from_type(ret_name.clone(), ret_type);
+        let ret = self.def_manager.resolve_from_name(ret_name.clone(), ret_name.name);
+        if require_ret.1 != ret.1 {
+            panic!("[ERROR] Function definition requires to return \"{:?}\", but \"{:?}\" is returned", require_ret.1, ret.1);
+        }
 
         let mut spawns = vec!();
         for SysDCSpawn { result: (name, _), detail } in func.spawns {
@@ -738,6 +742,37 @@ mod test {
                     @spawn c: C {
                         use a, b;
                     }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn return_check_ok() {
+        let program = "
+            module TestModule {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: i32
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn return_check_ng() {
+        let program = "
+            data A {}
+
+            module TestModule {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: A
                 }
             }
         ";
