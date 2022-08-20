@@ -20,7 +20,7 @@ impl InputPlugin for FilesPlugin {
     fn run(&self, args: Vec<String>) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
         if args.len() == 0 {
             return Err(Box::new(
-                PluginError::RuntimeError("Argument list is empty".to_string())
+                PluginError::Runtime("Argument list is empty".to_string())
             ));
         }
 
@@ -30,8 +30,8 @@ impl InputPlugin for FilesPlugin {
                 for entry in entries {
                     let entry = entry?;
                     if entry.is_file() {
-                        let unit_name = entry.file_name().ok_or(PluginError::UnknownError)?
-                                             .to_str().ok_or(PluginError::UnknownError)?
+                        let unit_name = entry.file_name().ok_or(PluginError::Unknown)?
+                                             .to_str().ok_or(PluginError::Unknown)?
                                              .to_string();
                         let unit_name = unit_name.split(".").collect::<Vec<&str>>();
                         let program = fs::read_to_string(&entry).unwrap();

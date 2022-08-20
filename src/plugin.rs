@@ -20,8 +20,8 @@ pub trait OutputPlugin {
 #[derive(Debug)]
 pub enum PluginError {
     NotFound(String),
-    RuntimeError(String),
-    UnknownError
+    Runtime(String),
+    Unknown
 }
 
 impl Error for PluginError {}
@@ -30,8 +30,8 @@ impl Display for PluginError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
             PluginError::NotFound(name) => write!(f, "Plugin \"{}\" not found", name),
-            PluginError::RuntimeError(msg) => write!(f, "{}", msg),
-            PluginError::UnknownError => write!(f, "Occured unknown error at running plugin")
+            PluginError::Runtime(msg) => write!(f, "{}", msg),
+            PluginError::Unknown => write!(f, "Occured unknown error at running plugin")
         }
     }
 }

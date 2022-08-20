@@ -29,7 +29,7 @@ impl OutputPlugin for JSONPlugin {
                 f.flush()?;
             }
             _ => Err(Box::new(
-                PluginError::RuntimeError("Usage: out json <filepath>".to_string())
+                PluginError::Runtime("Usage: out json <filepath>".to_string())
             ))?
         }
         Ok(())
