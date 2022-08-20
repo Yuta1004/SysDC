@@ -60,8 +60,12 @@ impl Checker {
             .map(|(name, types)| self.def_manager.resolve_from_type(name, types))
             .collect::<Vec<(Name, Type)>>();
 
+        let (ret_name, ret_type) = func.returns.unwrap();
+        let ret = self.def_manager.resolve_from_type(ret_name, ret_type);
+
         let mut spawns = vec!();
-        for SysDCSpawn { result: (name, types), detail } in func.spawns {
+        for SysDCSpawn { result: (name, _), detail } in func.spawns {
+            let required_types = self.def_manager.resolve_from_name(name.clone(), name.name);
             let mut details = vec!();
             for uses in detail {
                 match uses {
@@ -71,6 +75,9 @@ impl Checker {
                     }
                     SysDCSpawnChild::Return(name, _) => {
                         let (name, types) = self.def_manager.resolve_from_name(name.clone(), name.name);
+                        if types != required_types.1 {
+                            panic!("[ERROR] Spawn definition requires to return \"{:?}\", but \"{:?}\" is returned", required_types.1, types);
+                        }
                         details.push(SysDCSpawnChild::new_return(name, types));
                     }
                     SysDCSpawnChild::LetTo { name, func: (_, Type { kind: TypeKind::Unsolved(func), .. }), args } => {
@@ -88,13 +95,10 @@ impl Checker {
                     _ => panic!("[ERROR] Occur unknown error at Checker::check_function")
                 }
             }
-            spawns.push(SysDCSpawn::new(self.def_manager.resolve_from_type(name, types), details))
+            spawns.push(SysDCSpawn::new(required_types, details))
         }
 
-        let (ret_name, ret_type) = func.returns.unwrap();
-        let resolved_ret = self.def_manager.resolve_from_type(ret_name, ret_type);
-
-        SysDCFunction::new(func.name, args, resolved_ret, spawns)
+        SysDCFunction::new(func.name, args, ret, spawns)
     }
 }
 
@@ -734,6 +738,55 @@ mod test {
                     @spawn c: C {
                         use a, b;
                     }
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    fn in_spawn_return_check_ok() {
+        let program = "
+            module TestModule {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: i32 {
+                        let b = gen_i32();
+                        return b;
+                    }
+                }
+
+                gen_i32() -> i32 {
+                    @return a
+
+                    @spawn a: i32
+                }
+            }
+        ";
+        check(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn in_spawn_return_check_ng() {
+        let program = "
+            data A {}
+
+            module TestModule {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: i32 {
+                        let b = gen_A();
+                        return b;
+                    }
+                }
+
+                gen_A() -> A {
+                    @return a
+
+                    @spawn a: A
                 }
             }
         ";
