@@ -34,11 +34,13 @@ pub enum TokenKind {
 #[derive(Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
-    orig_id: Option<String>
+    pub row: i32,
+    pub col: i32,
+    orig: Option<String>,
 }
 
 impl Token {
-    pub fn from(orig: String) -> Token {
+    pub fn from(orig: String, row: i32, col: i32) -> Token {
         let kind = match orig.as_str() {
             "data"      => TokenKind::Data,
             "module"    => TokenKind::Module,
@@ -60,16 +62,17 @@ impl Token {
             "+"         => TokenKind::Plus,
             _           => TokenKind::Identifier,
         };
-        let orig_id = match kind {
+        let col = col-(orig.len() as i32);
+        let orig = match kind {
             TokenKind::Identifier => Some(orig),
             _ => None
         };
 
-        Token { kind, orig_id }
+        Token { kind, row, col, orig }
     }
 
     pub fn get_id(&self) -> Result<String, Box<dyn Error>> {
-        match &self.orig_id {
+        match &self.orig {
             Some(id) => Ok(id.clone()),
             None => panic!("Internal Error")
         }
@@ -79,16 +82,20 @@ impl Token {
 #[derive(Debug)]
 pub struct Tokenizer<'a> {
     text: &'a String,
+    hold_token: Option<Token>,
     now_ref_pos: usize,
-    hold_token: Option<Token>
+    now_ref_row: i32,
+    now_ref_col: i32
 }
 
 impl<'a> Tokenizer<'a> {
     pub fn new(text: &'a String) -> Tokenizer<'a> {
         let mut tokenizer = Tokenizer {
             text,
+            hold_token: None,
             now_ref_pos: 0,
-            hold_token: None
+            now_ref_row: 1,
+            now_ref_col: 1
         };
         tokenizer.skip_space();
         tokenizer
@@ -130,6 +137,7 @@ impl<'a> Tokenizer<'a> {
         let lead_ref_pos = self.now_ref_pos;
         let lead_type = CharType::from(self.get_char_at(lead_ref_pos));
         self.now_ref_pos += 1;
+        self.now_ref_col += 1;
 
         while self.has_token() {
             let now_type = CharType::from(self.get_char_at(self.now_ref_pos));
@@ -140,7 +148,11 @@ impl<'a> Tokenizer<'a> {
                 
                 // Ok(force stop)
                 (CharType::Symbol, _) => break,
-                (CharType::SymbolAllow1, CharType::SymbolAllow2) => { self.now_ref_pos += 1; break },
+                (CharType::SymbolAllow1, CharType::SymbolAllow2) => {
+                    self.now_ref_pos += 1;
+                    self.now_ref_col += 1;
+                    break;
+                },
 
                 // Ng(panic)
                 (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) => return CompileError::new(CompileErrorKind::FoundUnregisteredSymbol),
@@ -150,10 +162,11 @@ impl<'a> Tokenizer<'a> {
             }
 
             self.now_ref_pos += 1;
+            self.now_ref_col += 1;
         }
 
         let discovered_word = self.clip_text(lead_ref_pos, self.now_ref_pos);
-        let token = Token::from(discovered_word);
+        let token = Token::from(discovered_word, self.now_ref_row, self.now_ref_col);
         self.skip_space();
         Ok(Some(token))
     }
@@ -164,7 +177,15 @@ impl<'a> Tokenizer<'a> {
                 break;
             }
             match CharType::from(self.get_char_at(self.now_ref_pos)) {
-                CharType::Space => self.now_ref_pos += 1,
+                CharType::Space => {
+                    self.now_ref_pos += 1;
+                    self.now_ref_col += 1;
+                }
+                CharType::NewLine => {
+                    self.now_ref_pos += 1;
+                    self.now_ref_row += 1;
+                    self.now_ref_col = 1;
+                }
                 _ => break
             }
         }
@@ -193,6 +214,7 @@ enum CharType {
     SymbolAllow1,
     SymbolAllow2,
     Space,
+    NewLine,
     Other
 }
 
@@ -204,7 +226,8 @@ impl CharType {
             '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' | ':' => CharType::Symbol,
             '-' => CharType::SymbolAllow1,
             '>' => CharType::SymbolAllow2,
-            ' ' | '\t' | '\n' => CharType::Space,
+            ' ' | '\t'  => CharType::Space,
+            '\n' => CharType::NewLine,
             _ => CharType::Other
         }
     }
@@ -238,21 +261,21 @@ mod test {
                 ("+",       TokenKind::Plus)
             ];
             for (_str, kind) in str_kind_mapping {
-                assert_eq!(Token::from(_str.to_string()).kind, kind);
+                assert_eq!(Token::from(_str.to_string(), 0, 0).kind, kind);
             }
         }
 
         #[test]
         #[should_panic]
         fn get_identifer_from_reserved_token() {
-            Token::from("->".to_string()).get_id().unwrap();
+            Token::from("->".to_string(), 0, 0).get_id().unwrap();
         }
 
         #[test]
         fn get_identifer_from_identifer_token() {
-            let id = Token::from("test".to_string()).get_id().unwrap();
+            let id = Token::from("test".to_string(), 0, 0).get_id().unwrap();
             assert_eq!(id, "test");
-            Token::from("test".to_string()).get_id().unwrap();
+            Token::from("test".to_string(), 0, 0).get_id().unwrap();
         }
     }
 
@@ -340,11 +363,12 @@ mod test {
             let mut tokenizer = Tokenizer::new(&text);
             for token_kind in correct_token_kinds {
                 match tokenizer.expect(token_kind.clone()).unwrap() {
-                    Some(_) => {}
+                    Some(t) => { println!("{:?} => {}:{}", t.kind, t.row, t.col) }
                     None => assert!(false, "{:?}", token_kind)
                 }
             }
             assert!(!tokenizer.has_token());
+            panic!("")
         }
 
         #[test]
