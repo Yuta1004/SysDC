@@ -854,7 +854,7 @@ mod test {
 
     fn check(program: &str) {
         let mut compiler = Compiler::new();
-        compiler.add_unit("test".to_string(), program.to_string()).unwrap();
+        compiler.add_unit(program.to_string()).unwrap();
         compiler.generate_system().unwrap();
     }
 }

@@ -30,12 +30,11 @@ impl InputPlugin for FilesPlugin {
                 for entry in entries {
                     let entry = entry?;
                     if entry.is_file() {
-                        let unit_name = entry.file_name().ok_or(PluginError::Unknown)?
-                                             .to_str().ok_or(PluginError::Unknown)?
-                                             .to_string();
-                        let unit_name = unit_name.split(".").collect::<Vec<&str>>();
+                        let filename = entry.file_name().ok_or(PluginError::Unknown)?
+                                            .to_str().ok_or(PluginError::Unknown)?
+                                            .to_string();
                         let program = fs::read_to_string(&entry).unwrap();
-                        programs.push((unit_name[0].to_string(), program));
+                        programs.push((filename, program));
                     }
                 }
             }
