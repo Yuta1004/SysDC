@@ -64,9 +64,9 @@ pub mod unchecked {
             SysDCSystem { units }
         }
 
-        pub fn convert<F>(self, converter: F) -> Result<super::SysDCSystem, Box<dyn Error>>
+        pub fn convert<F>(self, mut converter: F) -> Result<super::SysDCSystem, Box<dyn Error>>
         where
-            F: Fn(SysDCUnit) -> Result<super::SysDCUnit, Box<dyn Error>>
+            F: FnMut(SysDCUnit) -> Result<super::SysDCUnit, Box<dyn Error>>
         {
             let mut units = vec!();
             for unit in self.units {
@@ -81,12 +81,12 @@ pub mod unchecked {
         pub name: Name,
         pub data: Vec<SysDCData>,
         pub modules: Vec<SysDCModule>,
-        pub refs: Vec<Name>
+        pub imports: Vec<Name>
     }
 
     impl SysDCUnit {
-        pub fn new(name: Name, data: Vec<SysDCData>, modules: Vec<SysDCModule>, refs: Vec<Name>) -> SysDCUnit {
-            SysDCUnit { name, data, modules, refs }
+        pub fn new(name: Name, data: Vec<SysDCData>, modules: Vec<SysDCModule>, imports: Vec<Name>) -> SysDCUnit {
+            SysDCUnit { name, data, modules, imports }
         }
 
         pub fn convert<F, G>(self, d_converter: F, m_converter: G) -> Result<super::SysDCUnit, Box<dyn Error>>
