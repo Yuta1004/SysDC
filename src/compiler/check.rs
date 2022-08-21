@@ -37,13 +37,22 @@ impl Checker {
     }
 
     fn check_function(&self, func: unchecked::SysDCFunction) -> Result<SysDCFunction, Box<dyn Error>> {
+        let (req_ret_name, req_ret_type) = func.returns.clone().unwrap();
+        let req_ret_type = self.def_manager.resolve_from_type(req_ret_name, req_ret_type)?.1;
+
         let a_converter = |(name, types)| self.def_manager.resolve_from_type(name, types);
         let r_converter = |returns: Option<(Name, Type)>| {
             let (ret_name, _) = returns.unwrap();
             let ret = self.def_manager.resolve_from_name(ret_name.clone(), ret_name.name)?;
             Ok(Some(ret))
         };
-        func.convert(a_converter, r_converter, |spawn| self.check_spawn(spawn))
+        let func = func.convert(a_converter, r_converter, |spawn| self.check_spawn(spawn))?;
+
+        let act_ret_type = &func.returns.as_ref().unwrap().1;
+        if &req_ret_type != act_ret_type {
+            return Err(Box::new(CompileError::TypeUnmatch2(req_ret_type, act_ret_type.clone())));
+        }
+        Ok(func)
     }
 
     fn check_spawn(&self, spawn: unchecked::SysDCSpawn) -> Result<SysDCSpawn, Box<dyn Error>> {
@@ -133,7 +142,7 @@ impl DefinesManager {
 
     pub fn resolve_from_type(&self, name: Name, types: Type) -> Result<(Name, Type), Box<dyn Error>> {
         match types.kind.clone() {
-            TypeKind::Int32 => Ok((name, types)),
+            TypeKind::Int32 | TypeKind::Data => Ok((name, types)),
             TypeKind::Unsolved(hint) => {
                 let (head, tails) = DefinesManager::split_name(&hint);
                 let found_def = self.find(&name, &head)?;
