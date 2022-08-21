@@ -157,7 +157,7 @@ impl DefinesManager {
                             None => CompileError::new(CompileErrorKind::MissingFunctionName)
                         }
                     DefineKind::Function(_) => {
-                        self.get_func_in_module(&name.get_par_name(true).get_par_name(true), &hint, imports)
+                        self.get_func_in_module(&name.get_namespace(true), &hint, imports)
                     }
                     _ => CompileError::new(CompileErrorKind::TypeUnmatch1(types))
                 }
