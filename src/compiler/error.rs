@@ -27,9 +27,6 @@ pub enum CompileError {
     FuncNotDefinedInModule(String, String),
     MissingFunctionName,
     IllegalAccess,
-
-    /* 内部エラー */
-    InternalError
 }
 
 impl Error for CompileError {}
@@ -54,8 +51,6 @@ impl Display for CompileError {
             CompileError::FuncNotDefinedInModule(func, module) => write!(f, "Function \"{}\" is not defined in Module \"{}\"", func, module),
             CompileError::MissingFunctionName => write!(f, "Missing to specify the function"),
             CompileError::IllegalAccess => write!(f, "Found illegal access"),
-
-            CompileError::InternalError => write!(f, "Occur something in compiler")
         }
     }
 }

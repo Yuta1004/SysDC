@@ -65,7 +65,7 @@ impl Checker {
                 let resolved_func = self.def_manager.resolve_from_type(name.clone(), Type::from(func))?;
                 return Ok((name, resolved_func, let_to_args));
             }
-            panic!("InternalError")
+            panic!("Internal Error")
         };
         spawn_child.convert(ur_converter, ur_converter, l_converter)
     }
@@ -154,7 +154,7 @@ impl DefinesManager {
                     _ => Err(Box::new(CompileError::TypeUnmatch1(types)))
                 }
             },
-            _ => Err(Box::new(CompileError::InternalError))
+            _ => panic!("Internal Error")
         }
     }
 
@@ -189,7 +189,7 @@ impl DefinesManager {
                                 Some(tails) => self.resolve_from_data_member(name, types, tails),
                                 None => Ok((refs.clone(), types))
                             },
-                        _ => Err(Box::new(CompileError::InternalError))
+                        _ => panic!("Internal Error")
                     }
                 }
             }

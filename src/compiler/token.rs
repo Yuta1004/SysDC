@@ -71,7 +71,7 @@ impl Token {
     pub fn get_id(&self) -> Result<String, Box<dyn Error>> {
         match &self.orig_id {
             Some(id) => Ok(id.clone()),
-            None => Err(Box::new(CompileError::InternalError))
+            None => panic!("Internal Error")
         }
     }
 }
