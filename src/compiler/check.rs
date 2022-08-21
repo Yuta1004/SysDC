@@ -56,10 +56,24 @@ impl Checker {
     }
 
     fn check_spawn(&self, spawn: unchecked::SysDCSpawn) -> Result<SysDCSpawn, Box<dyn Error>> {
-        spawn.convert(
+        let (req_ret_name, req_ret_type) = spawn.result.clone();
+        let req_ret_type = self.def_manager.resolve_from_type(req_ret_name, req_ret_type)?.1;
+
+        let spawn = spawn.convert(
             |(name, _)| self.def_manager.resolve_from_name(name.clone(), name.name),
             |spawn_child| self.check_spawn_child(spawn_child)
-        )
+        )?;
+
+        for spawn_child in &spawn.details {
+            match spawn_child {
+                SysDCSpawnChild::Return(_, act_ret_type) =>
+                    if &req_ret_type != act_ret_type {
+                        return Err(Box::new(CompileError::TypeUnmatch2(req_ret_type, act_ret_type.clone())));
+                    }
+                _ => {}
+            }
+        }
+        Ok(spawn)
     }
 
     fn check_spawn_child(&self, spawn_child: unchecked::SysDCSpawnChild) -> Result<SysDCSpawnChild, Box<dyn Error>> {
