@@ -138,7 +138,7 @@ impl DefinesManager {
     // 与えられたnameから参照可能なすべての範囲を対象に，typesと一致する定義を探す (Data, Module, Function)
     // ※name, typesはともに関連している状態を想定
     pub fn resolve_from_type(&self, (name, types): (Name, Type)) -> Result<(Name, Type), Box<dyn Error>> {
-        match types.kind.clone() {
+        match &types.kind {
             TypeKind::Int32 | TypeKind::Data => Ok((name, types)),
             TypeKind::Unsolved(hint) => {
                 let (head, tails) = DefinesManager::split_name(&hint);
@@ -151,11 +151,11 @@ impl DefinesManager {
                         }
                     DefineKind::Module =>
                         match tails {
-                            Some(tails) => self.get_func_in_module(found_def.refs, tails),
+                            Some(tails) => self.get_func_in_module(&found_def.refs, &tails),
                             None => CompileError::new(CompileErrorKind::MissingFunctionName)
                         }
                     DefineKind::Function(_) => {
-                        self.get_func_in_module(name.get_par_name(true).get_par_name(true), hint)
+                        self.get_func_in_module(&name.get_par_name(true).get_par_name(true), &hint)
                     }
                     _ => CompileError::new(CompileErrorKind::TypeUnmatch1(types))
                 }
@@ -174,10 +174,13 @@ impl DefinesManager {
                 match types.kind {
                     TypeKind::Data =>
                         match tails {
-                            Some(tails) => self.get_member_in_data(types.refs.unwrap(), tails),
+                            Some(tails) => {
+                                let (_, types) = self.get_member_in_data(types.refs.as_ref().unwrap(), &tails)?;
+                                Ok((name, types))
+                            }
                             None => Ok((found_def.refs, types))
                         }
-                    _ => Ok((name, types))
+                    _ => Ok((found_def.refs, types))
                 }
             }
             _ => CompileError::new(CompileErrorKind::NotDefined(name.name))
@@ -199,7 +202,7 @@ impl DefinesManager {
     }
 
     // data(Data)内のmember(Member)の定義を探す
-    fn get_member_in_data(&self, data: Name, member: String) -> Result<(Name, Type), Box<dyn Error>> {
+    fn get_member_in_data(&self, data: &Name, member: &String) -> Result<(Name, Type), Box<dyn Error>> {
         let (head, tails) = DefinesManager::split_name(&member);
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
@@ -212,7 +215,7 @@ impl DefinesManager {
                             }
                         (_, types@Type { kind: TypeKind::Data, .. }) =>
                             match tails {
-                                Some(tails) => self.get_member_in_data(types.refs.clone().unwrap(), tails),
+                                Some(tails) => self.get_member_in_data(types.refs.as_ref().unwrap(), &tails),
                                 None => Ok((types.refs.clone().unwrap(), types))
                             },
                         _ => panic!("Internal Error")
@@ -220,19 +223,19 @@ impl DefinesManager {
                 }
             }
         }
-        CompileError::new(CompileErrorKind::MemberNotDefinedInData(member, data.name))
+        CompileError::new(CompileErrorKind::MemberNotDefinedInData(member.clone(), data.name.clone()))
     }
 
     // module(Module)内のfunc(Function)の定義を探す
-    fn get_func_in_module(&self, module: Name, func: String) -> Result<(Name, Type), Box<dyn Error>> {
+    fn get_func_in_module(&self, module: &Name, func: &String) -> Result<(Name, Type), Box<dyn Error>> {
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Function(types) = kind {
-                if module == refs.get_par_name(true) && func == refs.name {
+                if module == &refs.get_par_name(true) && func == &refs.name {
                     return Ok((refs.clone(), self.resolve_from_type((refs.clone(), types.clone()))?.1));
                 }
             }
         }
-        CompileError::new(CompileErrorKind::FuncNotDefinedInModule(func, module.name))
+        CompileError::new(CompileErrorKind::FuncNotDefinedInModule(func.clone(), module.name.clone()))
     }
 
     // namespace内に存在する定義を対象に，nameと同じ名前を持つ定義を探して返す
