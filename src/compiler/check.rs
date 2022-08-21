@@ -340,6 +340,8 @@ mod test {
     #[test]
     fn primitive_member_only_data() {
         let program = "
+            unit test;
+
             data Test {
                 a: i32,
                 b: i32,
@@ -352,6 +354,8 @@ mod test {
     #[test]
     fn user_defined_type_mix_data() {
         let program = "
+            unit test;
+
             data A {
                 a: i32
             }
@@ -368,6 +372,8 @@ mod test {
     #[test]
     fn recursive_type_mix_data() {
         let program = "
+            unit test;
+
             data A {
                 a: A
             }
@@ -379,6 +385,8 @@ mod test {
     #[should_panic]
     fn undefined_type_mix_data() {
         let program = "
+            unit test;
+
             data Test {
                 a: i32,
                 b: Unknown
@@ -390,6 +398,8 @@ mod test {
     #[test]
     fn user_defind_type_mix_module() {
         let program = "
+            unit test;
+
             data A {
                 a: i32,
                 b: i32
@@ -407,6 +417,8 @@ mod test {
     #[test]
     fn user_defined_type_mix_module_with_spawn() {
         let program = "
+            unit test;
+
             data A {
                 a: B,
                 b: B
@@ -442,6 +454,8 @@ mod test {
     #[should_panic]
     fn user_defind_type_mix_module_with_spawn_failure_1() {
         let program = "
+            unit test;
+
             data A {
                 a: i32,
                 b: i32
@@ -464,6 +478,8 @@ mod test {
     #[should_panic]
     fn user_defind_type_mix_module_with_spawn_failure_2() {
         let program = "
+            unit test;
+
             data A {
                 a: i32,
                 b: i32
@@ -486,6 +502,8 @@ mod test {
     #[should_panic]
     fn user_defind_type_mix_module_with_spawn_failure_3() {
         let program = "
+            unit test;
+
             data A {
                 a: B,
                 b: B
@@ -517,6 +535,8 @@ mod test {
     #[test]
     fn let_by_user_defined_function_using_completed_name_1() {
         let program = "
+            unit test;
+
             data A {}
 
             module AModule {
@@ -544,6 +564,8 @@ mod test {
     #[test]
     fn let_by_user_defined_function_using_completed_name_2() {
         let program = "
+            unit test;
+
             data A {}
 
             module TestModule {
@@ -569,6 +591,8 @@ mod test {
     #[test]
     fn let_by_user_defined_function_using_uncompleted_name() {
         let program = "
+            unit test;
+
             data A {}
 
             module TestModule {
@@ -595,6 +619,8 @@ mod test {
     #[should_panic]
     fn let_by_user_defined_function_using_completed_name_failure() {
         let program = "
+            unit test;
+
             data A {}
 
             module TestModule {
@@ -621,6 +647,8 @@ mod test {
     #[should_panic]
     fn let_by_user_defined_function_using_uncompleted_name_failure() {
         let program = "
+            unit test;
+
             data A {}
 
             module TestModule {
@@ -646,6 +674,8 @@ mod test {
     #[test]
     fn argument_check_ok() {
         let program = "
+            unit test;
+
             data A {}
             data B {}
             data C {}
@@ -691,6 +721,8 @@ mod test {
     #[should_panic]
     fn argument_check_ng() {
         let program = "
+            unit test;
+
             data A {}
             data B {}
             data C {}
@@ -735,6 +767,8 @@ mod test {
     #[test]
     fn return_check_ok() {
         let program = "
+            unit test;
+
             module TestModule {
                 test() -> i32 {
                     @return a
@@ -750,6 +784,8 @@ mod test {
     #[should_panic]
     fn return_check_ng() {
         let program = "
+            unit test;
+
             data A {}
 
             module TestModule {
@@ -766,6 +802,8 @@ mod test {
     #[test]
     fn in_spawn_return_check_ok() {
         let program = "
+            unit test;
+
             module TestModule {
                 test() -> i32 {
                     @return a
@@ -790,6 +828,8 @@ mod test {
     #[should_panic]
     fn in_spawn_return_check_ng() {
         let program = "
+            unit test;
+
             data A {}
 
             module TestModule {

@@ -1,3 +1,5 @@
+unit box;
+
 data Box {
     x: i32,
     y: i32,

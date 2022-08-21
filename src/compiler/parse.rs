@@ -48,9 +48,18 @@ impl<'a> Parser<'a> {
 
     /**
      * <root> ::= { <sentence> }
-     * <sentence> ::= { <data> | <module> }
+     * <sentence> ::= unit <id_chain>; { <data> | <module> }
      */
     fn parse_root(&mut self, namespace: Name) -> Result<SysDCUnit, Box<dyn Error>> {
+        // unit
+        self.tokenizer.request(TokenKind::Unit)?;
+        let namespace = match self.parse_id_chain(&namespace)? {
+            Some((found_name, _)) => Name::from(&namespace, found_name.name),
+            None => return CompileError::new(CompileErrorKind::UnitNameNotSpecified)
+        };
+        self.tokenizer.request(TokenKind::Semicolon)?;
+
+        // { <data> | <module> }
         let mut data = vec!();
         let mut modules = vec!();
         while self.tokenizer.has_token() {
@@ -62,6 +71,7 @@ impl<'a> Parser<'a> {
                 }
             }
         }
+
         Ok(SysDCUnit::new(namespace, data, modules, vec!()))
     }
 
@@ -316,6 +326,8 @@ mod test {
     #[test]
     fn data_empty_ok() {
         let program = "
+            unit test;
+
             data A {}
             data B{}
             data C{   
@@ -347,6 +359,8 @@ mod test {
     #[test]
     fn data_has_member_ok() {
         let program = "
+            unit test;
+
             data Box {
                 x: i32,
                 y: UserDefinedData,
@@ -370,6 +384,8 @@ mod test {
     #[should_panic]
     fn data_has_illegal_member_def_1() {
         let program = "
+            unit test;
+
             data Box {
                 x: i32
                 y: i32
@@ -382,6 +398,8 @@ mod test {
     #[should_panic]
     fn data_has_illegal_member_def_2() {
         let program = "
+            unit test;
+
             data Box {
                 x: i32,
                 y:
@@ -394,6 +412,8 @@ mod test {
     #[should_panic]
     fn data_has_illegal_member_def_3() {
         let program = "
+            unit test;
+
             data Box
                 x: i32,
                 y: i32
@@ -404,6 +424,8 @@ mod test {
     #[test]
     fn module_empty_ok() {
         let program = "
+            unit test;
+
             module A {}
             module B{}
             module C{   
@@ -435,6 +457,8 @@ mod test {
     #[test]
     fn function_only_has_return() {
         let program = "
+            unit test;
+
             module BoxModule {
                 new() -> Box {
                     @return box
@@ -459,6 +483,8 @@ mod test {
     #[test]
     fn function_has_return_and_spawn() {
         let program = "
+            unit test;
+
             module BoxModule {
                 new() -> Box {
                     @return box
@@ -489,6 +515,8 @@ mod test {
     #[test]
     fn function_has_full() {
         let program = "
+            unit test;
+
             module BoxModule {
                 move(box: Box, dx: i32, dy: i32) -> Box {
                     @return movedBox
@@ -553,6 +581,8 @@ mod test {
     #[should_panic]
     fn illegal_function_1() {
         let program = "
+            unit test;
+
             module BoxModule {
                 move() -> {
 
@@ -566,6 +596,8 @@ mod test {
     #[should_panic]
     fn illegal_function_2() {
         let program = "
+            unit test;
+
             module BoxModule {
                 move(box: Box, dx: i32, dy: ) -> i32 {
 
@@ -579,6 +611,8 @@ mod test {
     #[should_panic]
     fn illegal_function_3() {
         let program = "
+            unit test;
+
             module BoxModule {
                 move() {
 
@@ -591,6 +625,8 @@ mod test {
     #[test]
     fn full() {
         let program = "
+            unit test;
+
             data Box {
                 x: i32,
                 y: i32
@@ -676,6 +712,6 @@ mod test {
     fn parse(program: &str) -> SysDCUnit {
         let program = program.to_string();
         let tokenizer = Tokenizer::new(&program);
-        Parser::parse(tokenizer, generate_name_for_test()).unwrap()
+        Parser::parse(tokenizer, Name::new_root()).unwrap()
     }
 }
