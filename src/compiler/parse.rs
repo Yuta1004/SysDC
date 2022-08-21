@@ -4,7 +4,7 @@ use super::name::Name;
 use super::types::Type;
 use super::error::CompileError;
 use super::token::{ TokenKind, Tokenizer };
-use super::structure::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawn, SysDCSpawnChild };
+use super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawn, SysDCSpawnChild };
 
 // 複数要素を一気にパースするためのマクロ
 // - 返り値: Vec<T>
@@ -306,7 +306,7 @@ mod test {
     use super::super::name::Name;
     use super::super::types::Type;
     use super::super::token::Tokenizer;
-    use super::super::structure::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
+    use super::super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
     
     #[test]
     fn data_empty_ok() {
