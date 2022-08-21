@@ -135,20 +135,6 @@ impl DefinesManager {
         DefinesManager { defines: DefinesManager::listup_defines(system) }
     }
 
-    // 与えられた関数名に対応する関数を探し，関数に登録されている引数の型の一覧を返す
-    pub fn get_args_type(&self, func_name: &Name) -> Result<Vec<Type>, Box<dyn Error>> {
-        let func_name = func_name.get_full_name();
-        let mut args = vec!();
-        for Define { kind, refs } in &self.defines {
-            if let DefineKind::Argument(types) = kind {
-                if &refs.namespace == &func_name {
-                    args.push(self.resolve_from_type((refs.clone(), types.clone()))?.1);
-                }
-            }
-        }
-        Ok(args)
-    }
-
     // 与えられたnameから参照可能なすべての範囲を対象に，typesと一致する定義を探す (Data, Module, Function)
     // ※name, typesはともに関連している状態を想定
     pub fn resolve_from_type(&self, (name, types): (Name, Type)) -> Result<(Name, Type), Box<dyn Error>> {
@@ -196,6 +182,20 @@ impl DefinesManager {
             }
             _ => CompileError::new(CompileErrorKind::NotDefined(name.name))
         }
+    }
+
+    // 与えられた関数名に対応する関数を探し，関数に登録されている引数の型の一覧を返す
+    pub fn get_args_type(&self, func_name: &Name) -> Result<Vec<Type>, Box<dyn Error>> {
+        let func_name = func_name.get_full_name();
+        let mut args = vec!();
+        for Define { kind, refs } in &self.defines {
+            if let DefineKind::Argument(types) = kind {
+                if &refs.namespace == &func_name {
+                    args.push(self.resolve_from_type((refs.clone(), types.clone()))?.1);
+                }
+            }
+        }
+        Ok(args)
     }
 
     // data(Data)内のmember(Member)の定義を探す
