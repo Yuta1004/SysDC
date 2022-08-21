@@ -138,7 +138,7 @@ impl DefinesManager {
     }
 
     pub fn get_args_type(&self, fullname: &Name) -> Result<Vec<Type>, Box<dyn Error>> {
-        let func_name = fullname.get_global_name();
+        let func_name = fullname.get_full_name();
         let mut args = vec!();
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Argument(types) = kind {
