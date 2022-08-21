@@ -90,7 +90,19 @@ impl Checker {
             }
             panic!("Internal Error")
         };
-        spawn_child.convert(ur_converter, ur_converter, l_converter)
+        let spawn_child = spawn_child.convert(ur_converter, ur_converter, l_converter)?;
+
+        match &spawn_child {
+            SysDCSpawnChild::LetTo { func: (func, _), args, .. } => {
+                for ((_, act_arg_type), req_arg_type) in args.iter().zip(self.def_manager.get_args_type(&func)?.iter()) {
+                    if act_arg_type != req_arg_type {
+                        return Err(Box::new(CompileError::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone())));
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(spawn_child)
     }
 }
 
@@ -125,29 +137,13 @@ impl DefinesManager {
         DefinesManager { defines: DefinesManager::listup_defines(system) }
     }
 
-    pub fn get_args_type(&self, namespace: &Name, name: &String) -> Result<Vec<Type>, Box<dyn Error>> {
-        let (head, tails) = DefinesManager::split_name(name);
-        let found_def = self.find(namespace, &head)?;
-        let func = match &found_def.kind {
-            DefineKind::Module =>
-                match tails {
-                    Some(tails) => Name::from(&found_def.refs, tails),
-                    None => return Err(Box::new(CompileError::MissingFunctionName))
-                }
-            DefineKind::Function(_) =>
-                match tails {
-                    Some(_) => return Err(Box::new(CompileError::IllegalAccess)),
-                    None => Name::from(&namespace.get_par_name(true).get_par_name(true), head)
-                }
-            _ => return Err(Box::new(CompileError::NotDefined(name.to_string())))
-        };
-        let func_name = func.get_global_name();
-
+    pub fn get_args_type(&self, fullname: &Name) -> Result<Vec<Type>, Box<dyn Error>> {
+        let func_name = fullname.get_global_name();
         let mut args = vec!();
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Argument(types) = kind {
                 if &refs.namespace == &func_name {
-                    args.push(self.resolve_from_type(func.clone(), types.clone())?.1);
+                    args.push(self.resolve_from_type(fullname.clone(), types.clone())?.1);
                 }
             }
         }
