@@ -2,9 +2,9 @@ use std::error::Error;
 
 use super::name::Name;
 use super::types::Type;
-use super::error::CompileError;
 use super::token::{ TokenKind, Tokenizer };
-use super::structure::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawn, SysDCSpawnChild };
+use super::error::{ CompileError, CompileErrorKind };
+use super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
 
 // 複数要素を一気にパースするためのマクロ
 // - 返り値: Vec<T>
@@ -31,6 +31,11 @@ macro_rules! parse_list {
     }};
 }
 
+enum Annotation {
+    Return(Name),
+    Spawn(SysDCSpawn)
+}
+
 pub struct Parser<'a> {
     tokenizer: Tokenizer<'a>
 }
@@ -50,7 +55,7 @@ impl<'a> Parser<'a> {
         let mut modules = vec!();
         while self.tokenizer.has_token() {
             match (self.parse_data(&namespace)?, self.parse_module(&namespace)?) {
-                (None, None) => return Err(Box::new(CompileError::UnexpectedEOF)),
+                (None, None) => return CompileError::new(CompileErrorKind::UnexpectedEOF),
                 (d, m) => {
                     if d.is_some() { data.push(d.unwrap()); }
                     if m.is_some() { modules.push(m.unwrap()); }
@@ -136,17 +141,17 @@ impl<'a> Parser<'a> {
         let mut spawns = vec!();
         while let Some(annotation) = self.parse_annotation(namespace)? {
             match annotation {
-                SysDCAnnotation::Return(ret) => {
+                Annotation::Return(ret) => {
                     if returns.is_some() {
-                        return Err(Box::new(CompileError::ReturnExistsMultiple));
+                        return CompileError::new(CompileErrorKind::ReturnExistsMultiple);
                     }
                     returns = Some(ret)
                 }
-                SysDCAnnotation::Spawn(spawn) => spawns.push(spawn),
+                Annotation::Spawn(spawn) => spawns.push(spawn),
             }
         }
         if returns.is_none() {
-            return Err(Box::new(CompileError::ReturnNotExists));
+            return CompileError::new(CompileErrorKind::ReturnNotExists);
         }
         Ok((returns.unwrap(), spawns))
     }
@@ -154,7 +159,7 @@ impl<'a> Parser<'a> {
     /**
      * <annotation> = @ ( <annotation_spawn> | <annotation_return> )
      */
-    fn parse_annotation(&mut self, namespace: &Name) -> Result<Option<SysDCAnnotation>, Box<dyn Error>> {
+    fn parse_annotation(&mut self, namespace: &Name) -> Result<Option<Annotation>, Box<dyn Error>> {
         // @
         if self.tokenizer.expect(TokenKind::AtMark)?.is_none() {
             return Ok(None);
@@ -173,18 +178,18 @@ impl<'a> Parser<'a> {
     /**
      * <annotation_return> ::= return <id>
      */
-    fn parse_annotation_return(&mut self, namespace: &Name) -> Result<Option<SysDCAnnotation>, Box<dyn Error>> {
+    fn parse_annotation_return(&mut self, namespace: &Name) -> Result<Option<Annotation>, Box<dyn Error>> {
         if self.tokenizer.expect(TokenKind::Return)?.is_none() {
             return Ok(None);
         }
         let returns = self.tokenizer.request(TokenKind::Identifier)?.get_id()?;
-        Ok(Some(SysDCAnnotation::new_return(Name::from(namespace, returns))))
+        Ok(Some(Annotation::Return(Name::from(namespace, returns))))
     }
 
     /**
      * <annotation_spawn> ::= spawn <id_type_mapping> ( \{ { <annotation_spawn_detail> } \} )
      */
-    fn parse_annotation_spawn(&mut self, namespace: &Name) -> Result<Option<SysDCAnnotation>, Box<dyn Error>> {
+    fn parse_annotation_spawn(&mut self, namespace: &Name) -> Result<Option<Annotation>, Box<dyn Error>> {
         // spawn
         if self.tokenizer.expect(TokenKind::Spawn)?.is_none() {
             return Ok(None);
@@ -193,7 +198,7 @@ impl<'a> Parser<'a> {
         // <id_type_mapping>
         let spawn_result = self.parse_id_type_mapping(namespace)?;
         if spawn_result.is_none() {
-            return Err(Box::new(CompileError::ResultOfSpawnNotSpecified));
+            return CompileError::new(CompileErrorKind::ResultOfSpawnNotSpecified);
         }
 
         // ( \{ { <annotation_spawn_detail > } \} )
@@ -211,7 +216,7 @@ impl<'a> Parser<'a> {
             self.tokenizer.request(TokenKind::BracketEnd)?;
         }
 
-        Ok(Some(SysDCAnnotation::new_spawn(spawn_result.unwrap(), details)))
+        Ok(Some(Annotation::Spawn(SysDCSpawn::new(spawn_result.unwrap(), details))))
     }
 
     /** 
@@ -233,7 +238,7 @@ impl<'a> Parser<'a> {
             // <id_chain> 
             let func = match self.parse_id_chain(namespace)? {
                 Some((func, _)) => func.name,
-                None => return Err(Box::new(CompileError::FunctionNameNotFound))
+                None => return CompileError::new(CompileErrorKind::FunctionNameNotFound)
             };
         
             // \( <id_chain_list, delimiter=',') \)
@@ -264,7 +269,7 @@ impl<'a> Parser<'a> {
                     self.tokenizer.request(TokenKind::Semicolon)?;
                     return Ok(Some(vec!(SysDCSpawnChild::new_return(name, Type::new_unsovled_nohint()))));
                 },
-                None => return Err(Box::new(CompileError::ResultOfSpawnNotSpecified))
+                None => return CompileError::new(CompileErrorKind::ResultOfSpawnNotSpecified)
             }
         }
 
@@ -306,7 +311,7 @@ mod test {
     use super::super::name::Name;
     use super::super::types::Type;
     use super::super::token::Tokenizer;
-    use super::super::structure::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
+    use super::super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
     
     #[test]
     fn data_empty_ok() {

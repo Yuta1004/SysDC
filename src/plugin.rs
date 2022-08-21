@@ -102,7 +102,7 @@ mod test {
         let plugin_manager = PluginManager::new();
         let plugin = plugin_manager.get_type_out(&"debug".to_string());
         assert!(plugin.is_ok());
-        plugin.unwrap().run(vec!(), &SysDCSystem::new(vec!())).unwrap();
+        plugin.unwrap().run(vec!(), &SysDCSystem { units: vec!() }).unwrap();
     }
 
     #[test]

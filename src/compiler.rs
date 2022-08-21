@@ -12,10 +12,11 @@ use name::Name;
 use parse::Parser;
 use token::Tokenizer;
 use check::Checker;
-use structure::{ SysDCSystem, SysDCUnit };
+use structure::SysDCSystem;
+use structure::unchecked;
 
 pub struct Compiler {
-    units: Vec<SysDCUnit>
+    units: Vec<unchecked::SysDCUnit>
 }
 
 impl Compiler {
@@ -34,7 +35,7 @@ impl Compiler {
     }
 
     pub fn generate_system(self) -> Result<SysDCSystem, Box<dyn Error>> {
-        Checker::check(SysDCSystem::new(self.units))
+        Checker::check(unchecked::SysDCSystem::new(self.units))
     }
 }
 
