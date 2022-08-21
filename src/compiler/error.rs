@@ -55,19 +55,27 @@ impl Display for CompileErrorKind {
 
 #[derive(Debug)]
 pub struct CompileError {
-    kind: CompileErrorKind
+    kind: CompileErrorKind,
+    pos: Option<(i32, i32)>
 }
 
 impl Error for CompileError {}
 
 impl Display for CompileError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", self.kind)
+        match &self.pos {
+            Some((row, col)) => write!(f, "{} (at {}:{})", self.kind, row, col),
+            None => write!(f, "{}", self.kind)
+        }
     }
 }
 
 impl CompileError {
     pub fn new<T>(kind: CompileErrorKind) -> Result<T, Box<dyn Error>> {
-        Err(Box::new(CompileError { kind }))
+        Err(Box::new(CompileError { kind, pos: None }))
+    }
+
+    pub fn new_with_pos<T>(kind: CompileErrorKind, pos: (i32, i32)) -> Result<T, Box<dyn Error>> {
+        Err(Box::new(CompileError { kind, pos: Some(pos) }))
     }
 }
