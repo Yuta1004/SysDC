@@ -62,7 +62,7 @@ impl<'a> Parser<'a> {
                 }
             }
         }
-        Ok(SysDCUnit::new(namespace, data, modules))
+        Ok(SysDCUnit::new(namespace, data, modules, vec!()))
     }
 
     /**
@@ -339,7 +339,7 @@ mod test {
             SysDCData::new(Name::from(&name, "D".to_string()), vec!()),
             SysDCData::new(Name::from(&name, "E".to_string()), vec!())
         );
-        let unit = SysDCUnit::new(name, data, vec!());
+        let unit = SysDCUnit::new(name, data, vec!(), vec!());
 
         compare_unit(program, unit);
     }
@@ -361,7 +361,7 @@ mod test {
             (Name::from(&name_box, "y".to_string()), Type::from("UserDefinedData".to_string()))
         );
         let data = SysDCData::new(name_box, member);
-        let unit = SysDCUnit::new(name, vec!(data), vec!());
+        let unit = SysDCUnit::new(name, vec!(data), vec!(), vec!());
 
         compare_unit(program, unit);
     }
@@ -427,7 +427,7 @@ mod test {
             SysDCModule::new(Name::from(&name, "D".to_string()), vec!()),
             SysDCModule::new(Name::from(&name, "E".to_string()), vec!())
         );
-        let unit = SysDCUnit::new(name, vec!(), module);
+        let unit = SysDCUnit::new(name, vec!(), module, vec!());
 
         compare_unit(program, unit);
     }
@@ -451,7 +451,7 @@ mod test {
         let func = SysDCFunction::new(name_func, vec!(), func_returns, vec!());
         let module = SysDCModule::new(name_module, vec!(func));
 
-        let unit = SysDCUnit::new(name, vec!(), vec!(module));
+        let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
 
         compare_unit(program, unit);
     }
@@ -481,7 +481,7 @@ mod test {
         let func = SysDCFunction::new(name_func, vec!(), func_returns, func_spawns);
         let module = SysDCModule::new(name_module, vec!(func));
 
-        let unit = SysDCUnit::new(name, vec!(), vec!(module));
+        let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
 
         compare_unit(program, unit);
     }
@@ -544,7 +544,7 @@ mod test {
         let func = SysDCFunction::new(name_func, func_args, func_returns, func_spawns);
         let module = SysDCModule::new(name_module, vec!(func));
 
-        let unit = SysDCUnit::new(name, vec!(), vec!(module));
+        let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
 
         compare_unit(program, unit);
     }
@@ -659,7 +659,7 @@ mod test {
         );
         let data = SysDCData::new(name_data, data_members);
 
-        let unit = SysDCUnit::new(name, vec!(data), vec!(module));
+        let unit = SysDCUnit::new(name, vec!(data), vec!(module), vec!());
 
         compare_unit(program, unit);
     }

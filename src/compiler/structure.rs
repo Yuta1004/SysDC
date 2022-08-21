@@ -60,7 +60,7 @@ pub mod unchecked {
     }
 
     impl SysDCSystem {
-        pub fn new(units: Vec<SysDCUnit>) -> SysDCSystem {
+        pub fn new(units: Vec<SysDCUnit> ) -> SysDCSystem {
             SysDCSystem { units }
         }
 
@@ -80,12 +80,13 @@ pub mod unchecked {
     pub struct SysDCUnit {
         pub name: Name,
         pub data: Vec<SysDCData>,
-        pub modules: Vec<SysDCModule>
+        pub modules: Vec<SysDCModule>,
+        pub refs: Vec<Name>
     }
 
     impl SysDCUnit {
-        pub fn new(name: Name, data: Vec<SysDCData>, modules: Vec<SysDCModule>) -> SysDCUnit {
-            SysDCUnit { name, data, modules }
+        pub fn new(name: Name, data: Vec<SysDCData>, modules: Vec<SysDCModule>, refs: Vec<Name>) -> SysDCUnit {
+            SysDCUnit { name, data, modules, refs }
         }
 
         pub fn convert<F, G>(self, d_converter: F, m_converter: G) -> Result<super::SysDCUnit, Box<dyn Error>>
