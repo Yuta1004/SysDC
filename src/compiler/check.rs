@@ -165,11 +165,11 @@ impl DefinesManager {
                         }
                     DefineKind::Module =>
                         match tails {
-                            Some(tails) => self.resolve_from_module_func(found_def.refs, tails),
+                            Some(tails) => self.get_func_in_module(found_def.refs, tails),
                             None => CompileError::new(CompileErrorKind::MissingFunctionName)
                         }
                     DefineKind::Function(_) => {
-                        self.resolve_from_module_func(name.get_par_name(true).get_par_name(true), hint)
+                        self.get_func_in_module(name.get_par_name(true).get_par_name(true), hint)
                     }
                     _ => CompileError::new(CompileErrorKind::TypeUnmatch1(types))
                 }
@@ -184,43 +184,47 @@ impl DefinesManager {
         let found_def = self.find(name.clone(), &head, &vec!())?;
         match found_def.kind {
             DefineKind::Variable(types) => {
-                let types = self.resolve_from_type((name.clone(), types))?.1;
-                match tails {
-                    Some(tails) => self.resolve_from_data_member(name, types, tails),
-                    None => Ok((found_def.refs, types))
+                let (_, types) = self.resolve_from_type((name.clone(), types))?;
+                match types.kind {
+                    TypeKind::Data =>
+                        match tails {
+                            Some(tails) => self.get_member_in_data(types.refs.unwrap(), tails),
+                            None => Ok((found_def.refs, types))
+                        }
+                    _ => Ok((name, types))
                 }
             }
             _ => CompileError::new(CompileErrorKind::NotDefined(name.name))
         }
     }
 
-    // nameから参照可能なすべての範囲を対象に，data(Data)内のmember(Member)の定義を探す
-    fn resolve_from_data_member(&self, name: Name, data: Type, member: String) -> Result<(Name, Type), Box<dyn Error>> {
+    // data(Data)内のmember(Member)の定義を探す
+    fn get_member_in_data(&self, data: Name, member: String) -> Result<(Name, Type), Box<dyn Error>> {
         let (head, tails) = DefinesManager::split_name(&member);
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
-                if data.refs.as_ref().unwrap().name == refs.get_par_name(true).name && head == refs.name {
-                    return match self.resolve_from_type((name.clone(), types.clone()))?.1 {
-                        types@Type { kind: TypeKind::Int32, .. } =>
+                if data.get_full_name() == refs.namespace && head == refs.name {
+                    return match self.resolve_from_type((refs.clone(), types.clone()))? {
+                        (_, types@Type { kind: TypeKind::Int32, .. }) =>
                             match tails {
                                 Some(_) => CompileError::new(CompileErrorKind::IllegalAccess),
                                 None => Ok((refs.clone(), types))
                             }
-                        types@Type { kind: TypeKind::Data, .. } =>
+                        (_, types@Type { kind: TypeKind::Data, .. }) =>
                             match tails {
-                                Some(tails) => self.resolve_from_data_member(name, types, tails),
-                                None => Ok((refs.clone(), types))
+                                Some(tails) => self.get_member_in_data(types.refs.clone().unwrap(), tails),
+                                None => Ok((types.refs.clone().unwrap(), types))
                             },
                         _ => panic!("Internal Error")
                     }
                 }
             }
         }
-        CompileError::new(CompileErrorKind::MemberNotDefinedInData(member, data.refs.unwrap().name))
+        CompileError::new(CompileErrorKind::MemberNotDefinedInData(member, data.name))
     }
 
     // module(Module)内のfunc(Function)の定義を探す
-    fn resolve_from_module_func(&self, module: Name, func: String) -> Result<(Name, Type), Box<dyn Error>> {
+    fn get_func_in_module(&self, module: Name, func: String) -> Result<(Name, Type), Box<dyn Error>> {
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Function(types) = kind {
                 if module == refs.get_par_name(true) && func == refs.name {
