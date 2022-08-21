@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use super::error::CompileError;
+use super::error::{ CompileError, CompileErrorKind };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
@@ -115,7 +115,7 @@ impl<'a> Tokenizer<'a> {
     pub fn request(&mut self, kind: TokenKind) -> Result<Token, Box<dyn Error>> {
         match self.expect(kind.clone())? {
             Some(token) => Ok(token),
-            None => Err(Box::new(CompileError::RequestedTokenNotFound(kind)))
+            None => CompileError::new(CompileErrorKind::RequestedTokenNotFound(kind))
         }
     }
 
@@ -143,7 +143,7 @@ impl<'a> Tokenizer<'a> {
                 (CharType::SymbolAllow1, CharType::SymbolAllow2) => { self.now_ref_pos += 1; break },
 
                 // Ng(panic)
-                (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) => return Err(Box::new(CompileError::FoundUnregisteredSymbol)),
+                (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) => return CompileError::new(CompileErrorKind::FoundUnregisteredSymbol),
 
                 // Ok(force stop)
                 _ => break

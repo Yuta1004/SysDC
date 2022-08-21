@@ -1,8 +1,8 @@
 use std::error::Error;
 
 use super::name::Name;
-use super::error::CompileError;
 use super::types::{ Type, TypeKind };
+use super::error::{ CompileError, CompileErrorKind };
 use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild  };
 use super::structure::unchecked;
 
@@ -50,7 +50,7 @@ impl Checker {
 
         let act_ret_type = &func.returns.as_ref().unwrap().1;
         if &req_ret_type != act_ret_type {
-            return Err(Box::new(CompileError::TypeUnmatch2(req_ret_type, act_ret_type.clone())));
+            return CompileError::new(CompileErrorKind::TypeUnmatch2(req_ret_type, act_ret_type.clone()));
         }
         Ok(func)
     }
@@ -68,7 +68,7 @@ impl Checker {
             match spawn_child {
                 SysDCSpawnChild::Return(_, act_ret_type) =>
                     if &req_ret_type != act_ret_type {
-                        return Err(Box::new(CompileError::TypeUnmatch2(req_ret_type, act_ret_type.clone())));
+                        return CompileError::new(CompileErrorKind::TypeUnmatch2(req_ret_type, act_ret_type.clone()));
                     }
                 _ => {}
             }
@@ -96,7 +96,7 @@ impl Checker {
             SysDCSpawnChild::LetTo { func: (func, _), args, .. } => {
                 for ((_, act_arg_type), req_arg_type) in args.iter().zip(self.def_manager.get_args_type(&func)?.iter()) {
                     if act_arg_type != req_arg_type {
-                        return Err(Box::new(CompileError::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone())));
+                        return CompileError::new(CompileErrorKind::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone()));
                     }
                 }
             }
@@ -159,18 +159,18 @@ impl DefinesManager {
                 match found_def.kind {
                     DefineKind::Data =>
                         match tails {
-                            Some(_) => Err(Box::new(CompileError::IllegalAccess)),
+                            Some(_) => CompileError::new(CompileErrorKind::IllegalAccess),
                             None => Ok((name, Type::new(TypeKind::Data, Some(found_def.refs))))
                         }
                     DefineKind::Module =>
                         match tails {
                             Some(tails) => self.resolve_from_module_func(name, found_def.refs.name, tails),
-                            None => Err(Box::new(CompileError::MissingFunctionName))
+                            None => CompileError::new(CompileErrorKind::MissingFunctionName)
                         }
                     DefineKind::Function(_) => {
                         self.resolve_from_module_func(name.clone(), name.get_par_name(true).get_par_name(true).name, hint)
                     }
-                    _ => Err(Box::new(CompileError::TypeUnmatch1(types)))
+                    _ => CompileError::new(CompileErrorKind::TypeUnmatch1(types))
                 }
             },
             _ => panic!("Internal Error")
@@ -188,7 +188,7 @@ impl DefinesManager {
                     None => Ok((found_def.refs, types))
                 }
             }
-            _ => Err(Box::new(CompileError::NotDefined(nname)))
+            _ => CompileError::new(CompileErrorKind::NotDefined(nname))
         }
     }
 
@@ -200,7 +200,7 @@ impl DefinesManager {
                     return match self.resolve_from_type(name.clone(), types.clone())?.1 {
                         types@Type { kind: TypeKind::Int32, .. } =>
                             match tails {
-                                Some(_) => Err(Box::new(CompileError::IllegalAccess)),
+                                Some(_) => CompileError::new(CompileErrorKind::IllegalAccess),
                                 None => Ok((refs.clone(), types))
                             }
                         types@Type { kind: TypeKind::Data, .. } =>
@@ -213,7 +213,7 @@ impl DefinesManager {
                 }
             }
         }
-        Err(Box::new(CompileError::MemberNotDefinedInData(member, data.refs.unwrap().name)))
+        CompileError::new(CompileErrorKind::MemberNotDefinedInData(member, data.refs.unwrap().name))
     }
 
     fn resolve_from_module_func(&self, name: Name, module: String, func: String) -> Result<(Name, Type), Box<dyn Error>> {
@@ -224,12 +224,12 @@ impl DefinesManager {
                 }
             }
         }
-        Err(Box::new(CompileError::FuncNotDefinedInModule(func, module)))
+        CompileError::new(CompileErrorKind::FuncNotDefinedInModule(func, module))
     }
 
     fn find(&self, namespace: &Name, name: &String) -> Result<Define, Box<dyn Error>> {
         if namespace.namespace.len() == 0 {
-            return Err(Box::new(CompileError::NotFound(name.to_string())));
+            return CompileError::new(CompileErrorKind::NotFound(name.to_string()));
         }
         for Define{ kind, refs } in &self.defines {
             if refs.namespace == namespace.namespace && &refs.name == name {
