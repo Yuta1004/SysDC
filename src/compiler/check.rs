@@ -18,7 +18,12 @@ impl Checker {
     }
 
     fn check_unit(&mut self, unit: unchecked::SysDCUnit) -> Result<SysDCUnit, Box<dyn Error>> {
-        self.imports = unit.imports.clone();
+        let mut imports = vec!();
+        for import in unit.imports.clone() {
+            imports.push(self.def_manager.resolve_from_type((import.clone(), Type::from(import.name)), &vec!())?.0);
+        }
+        self.imports = imports;
+
         unit.convert(
             |data| self.check_data(data,),
             |module| self.check_module(module),
