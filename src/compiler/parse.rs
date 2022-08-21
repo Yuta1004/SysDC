@@ -48,7 +48,7 @@ impl<'a> Parser<'a> {
 
     /**
      * <root> ::= { <sentence> }
-     * <sentence> ::= unit <id_chain>; { <data> | <module> }
+     * <sentence> ::= unit <id_chain>; { <import> | <data> | <module> }
      */
     fn parse_root(&mut self, namespace: Name) -> Result<SysDCUnit, Box<dyn Error>> {
         // unit
@@ -60,19 +60,45 @@ impl<'a> Parser<'a> {
         self.tokenizer.request(TokenKind::Semicolon)?;
 
         // { <data> | <module> }
-        let mut data = vec!();
-        let mut modules = vec!();
+        let (mut imports, mut data, mut modules) = (vec!(), vec!(), vec!());
         while self.tokenizer.has_token() {
-            match (self.parse_data(&namespace)?, self.parse_module(&namespace)?) {
-                (None, None) => return CompileError::new(CompileErrorKind::UnexpectedEOF),
-                (d, m) => {
+            match (self.parse_import()?, self.parse_data(&namespace)?, self.parse_module(&namespace)?) {
+                (None, None, None) => return CompileError::new(CompileErrorKind::UnexpectedEOF),
+                (i, d, m) => {
+                    if i.is_some() { imports.extend(i.unwrap()); }
                     if d.is_some() { data.push(d.unwrap()); }
                     if m.is_some() { modules.push(m.unwrap()); }
                 }
             }
         }
 
-        Ok(SysDCUnit::new(namespace, data, modules, vec!()))
+        Ok(SysDCUnit::new(namespace, data, modules, imports))
+    }
+
+    /**
+     * <import> ::= from <id_chain> import <id_list, delimiter=','> ;
+     */
+    fn parse_import(&mut self) -> Result<Option<Vec<Name>>, Box<dyn Error>> {
+        // from
+        if self.tokenizer.expect(TokenKind::From)?.is_none() {
+            return Ok(None)
+        }
+
+        // from <id_chain>
+        let from_namespace = match self.parse_id_chain(&Name::new_root())? {
+            Some((found_name, _)) => Name::from(&Name::new_root(), found_name.name),
+            None => return CompileError::new(CompileErrorKind::FromNamespaceNotSpecified)
+        };
+
+        // import <id_list, delimiter=','> ;
+        self.tokenizer.request(TokenKind::Import)?;
+        let mut importes = vec!();
+        for import in parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Separater) {
+            importes.push(Name::from(&from_namespace, import.get_id()?));
+        }
+        self.tokenizer.request(TokenKind::Semicolon)?;
+
+        Ok(Some(importes))
     }
 
     /**
@@ -322,6 +348,49 @@ mod test {
     use super::super::types::Type;
     use super::super::token::Tokenizer;
     use super::super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
+
+    #[test]
+    fn empty() {
+        let program = "unit test;";
+        compare_unit(program, SysDCUnit::new(generate_name_for_test(), vec!(), vec!(), vec!()));
+    }
+
+    #[test]
+    fn import_simple() {
+        let program = "
+            unit test;
+
+            from outer import A;
+            from outer2.in import B;
+        ";
+
+        let name = Name::new_root();
+        let name_import_1 = Name::from(&Name::from(&name, "outer".to_string()), "A".to_string());
+        let name_import_2 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "B".to_string());
+        let name_imports = vec!(name_import_1, name_import_2);
+
+        compare_unit(program, SysDCUnit::new(generate_name_for_test(), vec!(), vec!(), name_imports));
+    }
+
+    #[test]
+    fn import_multiple() {
+        let program = "
+            unit test;
+
+            from outer import A, B;
+            from outer2.in import C, D, E;
+        ";
+
+        let name = Name::new_root();
+        let name_import_1 = Name::from(&Name::from(&name, "outer".to_string()), "A".to_string());
+        let name_import_2 = Name::from(&Name::from(&name, "outer".to_string()), "B".to_string());
+        let name_import_3 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "C".to_string());
+        let name_import_4 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "D".to_string());
+        let name_import_5 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "E".to_string());
+        let name_imports = vec!(name_import_1, name_import_2, name_import_3, name_import_4, name_import_5);
+
+        compare_unit(program, SysDCUnit::new(generate_name_for_test(), vec!(), vec!(), name_imports));
+    }
     
     #[test]
     fn data_empty_ok() {
@@ -627,6 +696,9 @@ mod test {
         let program = "
             unit test;
 
+            from outer import A;
+            from outer2.in import C, D, E;
+
             data Box {
                 x: i32,
                 y: i32
@@ -646,6 +718,13 @@ mod test {
                 }
             }
         ";
+
+        let name = Name::new_root();
+        let name_import_1 = Name::from(&Name::from(&name, "outer".to_string()), "A".to_string());
+        let name_import_2 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "C".to_string());
+        let name_import_3 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "D".to_string());
+        let name_import_4 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "E".to_string());
+        let name_imports = vec!(name_import_1, name_import_2, name_import_3, name_import_4);
 
         let name = generate_name_for_test();
         let name_data = Name::from(&name, "Box".to_string());
@@ -695,7 +774,7 @@ mod test {
         );
         let data = SysDCData::new(name_data, data_members);
 
-        let unit = SysDCUnit::new(name, vec!(data), vec!(module), vec!());
+        let unit = SysDCUnit::new(name, vec!(data), vec!(module), name_imports);
 
         compare_unit(program, unit);
     }

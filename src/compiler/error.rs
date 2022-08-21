@@ -13,6 +13,7 @@ pub enum CompileErrorKind {
 
     /* パース時に発生したエラー */
     UnitNameNotSpecified,
+    FromNamespaceNotSpecified,
     UnexpectedEOF,
     ReturnExistsMultiple,
     ReturnNotExists,
@@ -37,6 +38,7 @@ impl Display for CompileErrorKind {
             CompileErrorKind::FoundUnregisteredSymbol => write!(f, "Found unregistered symbol"),
 
             CompileErrorKind::UnitNameNotSpecified => write!(f, "Unit name is not specified"),
+            CompileErrorKind::FromNamespaceNotSpecified => write!(f, "From namespace is not specified"),
             CompileErrorKind::UnexpectedEOF => write!(f, "Expected Data or Module definition, but not found"),
             CompileErrorKind::ReturnExistsMultiple => write!(f, "Annotation \"return\" exists multiple"),
             CompileErrorKind::ReturnNotExists => write!(f, "Annotation \"return\" not existed"),
