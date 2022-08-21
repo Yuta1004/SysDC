@@ -155,7 +155,7 @@ impl DefinesManager {
             TypeKind::Int32 | TypeKind::Data => Ok((name, types)),
             TypeKind::Unsolved(hint) => {
                 let (head, tails) = DefinesManager::split_name(&hint);
-                let found_def = self.find(&name, &head)?;
+                let found_def = self.find(name.clone(), &head, &vec!())?;
                 match found_def.kind {
                     DefineKind::Data =>
                         match tails {
@@ -168,6 +168,7 @@ impl DefinesManager {
                             None => CompileError::new(CompileErrorKind::MissingFunctionName)
                         }
                     DefineKind::Function(_) => {
+                        println!("{:?}", hint);
                         self.resolve_from_module_func(name.clone(), name.get_par_name(true).get_par_name(true).name, hint)
                     }
                     _ => CompileError::new(CompileErrorKind::TypeUnmatch1(types))
@@ -179,7 +180,7 @@ impl DefinesManager {
 
     pub fn resolve_from_name(&self, name: Name, nname: String) -> Result<(Name, Type), Box<dyn Error>> {
         let (head, tails) = DefinesManager::split_name(&nname);
-        let found_def = self.find(&name, &head)?;
+        let found_def = self.find(name.clone(), &head, &vec!())?;
         match found_def.kind {
             DefineKind::Variable(types) => {
                 let types = self.resolve_from_type(name.clone(), types)?.1;
@@ -227,16 +228,16 @@ impl DefinesManager {
         CompileError::new(CompileErrorKind::FuncNotDefinedInModule(func, module))
     }
 
-    fn find(&self, namespace: &Name, name: &String) -> Result<Define, Box<dyn Error>> {
-        if namespace.namespace.len() == 0 {
-            return CompileError::new(CompileErrorKind::NotFound(name.to_string()));
-        }
-        for Define{ kind, refs } in &self.defines {
-            if refs.namespace == namespace.namespace && &refs.name == name {
-                return Ok(Define::new(kind.clone(), refs.clone()))
+    fn find(&self, mut namespace: Name, name: &String, imports: &Vec<Name>) -> Result<Define, Box<dyn Error>> {
+        while namespace.name.len() > 0 {
+            for Define{ kind, refs } in &self.defines {
+                if refs.namespace == namespace.namespace && &refs.name == name {
+                    return Ok(Define::new(kind.clone(), refs.clone()))
+                }
             }
+            namespace = namespace.get_par_name(false);
         }
-        self.find(&namespace.get_par_name(false), name)
+        CompileError::new(CompileErrorKind::NotFound(name.clone()))
     }
 
     fn split_name(hint: &String) -> (String, Option<String>) {
