@@ -39,17 +39,13 @@ impl Checker {
     fn check_function(&self, func: unchecked::SysDCFunction) -> Result<SysDCFunction, Box<dyn Error>> {
         let a_converter = |(name, types)| self.def_manager.resolve_from_type(name, types);
         let r_converter = |returns: Option<(Name, Type)>| {
-            let (ret_name, ret_type) = returns.unwrap();
-            let require_ret = self.def_manager.resolve_from_type(ret_name.clone(), ret_type)?;
+            let (ret_name, _) = returns.unwrap();
             let ret = self.def_manager.resolve_from_name(ret_name.clone(), ret_name.name)?;
-            // if require_ret.1 != ret.1 {
-            //     return Err(Box::new(CompileError::TypeUnmatch2(require_ret.1, ret.1)));
-            // }
             Ok(Some(ret))
         };
         func.convert(a_converter, r_converter, |spawn| self.check_spawn(spawn))
     }
-    
+
     fn check_spawn(&self, spawn: unchecked::SysDCSpawn) -> Result<SysDCSpawn, Box<dyn Error>> {
         spawn.convert(
             |(name, _)| self.def_manager.resolve_from_name(name.clone(), name.name),
@@ -62,25 +58,16 @@ impl Checker {
         let l_converter = |name: Name, (_, func): (Name, Type), args: Vec<(Name, Type)>| {
             if let Type { kind: TypeKind::Unsolved(func), .. } = func {
                 let mut let_to_args = vec!();
-                for ((arg_name, _), required_type) in args.into_iter().zip(self.def_manager.get_args_type(&name, &func).unwrap().into_iter()) {
+                for (arg_name, _) in args {
                     let (arg_name, arg_type) = self.def_manager.resolve_from_name(arg_name.clone(), arg_name.name)?;
-                    // if arg_type != required_type {
-                    //     return Err(Box::new(CompileError::TypeUnmatch2(required_type, arg_type)));
-                    // }
                     let_to_args.push((arg_name, arg_type));
                 }
                 let resolved_func = self.def_manager.resolve_from_type(name.clone(), Type::from(func))?;
                 return Ok((name, resolved_func, let_to_args));
             }
-            panic!("")
-            // Err(Box::new(CompileError::InternalError))
+            panic!("InternalError")
         };
         spawn_child.convert(ur_converter, ur_converter, l_converter)
-        // let (name, types) = self.def_manager.resolve_from_name(name.clone(), name.name)?;
-        // if types != required_types.1 {
-        //     return Err(Box::new(CompileError::TypeUnmatch2(required_types.1, types)));
-        // }
-        // SysDCSpawnChild::new_return(name, types)
     }
 }
 
