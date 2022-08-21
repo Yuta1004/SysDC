@@ -168,7 +168,6 @@ impl DefinesManager {
                             None => CompileError::new(CompileErrorKind::MissingFunctionName)
                         }
                     DefineKind::Function(_) => {
-                        println!("{:?}", hint);
                         self.resolve_from_module_func(name.clone(), name.get_par_name(true).get_par_name(true).name, hint)
                     }
                     _ => CompileError::new(CompileErrorKind::TypeUnmatch1(types))
