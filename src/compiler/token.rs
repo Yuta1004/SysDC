@@ -122,7 +122,10 @@ impl<'a> Tokenizer<'a> {
     pub fn request(&mut self, kind: TokenKind) -> Result<Token, Box<dyn Error>> {
         match self.expect(kind.clone())? {
             Some(token) => Ok(token),
-            None => CompileError::new(CompileErrorKind::RequestedTokenNotFound(kind))
+            None => CompileError::new_with_pos(
+                CompileErrorKind::RequestedTokenNotFound(kind),
+                (self.now_ref_row, self.now_ref_col)
+            )
         }
     }
 
@@ -155,7 +158,11 @@ impl<'a> Tokenizer<'a> {
                 },
 
                 // Ng(panic)
-                (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) => return CompileError::new(CompileErrorKind::FoundUnregisteredSymbol),
+                (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) =>
+                    return CompileError::new_with_pos(
+                        CompileErrorKind::FoundUnregisteredSymbol,
+                        (self.now_ref_row, self.now_ref_col)
+                    ),
 
                 // Ok(force stop)
                 _ => break
