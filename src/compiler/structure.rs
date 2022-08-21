@@ -36,12 +36,6 @@ pub struct SysDCFunction {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum SysDCAnnotation {
-    Return(Name),
-    Spawn(SysDCSpawn)
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct SysDCSpawn {
     pub result: (Name, Type),
     pub details: Vec<SysDCSpawnChild>
@@ -183,22 +177,6 @@ pub mod unchecked {
                 spawns.push(s_convert(spawn)?);
             }
             Ok(super::SysDCFunction { name: self.name, args, returns, spawns })
-        }
-    }
-
-    #[derive(Debug)]
-    pub enum SysDCAnnotation {
-        Return(Name),
-        Spawn(SysDCSpawn)
-    }
-
-    impl SysDCAnnotation {
-        pub fn new_return(name: Name) -> SysDCAnnotation {
-            SysDCAnnotation::Return(name)
-        }
-
-        pub fn new_spawn(result: (Name, Type), details: Vec<SysDCSpawnChild>) -> SysDCAnnotation {
-            SysDCAnnotation::Spawn(SysDCSpawn{ result, details })
         }
     }
 

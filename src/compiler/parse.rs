@@ -4,7 +4,7 @@ use super::name::Name;
 use super::types::Type;
 use super::token::{ TokenKind, Tokenizer };
 use super::error::{ CompileError, CompileErrorKind };
-use super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawn, SysDCSpawnChild };
+use super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
 
 // 複数要素を一気にパースするためのマクロ
 // - 返り値: Vec<T>
@@ -29,6 +29,11 @@ macro_rules! parse_list {
         }
         var_list
     }};
+}
+
+enum Annotation {
+    Return(Name),
+    Spawn(SysDCSpawn)
 }
 
 pub struct Parser<'a> {
@@ -136,13 +141,13 @@ impl<'a> Parser<'a> {
         let mut spawns = vec!();
         while let Some(annotation) = self.parse_annotation(namespace)? {
             match annotation {
-                SysDCAnnotation::Return(ret) => {
+                Annotation::Return(ret) => {
                     if returns.is_some() {
                         return CompileError::new(CompileErrorKind::ReturnExistsMultiple);
                     }
                     returns = Some(ret)
                 }
-                SysDCAnnotation::Spawn(spawn) => spawns.push(spawn),
+                Annotation::Spawn(spawn) => spawns.push(spawn),
             }
         }
         if returns.is_none() {
@@ -154,7 +159,7 @@ impl<'a> Parser<'a> {
     /**
      * <annotation> = @ ( <annotation_spawn> | <annotation_return> )
      */
-    fn parse_annotation(&mut self, namespace: &Name) -> Result<Option<SysDCAnnotation>, Box<dyn Error>> {
+    fn parse_annotation(&mut self, namespace: &Name) -> Result<Option<Annotation>, Box<dyn Error>> {
         // @
         if self.tokenizer.expect(TokenKind::AtMark)?.is_none() {
             return Ok(None);
@@ -173,18 +178,18 @@ impl<'a> Parser<'a> {
     /**
      * <annotation_return> ::= return <id>
      */
-    fn parse_annotation_return(&mut self, namespace: &Name) -> Result<Option<SysDCAnnotation>, Box<dyn Error>> {
+    fn parse_annotation_return(&mut self, namespace: &Name) -> Result<Option<Annotation>, Box<dyn Error>> {
         if self.tokenizer.expect(TokenKind::Return)?.is_none() {
             return Ok(None);
         }
         let returns = self.tokenizer.request(TokenKind::Identifier)?.get_id()?;
-        Ok(Some(SysDCAnnotation::new_return(Name::from(namespace, returns))))
+        Ok(Some(Annotation::Return(Name::from(namespace, returns))))
     }
 
     /**
      * <annotation_spawn> ::= spawn <id_type_mapping> ( \{ { <annotation_spawn_detail> } \} )
      */
-    fn parse_annotation_spawn(&mut self, namespace: &Name) -> Result<Option<SysDCAnnotation>, Box<dyn Error>> {
+    fn parse_annotation_spawn(&mut self, namespace: &Name) -> Result<Option<Annotation>, Box<dyn Error>> {
         // spawn
         if self.tokenizer.expect(TokenKind::Spawn)?.is_none() {
             return Ok(None);
@@ -211,7 +216,7 @@ impl<'a> Parser<'a> {
             self.tokenizer.request(TokenKind::BracketEnd)?;
         }
 
-        Ok(Some(SysDCAnnotation::new_spawn(spawn_result.unwrap(), details)))
+        Ok(Some(Annotation::Spawn(SysDCSpawn::new(spawn_result.unwrap(), details))))
     }
 
     /** 
