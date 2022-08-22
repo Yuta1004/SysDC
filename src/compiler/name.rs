@@ -45,6 +45,10 @@ impl Name {
         let par_namespace = splitted_name[0..splitted_name.len()-2].join(".");
         Name { name: par_name.to_string(), namespace: par_namespace }
     }
+
+    pub fn has_underscore(&self) -> bool {
+        self.namespace.contains("_") || self.name.contains("_")
+    }
 }
 
 impl Debug for Name {
