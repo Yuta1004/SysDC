@@ -16,8 +16,10 @@ impl InputPlugin for DebugPlugin {
     }
 
     fn run(&self, _: Vec<String>) -> Result<Vec<(String, String)>, Box<dyn Error>> {
-        let unit_name = "debug".to_string();
+        let filename = "debug.def".to_string();
         let program = "
+            unit debug;
+
             data Box {
                 x: i32,
                 y: i32,
@@ -53,6 +55,6 @@ impl InputPlugin for DebugPlugin {
                 }
             }
         ".to_string();
-        Ok(vec!((unit_name, program)))
+        Ok(vec!((filename, program)))
     }
 }

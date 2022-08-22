@@ -1,0 +1,20 @@
+unit compiler;
+
+from std import String;
+
+from compiler.structure import SysDCSystem;
+from compiler.tokenizer import TokenList, Tokenizer;
+from compiler.parser import Parser;
+
+module Compiler {
+    compiile(program: String) -> SysDCSystem {
+        @return system
+
+        @spawn system: SysDCSystem {
+            use program;
+            let tokens = Tokenizer.tokenize(program);
+            let system = Parser.parse(tokens);
+            return system;
+        }
+    }
+}

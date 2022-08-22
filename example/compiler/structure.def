@@ -1,0 +1,15 @@
+unit compiler.structure;
+
+data SysDCSystem {}
+
+data SysDCUnit {}
+
+data SysDCData {}
+
+data SysDCModule {}
+
+data SysdCFunction {}
+
+data SysDCSpawn {}
+
+data SysDCSpawnChild {}

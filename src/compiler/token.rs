@@ -5,6 +5,9 @@ use super::error::{ CompileError, CompileErrorKind };
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     /* Reserved */
+    Unit,               // unit
+    From,               // from
+    Import,             // import
     Data,               // data
     Module,             // module
     Return,             // return
@@ -42,6 +45,9 @@ pub struct Token {
 impl Token {
     pub fn from(orig: String, row: i32, col: i32) -> Token {
         let kind = match orig.as_str() {
+            "unit"      => TokenKind::Unit,
+            "from"      => TokenKind::From,
+            "import"    => TokenKind::Import,
             "data"      => TokenKind::Data,
             "module"    => TokenKind::Module,
             "return"    => TokenKind::Return,
@@ -248,6 +254,9 @@ mod test {
         #[test]
         fn create_token_from() {
             let str_kind_mapping = [
+                ("unit",    TokenKind::Unit),
+                ("from",    TokenKind::From),
+                ("import",  TokenKind::Import),
                 ("data",    TokenKind::Data),
                 ("module",  TokenKind::Module),
                 ("return",  TokenKind::Return),
@@ -298,6 +307,10 @@ mod test {
         #[test]
         fn expect_all_ok() {
             let text = "
+                unit box;
+
+                from square import Square;
+
                 data Box {
                     x: i32,
                     y: i32
@@ -313,6 +326,14 @@ mod test {
                     }
                 }".to_string();
             let correct_token_kinds = [
+                TokenKind::Unit,
+                TokenKind::Identifier,
+                TokenKind::Semicolon,
+                TokenKind::From,
+                TokenKind::Identifier,
+                TokenKind::Import,
+                TokenKind::Identifier,
+                TokenKind::Semicolon,
                 TokenKind::Data,
                 TokenKind::Identifier,
                 TokenKind::BracketBegin,
@@ -370,12 +391,10 @@ mod test {
             let mut tokenizer = Tokenizer::new(&text);
             for token_kind in correct_token_kinds {
                 match tokenizer.expect(token_kind.clone()).unwrap() {
-                    Some(t) => { println!("{:?} => {}:{}", t.kind, t.row, t.col) }
+                    Some(_) => {}
                     None => assert!(false, "{:?}", token_kind)
                 }
             }
-            assert!(!tokenizer.has_token());
-            panic!("")
         }
 
         #[test]

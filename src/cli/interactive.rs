@@ -79,9 +79,9 @@ impl InteractiveCmd {
     fn run_mode_in(&mut self, name: String, args: Vec<String>) -> Result<(), Box<dyn Error>> {
         let plugin = self.plugin_manager.get_type_in(&name)?;
         let mut compiler = Compiler::new();
-        for (unit_name, program) in plugin.run(args)? {
-            println!("Load: {}", unit_name);
-            compiler.add_unit(unit_name, program)?;
+        for (filename, program) in plugin.run(args)? {
+            println!("Loading: {}", filename);
+            compiler.add_unit(program)?;
         }
         self.system = Some(compiler.generate_system()?);
         Ok(())

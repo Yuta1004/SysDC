@@ -7,19 +7,27 @@ use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFun
 use super::structure::unchecked;
 
 pub struct Checker {
-    def_manager: DefinesManager
+    def_manager: DefinesManager,
+    imports: Vec<Name>
 }
 
 impl Checker {
     pub fn check(system: unchecked::SysDCSystem) -> Result<SysDCSystem, Box<dyn Error>> {
-        let checker = Checker { def_manager: DefinesManager::new(&system) };
+        let mut checker = Checker { def_manager: DefinesManager::new(&system), imports: vec!() };
         system.convert(|unit| checker.check_unit(unit))
     }
 
-    fn check_unit(&self, unit: unchecked::SysDCUnit) -> Result<SysDCUnit, Box<dyn Error>> {
+    fn check_unit(&mut self, unit: unchecked::SysDCUnit) -> Result<SysDCUnit, Box<dyn Error>> {
+        let mut imports = vec!();
+        for import in unit.imports.clone() {
+            self.def_manager.is_defined(import.clone(), &vec!())?;
+            imports.push(import);
+        }
+        self.imports = imports;
+
         unit.convert(
-            |data| self.check_data(data),
-            |module| self.check_module(module)
+            |data| self.check_data(data,),
+            |module| self.check_module(module),
         )
     }
 
@@ -27,7 +35,7 @@ impl Checker {
         data.convert(|(name, types): (Name, Type)|
             match types.kind {
                 TypeKind::Int32 => Ok((name, types)),
-                _ => self.def_manager.resolve_from_type(name, types)
+                _ => self.def_manager.resolve_from_type((name, types), &self.imports)
             }
         )
     }
@@ -37,13 +45,12 @@ impl Checker {
     }
 
     fn check_function(&self, func: unchecked::SysDCFunction) -> Result<SysDCFunction, Box<dyn Error>> {
-        let (req_ret_name, req_ret_type) = func.returns.clone().unwrap();
-        let req_ret_type = self.def_manager.resolve_from_type(req_ret_name, req_ret_type)?.1;
+        let req_ret_type = self.def_manager.resolve_from_type(func.returns.clone().unwrap(), &self.imports)?.1;
 
-        let a_converter = |(name, types)| self.def_manager.resolve_from_type(name, types);
+        let a_converter = |arg| self.def_manager.resolve_from_type(arg, &self.imports);
         let r_converter = |returns: Option<(Name, Type)>| {
             let (ret_name, _) = returns.unwrap();
-            let ret = self.def_manager.resolve_from_name(ret_name.clone(), ret_name.name)?;
+            let ret = self.def_manager.resolve_from_name(ret_name.clone(), &self.imports)?;
             Ok(Some(ret))
         };
         let func = func.convert(a_converter, r_converter, |spawn| self.check_spawn(spawn))?;
@@ -56,11 +63,10 @@ impl Checker {
     }
 
     fn check_spawn(&self, spawn: unchecked::SysDCSpawn) -> Result<SysDCSpawn, Box<dyn Error>> {
-        let (req_ret_name, req_ret_type) = spawn.result.clone();
-        let req_ret_type = self.def_manager.resolve_from_type(req_ret_name, req_ret_type)?.1;
+        let req_ret_type = self.def_manager.resolve_from_type(spawn.result.clone(), &self.imports)?.1;
 
         let spawn = spawn.convert(
-            |(name, _)| self.def_manager.resolve_from_name(name.clone(), name.name),
+            |(name, _)| self.def_manager.resolve_from_name(name.clone(), &self.imports),
             |spawn_child| self.check_spawn_child(spawn_child)
         )?;
 
@@ -77,15 +83,15 @@ impl Checker {
     }
 
     fn check_spawn_child(&self, spawn_child: unchecked::SysDCSpawnChild) -> Result<SysDCSpawnChild, Box<dyn Error>> {
-        let ur_converter = |(name, _): (Name, Type)| self.def_manager.resolve_from_name(name.clone(), name.name);
-        let l_converter = |name: Name, (_, func): (Name, Type), args: Vec<(Name, Type)>| {
-            if let Type { kind: TypeKind::Unsolved(func), .. } = func {
+        let ur_converter = |(name, _): (Name, Type)| self.def_manager.resolve_from_name(name.clone(), &self.imports);
+        let l_converter = |name: Name, func: (Name, Type), args: Vec<(Name, Type)>| {
+            if let Type { kind: TypeKind::Unsolved(_), .. } = func.1 {
                 let mut let_to_args = vec!();
                 for (arg_name, _) in args {
-                    let (arg_name, arg_type) = self.def_manager.resolve_from_name(arg_name.clone(), arg_name.name)?;
+                    let (arg_name, arg_type) = self.def_manager.resolve_from_name(arg_name.clone(), &self.imports)?;
                     let_to_args.push((arg_name, arg_type));
                 }
-                let resolved_func = self.def_manager.resolve_from_type(name.clone(), Type::from(func))?;
+                let resolved_func = self.def_manager.resolve_from_type((name.clone(), func.1), &self.imports)?;
                 return Ok((name, resolved_func, let_to_args));
             }
             panic!("Internal Error")
@@ -94,7 +100,7 @@ impl Checker {
 
         match &spawn_child {
             SysDCSpawnChild::LetTo { func: (func, _), args, .. } => {
-                for ((_, act_arg_type), req_arg_type) in args.iter().zip(self.def_manager.get_args_type(&func)?.iter()) {
+                for ((_, act_arg_type), req_arg_type) in args.iter().zip(self.def_manager.get_args_type(&func, &self.imports)?.iter()) {
                     if act_arg_type != req_arg_type {
                         return CompileError::new(CompileErrorKind::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone()));
                     }
@@ -137,25 +143,22 @@ impl DefinesManager {
         DefinesManager { defines: DefinesManager::listup_defines(system) }
     }
 
-    pub fn get_args_type(&self, fullname: &Name) -> Result<Vec<Type>, Box<dyn Error>> {
-        let func_name = fullname.get_global_name();
-        let mut args = vec!();
-        for Define { kind, refs } in &self.defines {
-            if let DefineKind::Argument(types) = kind {
-                if &refs.namespace == &func_name {
-                    args.push(self.resolve_from_type(fullname.clone(), types.clone())?.1);
-                }
-            }
+    // 与えられたnameと同じ名前を持つ定義が存在するかどうかを確認する
+    pub fn is_defined(&self, name: Name, imports: &Vec<Name>) -> Result<(), Box<dyn Error>> {
+        match self.find(name.clone(), &name.name, imports)?.kind {
+            DefineKind::Data | DefineKind::Module => Ok(()),
+            _ => CompileError::new(CompileErrorKind::NotDefined(name.name))
         }
-        Ok(args)
     }
 
-    pub fn resolve_from_type(&self, name: Name, types: Type) -> Result<(Name, Type), Box<dyn Error>> {
-        match types.kind.clone() {
+    // 与えられたnameから参照可能なすべての範囲またはimports内を対象に，typesと一致する定義を探す (Data, Module, Function)
+    // ※name, typesはともに関連している状態を想定
+    pub fn resolve_from_type(&self, (name, types): (Name, Type), imports: &Vec<Name>) -> Result<(Name, Type), Box<dyn Error>> {
+        match &types.kind {
             TypeKind::Int32 | TypeKind::Data => Ok((name, types)),
             TypeKind::Unsolved(hint) => {
                 let (head, tails) = DefinesManager::split_name(&hint);
-                let found_def = self.find(&name, &head)?;
+                let found_def = self.find(name.clone(), &head, &imports)?;
                 match found_def.kind {
                     DefineKind::Data =>
                         match tails {
@@ -164,11 +167,11 @@ impl DefinesManager {
                         }
                     DefineKind::Module =>
                         match tails {
-                            Some(tails) => self.resolve_from_module_func(name, found_def.refs.name, tails),
+                            Some(tails) => self.get_func_in_module(&found_def.refs, &tails, imports),
                             None => CompileError::new(CompileErrorKind::MissingFunctionName)
                         }
                     DefineKind::Function(_) => {
-                        self.resolve_from_module_func(name.clone(), name.get_par_name(true).get_par_name(true).name, hint)
+                        self.get_func_in_module(&name.get_namespace(true), &hint, imports)
                     }
                     _ => CompileError::new(CompileErrorKind::TypeUnmatch1(types))
                 }
@@ -177,66 +180,100 @@ impl DefinesManager {
         }
     }
 
-    pub fn resolve_from_name(&self, name: Name, nname: String) -> Result<(Name, Type), Box<dyn Error>> {
-        let (head, tails) = DefinesManager::split_name(&nname);
-        let found_def = self.find(&name, &head)?;
+    // nameから参照可能なすべての範囲またはimports内を対象に，nameと一致する名前をもつ定義を探す (Variable)
+    pub fn resolve_from_name(&self, name: Name, imports: &Vec<Name>) -> Result<(Name, Type), Box<dyn Error>> {
+        let (head, tails) = DefinesManager::split_name(&name.name);
+        let found_def = self.find(name.clone(), &head, &vec!())?;
         match found_def.kind {
             DefineKind::Variable(types) => {
-                let types = self.resolve_from_type(name.clone(), types)?.1;
-                match tails {
-                    Some(tails) => self.resolve_from_data_member(name, types, tails),
-                    None => Ok((found_def.refs, types))
+                let (_, types) = self.resolve_from_type((name.clone(), types), imports)?;
+                match types.kind {
+                    TypeKind::Data =>
+                        match tails {
+                            Some(tails) => {
+                                let (_, types) = self.get_member_in_data(types.refs.as_ref().unwrap(), &tails, imports)?;
+                                Ok((name, types))
+                            }
+                            None => Ok((found_def.refs, types))
+                        }
+                    _ => Ok((found_def.refs, types))
                 }
             }
-            _ => CompileError::new(CompileErrorKind::NotDefined(nname))
+            _ => CompileError::new(CompileErrorKind::NotDefined(name.name))
         }
     }
 
-    fn resolve_from_data_member(&self, name: Name, data: Type, member: String) -> Result<(Name, Type), Box<dyn Error>> {
+    // 与えられた関数名に対応する関数を探し，関数に登録されている引数の型の一覧を返す
+    pub fn get_args_type(&self, func_name: &Name, imports: &Vec<Name>) -> Result<Vec<Type>, Box<dyn Error>> {
+        let func_name = func_name.get_full_name();
+        let mut args = vec!();
+        for Define { kind, refs } in &self.defines {
+            if let DefineKind::Argument(types) = kind {
+                if &refs.namespace == &func_name {
+                    args.push(self.resolve_from_type((refs.clone(), types.clone()), imports)?.1);
+                }
+            }
+        }
+        Ok(args)
+    }
+
+    // data(Data)内のmember(Member)の定義を探す
+    fn get_member_in_data(&self, data: &Name, member: &String, imports: &Vec<Name>) -> Result<(Name, Type), Box<dyn Error>> {
         let (head, tails) = DefinesManager::split_name(&member);
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
-                if data.refs.as_ref().unwrap().name == refs.get_par_name(true).name && head == refs.name {
-                    return match self.resolve_from_type(name.clone(), types.clone())?.1 {
-                        types@Type { kind: TypeKind::Int32, .. } =>
+                if data.get_full_name() == refs.namespace && head == refs.name {
+                    return match self.resolve_from_type((refs.clone(), types.clone()), imports)? {
+                        (_, types@Type { kind: TypeKind::Int32, .. }) =>
                             match tails {
                                 Some(_) => CompileError::new(CompileErrorKind::IllegalAccess),
                                 None => Ok((refs.clone(), types))
                             }
-                        types@Type { kind: TypeKind::Data, .. } =>
+                        (_, types@Type { kind: TypeKind::Data, .. }) =>
                             match tails {
-                                Some(tails) => self.resolve_from_data_member(name, types, tails),
-                                None => Ok((refs.clone(), types))
+                                Some(tails) => self.get_member_in_data(types.refs.as_ref().unwrap(), &tails, imports),
+                                None => Ok((types.refs.clone().unwrap(), types))
                             },
                         _ => panic!("Internal Error")
                     }
                 }
             }
         }
-        CompileError::new(CompileErrorKind::MemberNotDefinedInData(member, data.refs.unwrap().name))
+        CompileError::new(CompileErrorKind::MemberNotDefinedInData(member.clone(), data.name.clone()))
     }
 
-    fn resolve_from_module_func(&self, name: Name, module: String, func: String) -> Result<(Name, Type), Box<dyn Error>> {
+    // module(Module)内のfunc(Function)の定義を探す
+    fn get_func_in_module(&self, module: &Name, func: &String, imports: &Vec<Name>) -> Result<(Name, Type), Box<dyn Error>> {
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Function(types) = kind {
-                if module == refs.get_par_name(true).name && func == refs.name {
-                    return Ok((refs.clone(), self.resolve_from_type(name, types.clone())?.1));
+                if module == &refs.get_par_name(true) && func == &refs.name {
+                    return Ok((refs.clone(), self.resolve_from_type((refs.clone(), types.clone()), imports)?.1));
                 }
             }
         }
-        CompileError::new(CompileErrorKind::FuncNotDefinedInModule(func, module))
+        CompileError::new(CompileErrorKind::FuncNotDefinedInModule(func.clone(), module.name.clone()))
     }
 
-    fn find(&self, namespace: &Name, name: &String) -> Result<Define, Box<dyn Error>> {
-        if namespace.namespace.len() == 0 {
-            return CompileError::new(CompileErrorKind::NotFound(name.to_string()));
+    // namespace内に存在する定義を対象に，nameと同じ名前を持つ定義を探して返す
+    // namespace内に存在しない場合はimports内の名前を探して返す
+    // ※namespaceはルートにたどり着くまで再帰的に更新されながら検索が続く (.a.b.c -> .a.b -> .a -> .)
+    fn find(&self, mut namespace: Name, name: &String, imports: &Vec<Name>) -> Result<Define, Box<dyn Error>> {
+        while namespace.name.len() > 0 {
+            for Define{ kind, refs } in &self.defines {
+                if refs.namespace == namespace.namespace && &refs.name == name {
+                    return Ok(Define::new(kind.clone(), refs.clone()))
+                }
+            }
+            namespace = namespace.get_par_name(false);
         }
-        for Define{ kind, refs } in &self.defines {
-            if refs.namespace == namespace.namespace && &refs.name == name {
-                return Ok(Define::new(kind.clone(), refs.clone()))
+       
+        for import in imports {
+            if &import.name == name {
+                return self.find(import.clone(), &import.name, &vec!());
             }
         }
-        self.find(&namespace.get_par_name(false), name)
+
+        CompileError::new(CompileErrorKind::NotFound(name.clone()))
     }
 
     fn split_name(hint: &String) -> (String, Option<String>) {
@@ -340,18 +377,22 @@ mod test {
     #[test]
     fn primitive_member_only_data() {
         let program = "
+            unit test;
+
             data Test {
                 a: i32,
                 b: i32,
                 c: i32
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     fn user_defined_type_mix_data() {
         let program = "
+            unit test;
+
             data A {
                 a: i32
             }
@@ -362,34 +403,40 @@ mod test {
                 c: A
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     fn recursive_type_mix_data() {
         let program = "
+            unit test;
+
             data A {
                 a: A
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     #[should_panic]
     fn undefined_type_mix_data() {
         let program = "
+            unit test;
+
             data Test {
                 a: i32,
                 b: Unknown
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     fn user_defind_type_mix_module() {
         let program = "
+            unit test;
+
             data A {
                 a: i32,
                 b: i32
@@ -401,12 +448,14 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     fn user_defined_type_mix_module_with_spawn() {
         let program = "
+            unit test;
+
             data A {
                 a: B,
                 b: B
@@ -435,13 +484,15 @@ mod test {
                 }
             }
         ";
-        check(program)
+        check(vec!(program))
     }
 
     #[test]
     #[should_panic]
     fn user_defind_type_mix_module_with_spawn_failure_1() {
         let program = "
+            unit test;
+
             data A {
                 a: i32,
                 b: i32
@@ -457,13 +508,15 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     #[should_panic]
     fn user_defind_type_mix_module_with_spawn_failure_2() {
         let program = "
+            unit test;
+
             data A {
                 a: i32,
                 b: i32
@@ -479,13 +532,15 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     #[should_panic]
     fn user_defind_type_mix_module_with_spawn_failure_3() {
         let program = "
+            unit test;
+
             data A {
                 a: B,
                 b: B
@@ -511,12 +566,14 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     fn let_by_user_defined_function_using_completed_name_1() {
         let program = "
+            unit test;
+
             data A {}
 
             module AModule {
@@ -538,12 +595,14 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     fn let_by_user_defined_function_using_completed_name_2() {
         let program = "
+            unit test;
+
             data A {}
 
             module TestModule {
@@ -563,12 +622,14 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     fn let_by_user_defined_function_using_uncompleted_name() {
         let program = "
+            unit test;
+
             data A {}
 
             module TestModule {
@@ -588,13 +649,15 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     #[should_panic]
     fn let_by_user_defined_function_using_completed_name_failure() {
         let program = "
+            unit test;
+
             data A {}
 
             module TestModule {
@@ -614,13 +677,15 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     #[should_panic]
     fn let_by_user_defined_function_using_uncompleted_name_failure() {
         let program = "
+            unit test;
+
             data A {}
 
             module TestModule {
@@ -640,12 +705,14 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     fn argument_check_ok() {
         let program = "
+            unit test;
+
             data A {}
             data B {}
             data C {}
@@ -684,13 +751,15 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     #[should_panic]
     fn argument_check_ng() {
         let program = "
+            unit test;
+
             data A {}
             data B {}
             data C {}
@@ -729,12 +798,14 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     fn return_check_ok() {
         let program = "
+            unit test;
+
             module TestModule {
                 test() -> i32 {
                     @return a
@@ -743,13 +814,15 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     #[should_panic]
     fn return_check_ng() {
         let program = "
+            unit test;
+
             data A {}
 
             module TestModule {
@@ -760,12 +833,14 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     fn in_spawn_return_check_ok() {
         let program = "
+            unit test;
+
             module TestModule {
                 test() -> i32 {
                     @return a
@@ -783,13 +858,15 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
     #[should_panic]
     fn in_spawn_return_check_ng() {
         let program = "
+            unit test;
+
             data A {}
 
             module TestModule {
@@ -809,12 +886,141 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
-    fn check(program: &str) {
+    #[test]
+    fn import_data_in_other_unit_simple() {
+        let program1 = "
+            unit test.A;
+
+            data A {}
+        ";
+        let program2 = "
+            unit test.B;
+
+            from test.A import A;
+
+            data B {
+                a: A
+            }
+        ";
+        check(vec!(program1, program2));
+    }
+
+    #[test]
+    fn import_data_in_other_unit_recursive() {
+        let program1 = "
+            unit test.A;
+
+            data A {
+                b: B
+            }
+
+            data B {
+                c: C
+            }
+
+            data C { 
+                body: i32
+            }
+        ";
+        let program2 = "
+            unit test.B;
+
+            from test.A import A;
+
+            module TestModule {
+                new() -> A {
+                    @return a
+                    @spawn a: A
+                }
+
+                test() -> i32 {
+                    @return v
+
+                    @spawn v: i32 {
+                        let a = new();
+                        return a.b.c.body;
+                    }
+                }
+            }
+        ";
+        check(vec!(program1, program2));
+    }
+
+    #[test]
+    fn import_module_in_other_unit() {
+        let program1 = "
+            unit test.A;
+
+            module TestModule {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: i32
+                }
+            }
+        ";
+        let program2 = "
+            unit test.B;
+
+            from test.A import TestModule;
+
+            module TestModule2 {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: i32 {
+                        let a = TestModule.test();
+                        return a;
+                    }
+                }
+            }
+        ";
+        check(vec!(program1, program2));
+    }
+
+    #[test]
+    #[should_panic]
+    fn import_module_in_other_unit_failure() {
+        let program1 = "
+            unit test.A;
+
+            data A {}
+
+            module TestModule {
+                test() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+            }
+        ";
+        let program2 = "
+            unit test.B;
+
+            from test.A import A, TestModule;
+
+            module TestModule2 {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: i32 {
+                        let a = TestModule.test();
+                        return a;
+                    }
+                }
+            }
+        ";
+        check(vec!(program1, program2));
+    }
+
+    fn check(programs: Vec<&str>) {
         let mut compiler = Compiler::new();
-        compiler.add_unit("test".to_string(), program.to_string()).unwrap();
+        for program in programs {
+            compiler.add_unit(program.to_string()).unwrap();
+        }
         compiler.generate_system().unwrap();
     }
 }
