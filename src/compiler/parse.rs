@@ -240,7 +240,7 @@ impl<'a> Parser<'a> {
         // ( \{ { <annotation_spawn_detail > } \} )
         let mut details = vec!();
         if self.tokenizer.expect(TokenKind::BracketBegin)?.is_some() {
-            let mut namespace = namespace.clone();
+            let mut namespace = Name::from(&namespace, "_".to_string());
             while let Some(new_details) = self.parse_annotation_spawn_detail(&namespace)? {
                 let for_cmp = new_details[0].clone();
                 details.extend(new_details);
@@ -609,13 +609,13 @@ mod test {
         let name_func_arg_dx = Name::from(&name_func, "dx".to_string());
         let name_func_arg_dy = Name::from(&name_func, "dy".to_string());
         let name_func_spawn_box = Name::from(&name_func, "movedBox".to_string());
-        let name_func_spawn_use_box_x = Name::from(&name_func, "box.x".to_string());
-        let name_func_spawn_use_box_y = Name::from(&name_func, "box.y".to_string());
-        let name_func_spawn_use_dx = Name::from(&name_func, "_.dx".to_string());
-        let name_func_spawn_use_dy = Name::from(&name_func, "_.dy".to_string());
-        let name_func_spawn_let_name = Name::from(&name_func, "_._.movedBox".to_string());
-        let name_func_spawn_let_arg_dx = Name::from(&name_func, "_._.dx".to_string());
-        let name_func_spawn_ret = Name::from(&name_func, "_._._.movedBox".to_string());
+        let name_func_spawn_use_box_x = Name::from(&name_func, "_.box.x".to_string());
+        let name_func_spawn_use_box_y = Name::from(&name_func, "_.box.y".to_string());
+        let name_func_spawn_use_dx = Name::from(&name_func, "_._.dx".to_string());
+        let name_func_spawn_use_dy = Name::from(&name_func, "_._.dy".to_string());
+        let name_func_spawn_let_name = Name::from(&name_func, "_._._.movedBox".to_string());
+        let name_func_spawn_let_arg_dx = Name::from(&name_func, "_._._.dx".to_string());
+        let name_func_spawn_ret = Name::from(&name_func, "_._._._.movedBox".to_string());
         let name_func_ret = Name::from(&name_func, "movedBox".to_string());
 
         let func_args = vec!(
@@ -736,13 +736,13 @@ mod test {
         let name_func_arg_dx = Name::from(&name_func, "dx".to_string());
         let name_func_arg_dy = Name::from(&name_func, "dy".to_string());
         let name_func_spawn_box = Name::from(&name_func, "movedBox".to_string());
-        let name_func_spawn_use_box_x = Name::from(&name_func, "box.x".to_string());
-        let name_func_spawn_use_box_y = Name::from(&name_func, "box.y".to_string());
-        let name_func_spawn_use_dx = Name::from(&name_func, "dx".to_string());
-        let name_func_spawn_use_dy = Name::from(&name_func, "dy".to_string());
-        let name_func_spawn_let_name = Name::from(&name_func, "_.movedBox".to_string());
-        let name_func_spawn_let_arg_dx = Name::from(&name_func, "_.dx".to_string());
-        let name_func_spawn_ret = Name::from(&name_func, "_._.movedBox".to_string());
+        let name_func_spawn_use_box_x = Name::from(&name_func, "_.box.x".to_string());
+        let name_func_spawn_use_box_y = Name::from(&name_func, "_.box.y".to_string());
+        let name_func_spawn_use_dx = Name::from(&name_func, "_.dx".to_string());
+        let name_func_spawn_use_dy = Name::from(&name_func, "_.dy".to_string());
+        let name_func_spawn_let_name = Name::from(&name_func, "_._.movedBox".to_string());
+        let name_func_spawn_let_arg_dx = Name::from(&name_func, "_._.dx".to_string());
+        let name_func_spawn_ret = Name::from(&name_func, "_._._.movedBox".to_string());
         let name_func_ret = Name::from(&name_func, "movedBox".to_string());
 
         let func_args = vec!(

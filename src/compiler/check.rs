@@ -909,7 +909,81 @@ mod test {
     }
 
     #[test]
-    fn import_module_in_other_unit_simple() {
+    fn import_data_in_other_unit_recursive() {
+        let program1 = "
+            unit test.A;
+
+            data A {
+                b: B
+            }
+
+            data B {
+                c: C
+            }
+
+            data C { 
+                body: i32
+            }
+        ";
+        let program2 = "
+            unit test.B;
+
+            from test.A import A;
+
+            module TestModule {
+                new() -> A {
+                    @return a
+                    @spawn a: A
+                }
+
+                test() -> i32 {
+                    @return v
+
+                    @spawn v: i32 {
+                        let a = new();
+                        return a.b.c.body;
+                    }
+                }
+            }
+        ";
+        check(vec!(program1, program2));
+    }
+
+    #[test]
+    fn import_module_in_other_unit() {
+        let program1 = "
+            unit test.A;
+
+            module TestModule {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: i32
+                }
+            }
+        ";
+        let program2 = "
+            unit test.B;
+
+            from test.A import TestModule;
+
+            module TestModule2 {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: i32 {
+                        let a = TestModule.test();
+                        return a;
+                    }
+                }
+            }
+        ";
+        check(vec!(program1, program2));
+    }
+
+    #[test]
+    #[should_panic]
+    fn import_module_in_other_unit_failure() {
         let program1 = "
             unit test.A;
 
