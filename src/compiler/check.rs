@@ -13,14 +13,14 @@ pub struct Checker {
 
 impl Checker {
     pub fn check(system: unchecked::SysDCSystem) -> Result<SysDCSystem, Box<dyn Error>> {
-        let mut checker = Checker { def_manager: DefinesManager::new(&system), imports: vec!() };
+        let mut checker = Checker { def_manager: DefinesManager::new(&system)?, imports: vec!() };
         system.convert(|unit| checker.check_unit(unit))
     }
 
     fn check_unit(&mut self, unit: unchecked::SysDCUnit) -> Result<SysDCUnit, Box<dyn Error>> {
         let mut imports = vec!();
         for import in unit.imports.clone() {
-            self.def_manager.is_defined(import.clone(), &vec!())?;
+            self.def_manager.check_can_import(import.clone(), &vec!())?;
             imports.push(import);
         }
         self.imports = imports;
@@ -119,7 +119,8 @@ enum DefineKind {
     Module,
     Function(Type),
     Argument(Type),
-    Variable(Type)
+    Variable(Type),
+    Use(Name)
 }
 
 #[derive(Debug)]
@@ -139,12 +140,14 @@ struct DefinesManager {
 }
 
 impl DefinesManager {
-    pub fn new(system: &unchecked::SysDCSystem) -> DefinesManager {
-        DefinesManager { defines: DefinesManager::listup_defines(system) }
+    pub fn new(system: &unchecked::SysDCSystem) -> Result<DefinesManager, Box<dyn Error>> {
+        let mut def_manager = DefinesManager { defines: vec!() };
+        def_manager.listup_defines(system)?;
+        Ok(def_manager)
     }
 
     // 与えられたnameと同じ名前を持つ定義が存在するかどうかを確認する
-    pub fn is_defined(&self, name: Name, imports: &Vec<Name>) -> Result<(), Box<dyn Error>> {
+    pub fn check_can_import(&self, name: Name, imports: &Vec<Name>) -> Result<(), Box<dyn Error>> {
         match self.find(name.clone(), &name.name, imports)?.kind {
             DefineKind::Data | DefineKind::Module => Ok(()),
             _ => CompileError::new(CompileErrorKind::NotDefined(name.name))
@@ -199,6 +202,7 @@ impl DefinesManager {
                     _ => Ok((found_def.refs, types))
                 }
             }
+            DefineKind::Use(use_ref) => self.resolve_from_name(use_ref, imports),
             _ => CompileError::new(CompileErrorKind::NotDefined(name.name))
         }
     }
@@ -258,9 +262,15 @@ impl DefinesManager {
     // namespace内に存在しない場合はimports内の名前を探して返す
     // ※namespaceはルートにたどり着くまで再帰的に更新されながら検索が続く (.a.b.c -> .a.b -> .a -> .)
     fn find(&self, mut namespace: Name, name: &String, imports: &Vec<Name>) -> Result<Define, Box<dyn Error>> {
+        let had_underscore = namespace.has_underscore();
         while namespace.name.len() > 0 {
             for Define{ kind, refs } in &self.defines {
                 if refs.namespace == namespace.namespace && &refs.name == name {
+                    if let DefineKind::Variable(_) = kind {
+                        if had_underscore && !refs.has_underscore() {
+                            continue;
+                        }
+                    }
                     return Ok(Define::new(kind.clone(), refs.clone()))
                 }
             }
@@ -284,89 +294,81 @@ impl DefinesManager {
         }
     }
 
-    fn listup_defines(system: &unchecked::SysDCSystem) -> Vec<Define> {
-        system.units
-            .iter()
-            .flat_map(|unit| DefinesManager::listup_defines_unit(unit))
-            .collect()
+    fn define(&mut self, def: Define) -> Result<(), Box<dyn Error>> {
+        match &self.find(def.refs.clone(), &def.refs.name, &vec!()) {
+            Ok(Define{ kind, .. }) =>
+                match (kind, &def.kind) {
+                    (DefineKind::Argument(_), _) => {},
+                    (_, DefineKind::Argument(_)) => {},
+                    _ => return CompileError::new(CompileErrorKind::AlreadyDefined(def.refs.name))
+                }
+            Err(_) => {}
+        }
+        self.defines.push(def);
+        Ok(())
     }
 
-    fn listup_defines_unit(unit: &unchecked::SysDCUnit) -> Vec<Define> {
-        let mut defined = vec!();
-        defined.extend(
-            unit.data
-                .iter()
-                .flat_map(|data| {
-                    let mut d = vec!(Define::new(DefineKind::Data, data.name.clone()));
-                    d.extend(DefinesManager::listup_defines_data(data));
-                    d
-                })
-                .collect::<Vec<Define>>()
-        );
-        defined.extend(
-            unit.modules
-                .iter()
-                .flat_map(|module| {
-                    let mut d = vec!(Define::new(DefineKind::Module, module.name.clone()));
-                    d.extend(DefinesManager::listup_defines_module(module));
-                    d
-                })
-                .collect::<Vec<Define>>()
-        );
-        defined
+    fn listup_defines(&mut self, system: &unchecked::SysDCSystem) -> Result<(), Box<dyn Error>> {
+        for unit in &system.units {
+            self.listup_defines_unit(unit)?;
+        }
+        Ok(())
     }
 
-    fn listup_defines_data(data: &unchecked::SysDCData) -> Vec<Define> {
-        data.members
-            .iter()
-            .map(|(name, types)| Define::new(DefineKind::DataMember(types.clone()), name.clone()))
-            .collect::<Vec<Define>>()
+    fn listup_defines_unit(&mut self, unit: &unchecked::SysDCUnit) -> Result<(), Box<dyn Error>> {
+        for data in &unit.data {
+            self.define(Define::new(DefineKind::Data, data.name.clone()))?;
+            self.listup_defines_data(data)?;
+        }
+        for module in &unit.modules {
+            self.define(Define::new(DefineKind::Module, module.name.clone()))?;
+            self.listup_defines_module(module)?;
+        }
+        Ok(())
     }
 
-    fn listup_defines_module(module: &unchecked::SysDCModule) -> Vec<Define> {
-        module.functions
-            .iter()
-            .flat_map(|func| { 
-                let mut d = vec!(Define::new(DefineKind::Function(func.returns.as_ref().unwrap().1.clone()), func.name.clone()));
-                d.extend(DefinesManager::listup_defines_function(func));
-                d
-            })
-            .collect::<Vec<Define>>()
+    fn listup_defines_data(&mut self, data: &unchecked::SysDCData) -> Result<(), Box<dyn Error>> {
+        for (name, types) in &data.members {
+            self.define(Define::new(DefineKind::DataMember(types.clone()), name.clone()))?;
+        }
+        Ok(())
     }
 
-    fn listup_defines_function(func: &unchecked::SysDCFunction) -> Vec<Define> {
-        let mut defined = vec!();
-        defined.extend(
-            func.args
-                .iter()
-                .flat_map(|(name, types)| vec!(
-                    Define::new(DefineKind::Variable(types.clone()), name.clone()),
-                    Define::new(DefineKind::Argument(types.clone()), name.clone())
-                ))
-                .collect::<Vec<Define>>()
-        );
-        defined.extend(
-            func.spawns
-                .iter()
-                .flat_map(|spawn@unchecked::SysDCSpawn { result: (name, types), .. }| {
-                    let mut d = vec!(Define::new(DefineKind::Variable(types.clone()), name.clone()));
-                    d.extend(DefinesManager::listup_defines_function_spawn_details(spawn));
-                    d
-                })
-                .collect::<Vec<Define>>()
-        );
-        defined
+    fn listup_defines_module(&mut self, module: &unchecked::SysDCModule) -> Result<(), Box<dyn Error>> {
+        for func in &module.functions {
+            self.define(Define::new(DefineKind::Function(func.returns.as_ref().unwrap().1.clone()), func.name.clone()))?;
+            self.listup_defines_function(func)?;
+        }
+        Ok(())
     }
 
-    fn listup_defines_function_spawn_details(spawn: &unchecked::SysDCSpawn) -> Vec<Define> {
-        let unchecked::SysDCSpawn { details, .. } = spawn;
-        details
-            .iter()
-            .flat_map(|detail| match detail {
-                unchecked::SysDCSpawnChild::LetTo { name, func: (_, func), ..} => vec!(Define::new(DefineKind::Variable(func.clone()), name.clone())),
-                _ => vec!()
-            })
-            .collect()
+    fn listup_defines_function(&mut self, func: &unchecked::SysDCFunction) -> Result<(), Box<dyn Error>> {
+        for (name, types) in &func.args {
+            self.define(Define::new(DefineKind::Variable(types.clone()), name.clone()))?;
+            self.define(Define::new(DefineKind::Argument(types.clone()), name.clone()))?;
+        }
+        for spawn@unchecked::SysDCSpawn { result: (name, types), .. } in &func.spawns {
+            self.define(Define::new(DefineKind::Variable(types.clone()), name.clone()))?;
+            self.listup_defines_function_spawn_details(spawn)?;
+        }
+        Ok(())
+    }
+
+    fn listup_defines_function_spawn_details(&mut self, spawn: &unchecked::SysDCSpawn) -> Result<(), Box<dyn Error>> {
+        for detail in &spawn.details {
+            match detail {
+                unchecked::SysDCSpawnChild::Use(name, _) => {
+                    let outer_spawn_namespace = name.clone().get_namespace(false);
+                    let outer_use_name = Name::from(&outer_spawn_namespace, name.clone().name);
+                    self.define(Define::new(DefineKind::Use(outer_use_name.clone()), name.clone()))?;
+                }
+                unchecked::SysDCSpawnChild::LetTo { name, func: (_, func), ..} => {
+                    self.define(Define::new(DefineKind::Variable(func.clone()), name.clone()))?;
+                }
+                _ => {}
+            }
+        }
+        Ok(())
     }
 }
 
@@ -1014,6 +1016,151 @@ mod test {
             }
         ";
         check(vec!(program1, program2));
+    }
+
+    #[test]
+    #[should_panic]
+    fn multiple_define_1() {
+        let program = "
+            unit test;
+
+            data A {}
+            data A{}
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    #[should_panic]
+    fn multiple_define_2() {
+        let program = "
+            unit test;
+
+            data A {
+                x: i32,
+                x: i32,
+                y: i32
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    #[should_panic]
+    fn multiple_define_3() {
+        let program = "
+            unit test;
+
+            module TestModule {}
+            module TestModule {}
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    #[should_panic]
+    fn multiple_define_4() {
+        let program = "
+            unit test;
+
+            module TestModule {
+                a() -> i32 {
+                    @return b
+
+                    @spawn b: i32
+                }
+
+                a() -> i32 {
+                    @return c
+
+                    @spawn c: i32
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    #[should_panic]
+    fn multiple_define_5() {
+        let program = "
+            unit test;
+
+            module TestModule {
+                a() -> i32 {
+                    @return a
+
+                    @spawn a: i32
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    #[should_panic]
+    fn multiple_define_6() {
+        let program = "
+            unit test;
+
+            module TestModule {
+                a(arg: i32) -> i32 {
+                    @return val
+
+                    @spawn val: i32 {
+                        return arg;
+                    }
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    #[should_panic]
+    fn multiple_define_7() {
+        let program = "
+            unit test;
+
+            module TestModule {
+                a(arg: i32) -> i32 {
+                    @return val
+
+                    @spawn val: i32 {
+                        use arg;
+                        return arg2;
+                    }
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    #[should_panic]
+    fn multiple_define_8() {
+        let program = "
+            unit test;
+
+            module TestModule {
+                a(arg: i32) -> i32 {
+                    @return val
+
+                    @spawn val: i32 {
+                        use arg;
+                        let val = new();
+                        return val2;
+                    }
+                }
+
+                new() -> i32 {
+                    @return val
+
+                    @spawn val: i32
+                }
+            }
+        ";
+        check(vec!(program));
     }
 
     fn check(programs: Vec<&str>) {

@@ -21,6 +21,7 @@ pub enum CompileErrorKind {
     FunctionNameNotFound,
 
     /* 検査時に発生したエラー */
+    AlreadyDefined(String),
     TypeUnmatch1(Type),
     TypeUnmatch2(Type, Type),
     NotFound(String),
@@ -45,6 +46,7 @@ impl Display for CompileErrorKind {
             CompileErrorKind::ResultOfSpawnNotSpecified => write!(f, "Missing to specify the result of spawn"),
             CompileErrorKind::FunctionNameNotFound => write!(f, "Function name is requested, but not found"),
 
+            CompileErrorKind::AlreadyDefined(name) => write!(f, "\"{}\" is already defined", name),
             CompileErrorKind::TypeUnmatch1(actual) => write!(f, "\"{:?}\" is defined, but type is unmatch", actual),
             CompileErrorKind::TypeUnmatch2(required, actual) => write!(f, "\"{:?}\" is required, but \"{:?}\" exists", required, actual),
             CompileErrorKind::NotFound(name) => write!(f, "Cannot find \"{}\"", name),
