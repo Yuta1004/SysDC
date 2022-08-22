@@ -80,7 +80,7 @@ impl InteractiveCmd {
         let plugin = self.plugin_manager.get_type_in(&name)?;
         let mut compiler = Compiler::new();
         for (filename, program) in plugin.run(args)? {
-            println!("Load: {}", filename);
+            println!("Loading: {}", filename);
             compiler.add_unit(program)?;
         }
         self.system = Some(compiler.generate_system()?);
