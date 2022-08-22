@@ -61,7 +61,7 @@ impl<'a> Parser<'a> {
 
         // { <data> | <module> }
         let (mut imports, mut data, mut modules) = (vec!(), vec!(), vec!());
-        while self.tokenizer.has_token() {
+        while self.tokenizer.exists_next() {
             match (self.parse_import()?, self.parse_data(&namespace)?, self.parse_module(&namespace)?) {
                 (None, None, None) => return CompileError::new(CompileErrorKind::UnexpectedEOF),
                 (i, d, m) => {
