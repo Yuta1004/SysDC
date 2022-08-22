@@ -185,6 +185,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn skip_space(&mut self) {
+        let mut comment = false;
         loop {
             if !self.has_token() {
                 break;
@@ -199,7 +200,18 @@ impl<'a> Tokenizer<'a> {
                     self.now_ref_row += 1;
                     self.now_ref_col = 1;
                 }
-                _ => break
+                CharType::Comment => {
+                    comment = !comment;
+                    self.now_ref_pos += 1;
+                    self.now_ref_col += 1;
+                }
+                _ => match comment {
+                    true => {
+                        self.now_ref_pos += 1;
+                        self.now_ref_col += 1;
+                    }
+                    false => break
+                } 
             }
         }
     }
@@ -226,6 +238,7 @@ enum CharType {
     Symbol,
     SymbolAllow1,
     SymbolAllow2,
+    Comment,
     Space,
     NewLine,
     Other
@@ -239,6 +252,7 @@ impl CharType {
             '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' | ':' => CharType::Symbol,
             '-' => CharType::SymbolAllow1,
             '>' => CharType::SymbolAllow2,
+            '%' => CharType::Comment,
             ' ' | '\t'  => CharType::Space,
             '\n' => CharType::NewLine,
             _ => CharType::Other
@@ -313,12 +327,18 @@ mod test {
 
                 data Box {
                     x: i32,
-                    y: i32
+                    y: i32  % Single Comment %
                 }
 
                 module BoxModule {
                     move(box: Box, dx: i32, dy: i32) -> Box {
                         @return movedBox
+
+                        %
+                            MultiLine
+                            Comment
+                            あああ？
+                        %
 
                         @spawn movedBox: Box {
                             use box.x, box.y;
