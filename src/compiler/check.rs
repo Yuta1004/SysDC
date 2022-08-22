@@ -202,7 +202,15 @@ impl DefinesManager {
                     _ => Ok((found_def.refs, types))
                 }
             }
-            DefineKind::Use(use_ref) => self.resolve_from_name(use_ref, imports),
+            DefineKind::Use(use_ref) => {
+                match tails {
+                    Some(_) => {
+                        let (dname, _) = self.resolve_from_name(use_ref, imports)?;
+                        self.resolve_from_name(Name::from(&dname.get_par_name(false), name.name.clone()), imports)
+                    },
+                    None => self.resolve_from_name(use_ref, imports)
+                }
+            }
             _ => CompileError::new(CompileErrorKind::NotDefined(name.name))
         }
     }
@@ -358,7 +366,7 @@ impl DefinesManager {
         for detail in &spawn.details {
             match detail {
                 unchecked::SysDCSpawnChild::Use(name, _) => {
-                    let outer_spawn_namespace = name.clone().get_namespace(false);
+                    let outer_spawn_namespace = name.clone().get_par_name(true);
                     let outer_use_name = Name::from(&outer_spawn_namespace, name.clone().name);
                     self.define(Define::new(DefineKind::Use(outer_use_name.clone()), name.clone()))?;
                 }
@@ -479,10 +487,42 @@ mod test {
 
                     @spawn b: A {
                         use a;
-                        use a.a, a.b;
-                        use a.a.a, a.a.b, a.b.a, a.b.b;
-                        use a.a.a.a, a.a.a.b, a.a.b.a, a.a.b.b, a.b.a.a, a.b.a.b, a.b.b.a, a.b.b.b;
+                        let tmp = receiveA(a);
+                        let tmp1 = receiveB(a.a);
+                        let tmp2 = receiveB(a.b);
+                        let tmp3 = receiveC(a.a.a);
+                        let tmp4 = receiveC(a.a.b);
+                        let tmp5 = receiveC(a.b.a);
+                        let tmp6 = receiveC(a.b.b);
+                        let tmp7 = receiveInt32(a.a.a.a);
+                        let tmp8 = receiveInt32(a.a.a.b);
+                        let tmp9 = receiveInt32(a.a.b.a);
+                        let tmp10 = receiveInt32(a.a.b.b);
+                        let tmp11 = receiveInt32(a.b.a.a);
+                        let tmp12 = receiveInt32(a.b.a.b);
+                        let tmp13 = receiveInt32(a.b.b.a);
+                        let tmp14 = receiveInt32(a.b.b.b);
                     }
+                }
+
+                receiveA(a: A) -> i32 {
+                    @return tmp
+                    @spawn tmp: i32
+                }
+
+                receiveB(b: B) -> i32 {
+                    @return tmp
+                    @spawn tmp: i32
+                }
+
+                receiveC(c: C) -> i32 {
+                    @return tmp
+                    @spawn tmp: i32
+                }
+
+                receiveInt32(i: i32) -> i32 {
+                    @return tmp
+                    @spawn tmp: i32
                 }
             }
         ";
@@ -529,8 +569,14 @@ mod test {
                     @return b
 
                     @spawn b: A {
-                        use a.c;
+                        use a;
+                        let tmp = receiveInt32(a.c);
                     }
+                }
+
+                receiveInt32(i: i32) -> i32 {
+                    @return tmp
+                    @spawn tmp: i32
                 }
             }
         ";

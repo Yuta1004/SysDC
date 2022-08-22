@@ -20,7 +20,7 @@ module BoxModule {
         @return movedBox
 
         @spawn movedBox: Box {
-            use box.x, box.y;
+            use box;
             use dx, dy;
         }
     }
@@ -29,7 +29,7 @@ module BoxModule {
         @return changedBox
 
         @spawn changedBox: Box {
-            use box.w, box.h;
+            use box;
             use w, h;
         }
     }
