@@ -20,7 +20,8 @@ impl Checker {
     fn check_unit(&mut self, unit: unchecked::SysDCUnit) -> Result<SysDCUnit, Box<dyn Error>> {
         let mut imports = vec!();
         for import in unit.imports.clone() {
-            imports.push(self.def_manager.resolve_from_type((import.clone(), Type::from(import.name)), &vec!())?.0);
+            self.def_manager.is_defined(import.clone(), &vec!())?;
+            imports.push(import);
         }
         self.imports = imports;
 
@@ -140,6 +141,14 @@ struct DefinesManager {
 impl DefinesManager {
     pub fn new(system: &unchecked::SysDCSystem) -> DefinesManager {
         DefinesManager { defines: DefinesManager::listup_defines(system) }
+    }
+
+    // 与えられたnameと同じ名前を持つ定義が存在するかどうかを確認する
+    pub fn is_defined(&self, name: Name, imports: &Vec<Name>) -> Result<(), Box<dyn Error>> {
+        match self.find(name.clone(), &name.name, imports)?.kind {
+            DefineKind::Data | DefineKind::Module => Ok(()),
+            _ => CompileError::new(CompileErrorKind::NotDefined(name.name))
+        }
     }
 
     // 与えられたnameから参照可能なすべての範囲またはimports内を対象に，typesと一致する定義を探す (Data, Module, Function)
@@ -376,7 +385,7 @@ mod test {
                 c: i32
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -394,7 +403,7 @@ mod test {
                 c: A
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -406,7 +415,7 @@ mod test {
                 a: A
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -420,7 +429,7 @@ mod test {
                 b: Unknown
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -439,7 +448,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -475,7 +484,7 @@ mod test {
                 }
             }
         ";
-        check(program)
+        check(vec!(program))
     }
 
     #[test]
@@ -499,7 +508,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -523,7 +532,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -557,7 +566,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -586,7 +595,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -613,7 +622,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -640,7 +649,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -668,7 +677,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -696,7 +705,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -742,7 +751,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -789,7 +798,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -805,7 +814,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -824,7 +833,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -849,7 +858,7 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
     #[test]
@@ -877,12 +886,67 @@ mod test {
                 }
             }
         ";
-        check(program);
+        check(vec!(program));
     }
 
-    fn check(program: &str) {
+    #[test]
+    fn import_data_in_other_unit_simple() {
+        let program1 = "
+            unit test.A;
+
+            data A {}
+        ";
+        let program2 = "
+            unit test.B;
+
+            from test.A import A;
+
+            data B {
+                a: A
+            }
+        ";
+        check(vec!(program1, program2));
+    }
+
+    #[test]
+    fn import_module_in_other_unit_simple() {
+        let program1 = "
+            unit test.A;
+
+            data A {}
+
+            module TestModule {
+                test() -> A {
+                    @return a
+
+                    @spawn a: A
+                }
+            }
+        ";
+        let program2 = "
+            unit test.B;
+
+            from test.A import A, TestModule;
+
+            module TestModule2 {
+                test() -> i32 {
+                    @return a
+
+                    @spawn a: i32 {
+                        let a = TestModule.test();
+                        return a;
+                    }
+                }
+            }
+        ";
+        check(vec!(program1, program2));
+    }
+
+    fn check(programs: Vec<&str>) {
         let mut compiler = Compiler::new();
-        compiler.add_unit(program.to_string()).unwrap();
+        for program in programs {
+            compiler.add_unit(program.to_string()).unwrap();
+        }
         compiler.generate_system().unwrap();
     }
 }
