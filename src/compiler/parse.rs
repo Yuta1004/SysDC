@@ -258,7 +258,7 @@ impl<'a> Parser<'a> {
     /** 
      * <annotation_spawn_detail> ::= (
      *      let <id> = <id_chain> \( <id_chain_list, delimiter=','> \) ; |
-     *      use <id_chain> ; |
+     *      use <id_list, delimiter=','> ; |
      *      return <id> ;
      * )
      */
@@ -290,10 +290,11 @@ impl<'a> Parser<'a> {
 
         // use
         if self.tokenizer.expect(TokenKind::Use)?.is_some() {
-            let var_list = parse_list!(self.parse_id_chain(namespace), TokenKind::Separater)
-                .into_iter()
-                .map(|(name, _)| SysDCSpawnChild::new_use(name, Type::new_unsovled_nohint()))
-                .collect();
+            let mut var_list = vec!();
+            for token in parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Separater) {
+                let name = token.get_id()?;
+                var_list.push(SysDCSpawnChild::new_use(Name::from(namespace, name), Type::new_unsovled_nohint()))
+            }
             self.tokenizer.request(TokenKind::Semicolon)?;
             return Ok(Some(var_list));
         }
@@ -591,7 +592,7 @@ mod test {
                     @return movedBox
 
                     @spawn movedBox: Box {
-                        use box.x, box.y;
+                        use box;
                         use dx, dy;
 
                         let movedBox = UnknownModule.func(dx);
@@ -609,8 +610,7 @@ mod test {
         let name_func_arg_dx = Name::from(&name_func, "dx".to_string());
         let name_func_arg_dy = Name::from(&name_func, "dy".to_string());
         let name_func_spawn_box = Name::from(&name_func, "movedBox".to_string());
-        let name_func_spawn_use_box_x = Name::from(&name_func, "_.box.x".to_string());
-        let name_func_spawn_use_box_y = Name::from(&name_func, "_.box.y".to_string());
+        let name_func_spawn_use_box = Name::from(&name_func, "_.box".to_string());
         let name_func_spawn_use_dx = Name::from(&name_func, "_._.dx".to_string());
         let name_func_spawn_use_dy = Name::from(&name_func, "_._.dy".to_string());
         let name_func_spawn_let_name = Name::from(&name_func, "_._._.movedBox".to_string());
@@ -625,8 +625,7 @@ mod test {
         );
         let func_spawns = vec!(
             SysDCSpawn::new((name_func_spawn_box, Type::from("Box".to_string())), vec!(
-                SysDCSpawnChild::new_use(name_func_spawn_use_box_x, Type::new_unsovled_nohint()),
-                SysDCSpawnChild::new_use(name_func_spawn_use_box_y, Type::new_unsovled_nohint()),
+                SysDCSpawnChild::new_use(name_func_spawn_use_box, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_let_to(
@@ -709,7 +708,7 @@ mod test {
                     @return movedBox
 
                     @spawn movedBox: Box {
-                        use box.x, box.y, dx, dy;
+                        use box, dx, dy;
 
                         let movedBox = UnknownModule.func(dx);
 
@@ -736,8 +735,7 @@ mod test {
         let name_func_arg_dx = Name::from(&name_func, "dx".to_string());
         let name_func_arg_dy = Name::from(&name_func, "dy".to_string());
         let name_func_spawn_box = Name::from(&name_func, "movedBox".to_string());
-        let name_func_spawn_use_box_x = Name::from(&name_func, "_.box.x".to_string());
-        let name_func_spawn_use_box_y = Name::from(&name_func, "_.box.y".to_string());
+        let name_func_spawn_use_box = Name::from(&name_func, "_.box".to_string());
         let name_func_spawn_use_dx = Name::from(&name_func, "_.dx".to_string());
         let name_func_spawn_use_dy = Name::from(&name_func, "_.dy".to_string());
         let name_func_spawn_let_name = Name::from(&name_func, "_._.movedBox".to_string());
@@ -752,8 +750,7 @@ mod test {
         );
         let func_spawns = vec!(
             SysDCSpawn::new((name_func_spawn_box, Type::from("Box".to_string())), vec!(
-                SysDCSpawnChild::new_use(name_func_spawn_use_box_x, Type::new_unsovled_nohint()),
-                SysDCSpawnChild::new_use(name_func_spawn_use_box_y, Type::new_unsovled_nohint()),
+                SysDCSpawnChild::new_use(name_func_spawn_use_box, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_let_to(
