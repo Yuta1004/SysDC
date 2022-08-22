@@ -1,3 +1,4 @@
+use std::str::Chars;
 use std::error::Error;
 
 use super::error::{ CompileError, CompileErrorKind };
@@ -87,9 +88,10 @@ impl Token {
 
 #[derive(Debug)]
 pub struct Tokenizer<'a> {
-    text: &'a String,
+    chars: Chars<'a>,
+    hold_char: Option<char>,
+    hold_chars: Vec<char>,
     hold_token: Option<Token>,
-    now_ref_pos: usize,
     now_ref_row: i32,
     now_ref_col: i32
 }
@@ -97,9 +99,10 @@ pub struct Tokenizer<'a> {
 impl<'a> Tokenizer<'a> {
     pub fn new(text: &'a String) -> Tokenizer<'a> {
         let mut tokenizer = Tokenizer {
-            text,
+            chars: text.chars(),
+            hold_char: None,
+            hold_chars: vec!(),
             hold_token: None,
-            now_ref_pos: 0,
             now_ref_row: 1,
             now_ref_col: 1
         };
@@ -107,8 +110,15 @@ impl<'a> Tokenizer<'a> {
         tokenizer
     }
 
-    pub fn has_token(&self) -> bool {
-        self.now_ref_pos != self.text.len()
+    pub fn exists_next(&mut self) -> bool {
+        match self.hold_char {
+            c@Some(_) => self.hold_char = c,
+            None => {
+                self.hold_char = self.chars.next();
+                self.now_ref_col += 1;
+            }
+        }
+        self.hold_char.is_some()
     }
 
     pub fn expect(&mut self, kind: TokenKind) -> Result<Option<Token>, Box<dyn Error>> {
@@ -139,29 +149,21 @@ impl<'a> Tokenizer<'a> {
         if !self.hold_token.is_none() {
             return Ok(self.hold_token.clone());
         }
-        if !self.has_token() {
+        if !self.exists_next() {
             return Ok(None);
         }
 
-        let lead_ref_pos = self.now_ref_pos;
-        let lead_type = CharType::from(self.get_char_at(lead_ref_pos));
-        self.now_ref_pos += 1;
-        self.now_ref_col += 1;
-
-        while self.has_token() {
-            let now_type = CharType::from(self.get_char_at(self.now_ref_pos));
-            match (&lead_type, now_type) {
+        let lead_type = CharType::from(self.hold_char.unwrap());
+        self.adopt()?;
+        while self.exists_next() {
+            match (&lead_type, CharType::from(self.hold_char.unwrap())) {
                 // Ok(continue)
                 (CharType::Identifier, CharType::Identifier | CharType::Number) => {},
                 (CharType::Number, CharType::Number) => {},
                 
                 // Ok(force stop)
                 (CharType::Symbol, _) => break,
-                (CharType::SymbolAllow1, CharType::SymbolAllow2) => {
-                    self.now_ref_pos += 1;
-                    self.now_ref_col += 1;
-                    break;
-                },
+                (CharType::SymbolAllow1, CharType::SymbolAllow2) => { self.adopt()?; break }
 
                 // Ng(panic)
                 (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) =>
@@ -173,60 +175,46 @@ impl<'a> Tokenizer<'a> {
                 // Ok(force stop)
                 _ => break
             }
-
-            self.now_ref_pos += 1;
-            self.now_ref_col += 1;
+            self.adopt()?;
         }
-
-        let discovered_word = self.clip_text(lead_ref_pos, self.now_ref_pos);
-        let token = Token::from(discovered_word, self.now_ref_row, self.now_ref_col);
         self.skip_space();
-        Ok(Some(token))
+        Ok(Some(Token::from(self.collect(), self.now_ref_row, self.now_ref_col)))
+    }
+
+    fn adopt(&mut self) -> Result<(), Box<dyn Error>> {
+        match self.hold_char {
+            Some(c) => self.hold_chars.push(c),
+            None => return CompileError::new(CompileErrorKind::UnexpectedEOF)
+        }
+        self.hold_char = self.chars.next();
+        self.now_ref_col += 1;
+        Ok(())
+    }
+
+    fn collect(&mut self) -> String {
+        let result = self.hold_chars.iter().collect::<String>();
+        self.hold_chars = vec!();
+        result
     }
 
     fn skip_space(&mut self) {
         let mut comment = false;
-        loop {
-            if !self.has_token() {
-                break;
-            }
-            match CharType::from(self.get_char_at(self.now_ref_pos)) {
+        while self.exists_next() {
+            match CharType::from(self.hold_char.unwrap()) {
                 CharType::Space => {
-                    self.now_ref_pos += 1;
                     self.now_ref_col += 1;
                 }
                 CharType::NewLine => {
-                    self.now_ref_pos += 1;
                     self.now_ref_row += 1;
                     self.now_ref_col = 1;
                 }
                 CharType::Comment => {
                     comment = !comment;
-                    self.now_ref_pos += 1;
                     self.now_ref_col += 1;
                 }
-                _ => match comment {
-                    true => {
-                        self.now_ref_pos += 1;
-                        self.now_ref_col += 1;
-                    }
-                    false => break
-                } 
+                _ => if !comment { break }
             }
-        }
-    }
-
-    fn get_char_at(&self, pos: usize) -> char {
-        self.text.chars().nth(pos).unwrap()
-    }
-
-    fn clip_text(&self, begin: usize, end: usize) -> String {
-        let (begin_idx, _) = self.text.char_indices().nth(begin).unwrap();
-        if end != self.text.len() {
-            let (end_idx, _) = self.text.char_indices().nth(end).unwrap();
-            self.text[begin_idx..end_idx].to_string()
-        } else {
-            self.text[begin_idx..].to_string()
+            self.hold_char = None;
         }
     }
 }
@@ -439,7 +427,7 @@ mod test {
                 let token = tokenizer.request(token_kind.clone()).unwrap();
                 assert_eq!(token.kind, token_kind);
             }
-            assert!(!tokenizer.has_token());
+            assert!(!tokenizer.exists_next());
         }
 
         #[test]
