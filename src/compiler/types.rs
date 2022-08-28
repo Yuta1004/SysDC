@@ -6,7 +6,7 @@ use serde::de::Deserializer;
 
 use super::name::Name;
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Type {
     pub kind: TypeKind,
     pub refs: Option<Name>
@@ -28,28 +28,18 @@ impl Type {
     }
 
     pub fn from(name: String) -> Type {
-        match name.as_str() {
-            "i32" => Type { kind: TypeKind::Int32, refs: None },
-            _ => Type { kind: TypeKind::Unsolved(name), refs: None }
-        }
+        Type { kind: TypeKind::from(name), refs: None }
     }
 }
 
-impl Debug for Type {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        match &self.kind {
-            TypeKind::Int32 => write!(f, "Int32"),
-            TypeKind::Data => write!(f, "{:?}", self.refs.clone().unwrap()),
-            TypeKind::Unsolved(hint) => write!(f, "{}", hint),
-            TypeKind::UnsolvedNoHint => write!(f, "UnsolvedNoHint"),
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum TypeKind {
     /* プリミティブ型 */
     Int32,
+    UInt32,
+    Float32,
+    Boolean,
+    Char,
 
     /* ユーザ定義型 */
     Data,
@@ -57,6 +47,45 @@ pub enum TypeKind {
     /* パーサ用 (解決後のSysDCSystemには含まれない) */
     Unsolved(String),
     UnsolvedNoHint
+}
+
+impl TypeKind {
+    fn from(name: String) -> TypeKind {
+        match name.as_str() {
+            "i32" => TypeKind::Int32,
+            "u32" => TypeKind::UInt32,
+            "f32" => TypeKind::Float32,
+            "bool" => TypeKind::Boolean,
+            "char" => TypeKind::Char,
+            _ => TypeKind::Unsolved(name)
+        }
+    }
+
+    pub fn is_primitive(&self) -> bool {
+        match self {
+            TypeKind::Int32 |
+            TypeKind::UInt32 |
+            TypeKind::Float32 |
+            TypeKind::Boolean |
+            TypeKind::Char => true,
+            _ => false
+        }
+    }
+}
+
+impl Debug for TypeKind {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            TypeKind::Int32 => write!(f, "i32"),
+            TypeKind::UInt32 => write!(f, "u32"),
+            TypeKind::Float32 => write!(f, "f32"),
+            TypeKind::Boolean => write!(f, "bool"),
+            TypeKind::Char => write!(f, "char"),
+            TypeKind::Data => write!(f, "Data"),
+            TypeKind::Unsolved(hint) => write!(f, "{}", hint),
+            TypeKind::UnsolvedNoHint => write!(f, "UnsolvedNoHint"),
+        }
+    }
 }
 
 impl Serialize for TypeKind {
@@ -75,13 +104,52 @@ impl Serialize for TypeKind {
 impl<'de> Deserialize<'de> for TypeKind {
     fn deserialize<D>(deserializer: D) -> Result<TypeKind, D::Error>
     where
-        D: Deserializer<'de> 
+        D: Deserializer<'de>
     {
-        let kind = String::deserialize(deserializer)?;
-        Ok(match kind.as_str() {
-            "Int32" => TypeKind::Int32,
-            "Data" => TypeKind::Data,
-            s => panic!("[ERROR] Found unknown type at deserializing => \"{}\"", s)
-        })
+        let skind = String::deserialize(deserializer)?;
+        match TypeKind::from(skind) {
+            TypeKind::Unsolved(_) => Ok(TypeKind::Data),
+            kind => Ok(kind)
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use serde::Serialize;
+    use rmp_serde;
+    use rmp_serde::Serializer;
+
+    use super::TypeKind;
+
+    macro_rules! check_serialize {
+        ($target:ty, $obj:expr) => {
+            let mut serialized = vec!();
+            $obj.serialize(&mut Serializer::new(&mut serialized)).unwrap();
+            let deserialized = rmp_serde::from_slice::<$target>(&serialized[..]).unwrap();
+            assert_eq!(deserialized, $obj);
+        };
+    }
+
+    #[test]
+    fn primitive() {
+        check_serialize!(TypeKind, TypeKind::Int32);
+        check_serialize!(TypeKind, TypeKind::UInt32);
+        check_serialize!(TypeKind, TypeKind::Float32);
+        check_serialize!(TypeKind, TypeKind::Boolean);
+        check_serialize!(TypeKind, TypeKind::Char);
+        check_serialize!(TypeKind, TypeKind::Data);
+    }
+
+    #[test]
+    #[should_panic]
+    fn primitive_unsolved_1() {
+        check_serialize!(TypeKind, TypeKind::Unsolved("aaa".to_string()));
+    }
+
+    #[test]
+    #[should_panic]
+    fn primitive_unsolved_2() {
+        check_serialize!(TypeKind, TypeKind::UnsolvedNoHint);
     }
 }

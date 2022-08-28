@@ -255,7 +255,7 @@ impl<'a> Parser<'a> {
         Ok(Some(Annotation::Spawn(SysDCSpawn::new(spawn_result.unwrap(), details))))
     }
 
-    /** 
+    /**
      * <annotation_spawn_detail> ::= (
      *      let <id> = <id_chain> \( <id_chain_list, delimiter=','> \) ; |
      *      use <id_list, delimiter=','> ; |
@@ -271,12 +271,12 @@ impl<'a> Parser<'a> {
             // =
             self.tokenizer.request(TokenKind::Equal)?;
 
-            // <id_chain> 
+            // <id_chain>
             let func = match self.parse_id_chain(namespace)? {
                 Some((func, _)) => func.name,
                 None => return CompileError::new(CompileErrorKind::FunctionNameNotFound)
             };
-        
+
             // \( <id_chain_list, delimiter=',') \)
             self.tokenizer.request(TokenKind::ParenthesisBegin)?;
             let args = parse_list!(self.parse_id_chain(namespace), TokenKind::Separater);
@@ -317,7 +317,6 @@ impl<'a> Parser<'a> {
      * <id_chain> ::= <id_list, delimiter=.>
      */
     fn parse_id_chain(&mut self, namespace: &Name) -> Result<Option<(Name, Type)>, Box<dyn Error>> {
-        // <id_list, delimiter=,>
         let name_elems = parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Accessor);
         let var = name_elems.iter().map(|x| x.get_id().unwrap()).collect::<Vec<String>>().join(".");
         match var.len() {
@@ -327,18 +326,37 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * <id_type_mapping> ::= <id> : <id> 
+     * <id_type_mapping> ::= <id> : <type>
      */
     fn parse_id_type_mapping(&mut self, namespace: &Name) -> Result<Option<(Name, Type)>, Box<dyn Error>> {
-        // <id> : <id>
         let id1 = if let Some(id1_token) = self.tokenizer.expect(TokenKind::Identifier)? {
             id1_token.get_id()?
         } else {
             return Ok(None);
         };
         self.tokenizer.request(TokenKind::Mapping)?;
-        let id2 = self.tokenizer.request(TokenKind::Identifier)?.get_id()?;
-        Ok(Some((Name::from(namespace, id1), Type::from(id2))))
+        Ok(Some((Name::from(namespace, id1), self.parse_type()?)))
+    }
+
+    /**
+     * <type> ::= { \[ } <id> { \] }
+     */
+    fn parse_type(&mut self) -> Result<Type, Box<dyn Error>> {
+        // { \[ }
+        let mut array_nest_cnt = 0;
+        while let Some(_) = self.tokenizer.expect(TokenKind::ArrayBegin)? {
+            array_nest_cnt += 1;
+        }
+
+        // <id>
+        let id = self.tokenizer.request(TokenKind::Identifier)?.get_id()?;
+
+        // { \] }
+        for _ in 0..array_nest_cnt {
+            self.tokenizer.request(TokenKind::ArrayEnd)?;
+        }
+
+        Ok(Type::from(id))
     }
 }
 
@@ -392,7 +410,7 @@ mod test {
 
         compare_unit(program, SysDCUnit::new(generate_name_for_test(), vec!(), vec!(), name_imports));
     }
-    
+
     #[test]
     fn data_empty_ok() {
         let program = "
@@ -400,7 +418,7 @@ mod test {
 
             data A {}
             data B{}
-            data C{   
+            data C{
 
             }
             data D
@@ -498,7 +516,7 @@ mod test {
 
             module A {}
             module B{}
-            module C{   
+            module C{
 
             }
             module D

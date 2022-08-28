@@ -33,9 +33,10 @@ impl Checker {
 
     fn check_data(&self, data: unchecked::SysDCData) -> Result<SysDCData, Box<dyn Error>> {
         data.convert(|(name, types): (Name, Type)|
-            match types.kind {
-                TypeKind::Int32 => Ok((name, types)),
-                _ => self.def_manager.resolve_from_type((name, types), &self.imports)
+            if types.kind.is_primitive() {
+                Ok((name, types))
+            } else {
+                self.def_manager.resolve_from_type((name, types), &self.imports)
             }
         )
     }
@@ -157,30 +158,32 @@ impl DefinesManager {
     // 与えられたnameから参照可能なすべての範囲またはimports内を対象に，typesと一致する定義を探す (Data, Module, Function)
     // ※name, typesはともに関連している状態を想定
     pub fn resolve_from_type(&self, (name, types): (Name, Type), imports: &Vec<Name>) -> Result<(Name, Type), Box<dyn Error>> {
-        match &types.kind {
-            TypeKind::Int32 | TypeKind::Data => Ok((name, types)),
-            TypeKind::Unsolved(hint) => {
-                let (head, tails) = DefinesManager::split_name(&hint);
-                let found_def = self.find(name.clone(), &head, &imports)?;
-                match found_def.kind {
-                    DefineKind::Data =>
-                        match tails {
-                            Some(_) => CompileError::new(CompileErrorKind::IllegalAccess),
-                            None => Ok((name, Type::new(TypeKind::Data, Some(found_def.refs))))
-                        }
-                    DefineKind::Module =>
-                        match tails {
-                            Some(tails) => self.get_func_in_module(&found_def.refs, &tails, imports),
-                            None => CompileError::new(CompileErrorKind::MissingFunctionName)
-                        }
-                    DefineKind::Function(_) => {
-                        self.get_func_in_module(&name.get_namespace(true), &hint, imports)
-                    }
-                    _ => CompileError::new(CompileErrorKind::TypeUnmatch1(types))
-                }
-            },
-            _ => panic!("Internal Error")
+        if types.kind.is_primitive() || types.kind == TypeKind::Data {
+            return Ok((name, types))
         }
+
+        if let TypeKind::Unsolved(hint) = &types.kind {
+            let (head, tails) = DefinesManager::split_name(&hint);
+            let found_def = self.find(name.clone(), &head, &imports)?;
+            return match found_def.kind {
+                DefineKind::Data =>
+                    match tails {
+                        Some(_) => CompileError::new(CompileErrorKind::IllegalAccess),
+                        None => Ok((name, Type::new(TypeKind::Data, Some(found_def.refs))))
+                    }
+                DefineKind::Module =>
+                    match tails {
+                        Some(tails) => self.get_func_in_module(&found_def.refs, &tails, imports),
+                        None => CompileError::new(CompileErrorKind::MissingFunctionName)
+                    }
+                DefineKind::Function(_) => {
+                    self.get_func_in_module(&name.get_namespace(true), &hint, imports)
+                }
+                _ => CompileError::new(CompileErrorKind::TypeUnmatch1(types))
+            }
+        }
+
+        panic!("Internal Error");
     }
 
     // nameから参照可能なすべての範囲またはimports内を対象に，nameと一致する名前をもつ定義を探す (Variable)
@@ -235,19 +238,20 @@ impl DefinesManager {
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
                 if data.get_full_name() == refs.namespace && head == refs.name {
-                    return match self.resolve_from_type((refs.clone(), types.clone()), imports)? {
-                        (_, types@Type { kind: TypeKind::Int32, .. }) =>
-                            match tails {
-                                Some(_) => CompileError::new(CompileErrorKind::IllegalAccess),
-                                None => Ok((refs.clone(), types))
-                            }
-                        (_, types@Type { kind: TypeKind::Data, .. }) =>
-                            match tails {
-                                Some(tails) => self.get_member_in_data(types.refs.as_ref().unwrap(), &tails, imports),
-                                None => Ok((types.refs.clone().unwrap(), types))
-                            },
-                        _ => panic!("Internal Error")
+                    let (_, types) = self.resolve_from_type((refs.clone(), types.clone()), imports)?;
+                    if types.kind.is_primitive() {
+                        return match tails {
+                            Some(_) => CompileError::new(CompileErrorKind::IllegalAccess),
+                            None => Ok((refs.clone(), types))
+                        };
                     }
+                    if types.kind == TypeKind::Data {
+                        return match tails {
+                            Some(tails) => self.get_member_in_data(types.refs.as_ref().unwrap(), &tails, imports),
+                            None => Ok((types.refs.clone().unwrap(), types))
+                        };
+                    }
+                    panic!("Internal Error");
                 }
             }
         }
@@ -284,7 +288,7 @@ impl DefinesManager {
             }
             namespace = namespace.get_par_name(false);
         }
-       
+
         for import in imports {
             if &import.name == name {
                 return self.find(import.clone(), &import.name, &vec!());
@@ -451,7 +455,7 @@ mod test {
                 a: i32,
                 b: i32
             }
-            
+
             module TestModule {
                 test(a: A) -> A {
                     @return a
@@ -764,7 +768,7 @@ mod test {
             data A {}
             data B {}
             data C {}
-            
+
             module TestModule {
                 test() -> A {
                     @return a
@@ -811,7 +815,7 @@ mod test {
             data A {}
             data B {}
             data C {}
-            
+
             module TestModule {
                 test() -> A {
                     @return a
@@ -969,7 +973,7 @@ mod test {
                 c: C
             }
 
-            data C { 
+            data C {
                 body: i32
             }
         ";

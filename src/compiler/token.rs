@@ -28,6 +28,8 @@ pub enum TokenKind {
     ParenthesisEnd,     // )
     BracketBegin,       // {
     BracketEnd,         // }
+    ArrayBegin,         // [
+    ArrayEnd,           // ]
     AtMark,             // @
     Plus,               // +
 
@@ -65,6 +67,8 @@ impl Token {
             ")"         => TokenKind::ParenthesisEnd,
             "{"         => TokenKind::BracketBegin,
             "}"         => TokenKind::BracketEnd,
+            "["         => TokenKind::ArrayBegin,
+            "]"         => TokenKind::ArrayEnd,
             "@"         => TokenKind::AtMark,
             "+"         => TokenKind::Plus,
             _           => TokenKind::Identifier,
@@ -160,9 +164,10 @@ impl<'a> Tokenizer<'a> {
                 // Ok(continue)
                 (CharType::Identifier, CharType::Identifier | CharType::Number) => {},
                 (CharType::Number, CharType::Number) => {},
-                
+
                 // Ok(force stop)
                 (CharType::Symbol, _) => break,
+                (CharType::SymbolArray1 | CharType::SymbolArray2, _) => break,
                 (CharType::SymbolAllow1, CharType::SymbolAllow2) => { self.adopt()?; break }
 
                 // Ng(panic)
@@ -223,12 +228,17 @@ impl<'a> Tokenizer<'a> {
 enum CharType {
     Number,
     Identifier,
+
     Symbol,
+    SymbolArray1,
+    SymbolArray2,
     SymbolAllow1,
     SymbolAllow2,
+
     Comment,
     Space,
     NewLine,
+
     Other
 }
 
@@ -237,12 +247,17 @@ impl CharType {
         match c {
             '0'..='9' => CharType::Number,
             'a'..='z' | 'A'..='Z' | '_' => CharType::Identifier,
+
             '=' | '.' | ',' | ';' | '{' | '}' | '(' | ')' | ':' => CharType::Symbol,
+            '[' => CharType::SymbolArray1,
+            ']' => CharType::SymbolArray2,
             '-' => CharType::SymbolAllow1,
             '>' => CharType::SymbolAllow2,
+
             '%' => CharType::Comment,
             ' ' | '\t'  => CharType::Space,
             '\n' => CharType::NewLine,
+
             _ => CharType::Other
         }
     }
@@ -264,7 +279,7 @@ mod test {
                 ("return",  TokenKind::Return),
                 ("let",     TokenKind::Let),
                 ("spawn",   TokenKind::Spawn),
-                ("use",     TokenKind::Use), 
+                ("use",     TokenKind::Use),
                 ("->",      TokenKind::Allow),
                 (":",       TokenKind::Mapping),
                 ("=",       TokenKind::Equal),
