@@ -83,12 +83,11 @@ impl<'de> Deserialize<'de> for TypeKind {
     where
         D: Deserializer<'de>
     {
-        let kind = String::deserialize(deserializer)?;
-         Ok(match kind.as_str() {
-            "i32" => TypeKind::Int32,
-            "Data" => TypeKind::Data,
-            s => panic!("[ERROR] Found unknown type at deserializing => \"{}\"", s)
-        })
+        let skind = String::deserialize(deserializer)?;
+        match TypeKind::from(skind) {
+            TypeKind::Unsolved(_) => Ok(TypeKind::Data),
+            kind => Ok(kind)
+        }
     }
 }
 
