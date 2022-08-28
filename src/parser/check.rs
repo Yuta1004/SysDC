@@ -386,7 +386,7 @@ impl DefinesManager {
 
 #[cfg(test)]
 mod test {
-    use super::super::super::compiler::Compiler;
+    use crate::parser::Parser;
 
     #[test]
     fn primitive_member_only_data() {
@@ -1214,10 +1214,10 @@ mod test {
     }
 
     fn check(programs: Vec<&str>) {
-        let mut compiler = Compiler::new();
+        let mut parser = Parser::new();
         for program in programs {
-            compiler.add_unit(program.to_string()).unwrap();
+            parser.parse(program.to_string()).unwrap();
         }
-        compiler.generate_system().unwrap();
+        parser.check().unwrap();
     }
 }

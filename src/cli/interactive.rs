@@ -10,8 +10,8 @@ use std::error::Error;
 use serde::Serialize;
 use rmp_serde::Serializer;
 
-use crate::compiler::Compiler;
-use crate::compiler::structure::SysDCSystem;
+use crate::parser::Parser;
+use crate::parser::structure::SysDCSystem;
 use crate::plugin::PluginManager;
 
 #[derive(Debug)]
@@ -54,7 +54,7 @@ impl InteractiveCmd {
 
     fn run_one_line(&mut self) -> Result<(), Box<dyn Error>> {
         print!("> ");
-        io::stdout().flush().unwrap(); 
+        io::stdout().flush().unwrap();
 
         let mut text = String::new();
         io::stdin().read_line(&mut text)?;
@@ -78,12 +78,12 @@ impl InteractiveCmd {
 
     fn run_mode_in(&mut self, name: String, args: Vec<String>) -> Result<(), Box<dyn Error>> {
         let plugin = self.plugin_manager.get_type_in(&name)?;
-        let mut compiler = Compiler::new();
+        let mut parser = Parser::new();
         for (filename, program) in plugin.run(args)? {
             println!("Loading: {}", filename);
-            compiler.add_unit(program)?;
+            parser.parse(program)?;
         }
-        self.system = Some(compiler.generate_system()?);
+        self.system = Some(parser.check()?);
         Ok(())
     }
 
@@ -129,7 +129,7 @@ impl InteractiveCmd {
             2 => Ok((splitted_text[0].clone(), splitted_text[1].clone(), vec!())),
             _ => Ok((splitted_text[0].clone(), splitted_text[1].clone(), splitted_text[2..].to_vec()))
         }
-    } 
+    }
 }
 
 #[cfg(test)]
@@ -158,7 +158,7 @@ mod test {
                 assert_eq!(args, empty_string_vec);
             },
             Err(e) => panic!("{}", e)
-        } 
+        }
 
         match InteractiveCmd::parse_input("aaa bbb ccc".to_string()) {
             Ok((cmd, subcmd, args)) => {

@@ -4,7 +4,7 @@ use std::io::Write;
 use serde_json;
 
 use crate::plugin::{ OutputPlugin, PluginError };
-use crate::compiler::structure::SysDCSystem;
+use crate::parser::structure::SysDCSystem;
 
 pub struct JSONPlugin;
 

@@ -1,6 +1,6 @@
 mod cli;
 pub mod plugin;
-pub mod compiler;
+pub mod parser;
 
 fn main() {
     cli::App::run();

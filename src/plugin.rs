@@ -5,7 +5,7 @@ use std::fmt::{ Display, Formatter };
 use std::error::Error;
 
 use default::{ input, output };
-use crate::compiler::structure::SysDCSystem;
+use crate::parser::structure::SysDCSystem;
 
 pub trait InputPlugin {
     fn get_name(&self) -> &str;
