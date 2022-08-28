@@ -9,9 +9,9 @@ use std::error::Error;
 
 use serde::Serialize;
 use rmp_serde::Serializer;
+use sysdc::parser::Parser;
+use sysdc::parser::structure::SysDCSystem;
 
-use crate::parser::Parser;
-use crate::parser::structure::SysDCSystem;
 use crate::plugin::PluginManager;
 
 #[derive(Debug)]

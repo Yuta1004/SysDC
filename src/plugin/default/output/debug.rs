@@ -1,5 +1,6 @@
+use sysdc::parser::structure::SysDCSystem;
+
 use crate::plugin::OutputPlugin;
-use crate::parser::structure::SysDCSystem;
 
 pub struct DebugPlugin;
 
