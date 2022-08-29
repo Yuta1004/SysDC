@@ -1,10 +1,10 @@
-mod interactive;
-mod plugin;
+mod parse;
+mod exec;
 
 use clap::{ AppSettings, Parser, Subcommand };
 
-use interactive::InteractiveCmd;
-use plugin::PluginCmd;
+use parse::ParseCmd;
+use exec::ExecCmd;
 
 /// SysDC: System Definition Language and Tools
 #[derive(Parser)]
@@ -18,18 +18,18 @@ pub struct App {
 #[derive(Subcommand)]
 #[allow(non_camel_case_types)]
 enum AppSub {
-    /// Run interactive mode
-    interactive(InteractiveCmd),
+    /// Parse *.def files
+    parse(ParseCmd),
 
-    /// Setup plugins (ex. add, remove)
-    plugin(PluginCmd),
+    /// Execute tool
+    exec(ExecCmd)
 }
 
 impl App {
     pub fn run() {
         match App::parse().sub {
-            AppSub::interactive(mut cmd) => cmd.run(),
-            AppSub::plugin(cmd) => cmd.run()
+            AppSub::parse(cmd) => cmd.run(),
+            AppSub::exec(cmd) => cmd.run()
         }
     }
 }
