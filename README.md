@@ -4,28 +4,49 @@
 
 システム設計支援言語
 
+## 構成
+
+### cli (bin)
+
+CLI
+
+### parser (lib)
+
+プログラムを内部表現に変換する
+
+### tools
+
+#### tools/debug (lib)
+
+内部表現を標準出力
+
+#### tools/json (lib)
+
+内部表現をJSON形式で標準出力する  
+`--args` オプションを指定することでファイルに出力することも可能
+
 ## サンプルコードの実行
 
 ### Box
 
 ```
-$ cargo run -- interactive
-> in files example/box/*.def
-Loading: box.def
+$ cargo run parse example/box/box.def
+Load: box.def
+1 units loaded!
 
-> out debug
+$ cargo run exec debug
 ```
 
 ### Compiler
 
 ```
-$ cargo run -- interactive
-> in files example/compiler/*.def
-Loading: compiler.def
-Loading: parser.def
-Loading: std.def
-Loading: structure.def
-Loading: tokenizer.def
+$ cargo run parse example/compiler/*.def
+Load: compiler.def
+Load: parser.def
+Load: std.def
+Load: structure.def
+Load: tokenizer.def
+5 units loaded!
 
-> out debug
+$ cargo run exec debug
 ```
