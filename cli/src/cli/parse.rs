@@ -26,6 +26,7 @@ impl ParseCmd {
     }
 
     fn read_files(&self) -> Result<SysDCSystem, Box<dyn Error>> {
+        let mut load_unit_cnt = 0;
         let mut parser = SParser::new();
         for filename in &self.input {
             for entries in glob::glob(&filename) {
@@ -38,11 +39,14 @@ impl ParseCmd {
                         let program = fs::read_to_string(&entry)?;
                         parser.parse(program)?;
                         println!("Load: {}", filename);
+                        load_unit_cnt += 1;
                     }
                 }
             }
         }
-        parser.check()
+        let system = parser.check()?;
+        println!("{} units loaded!", load_unit_cnt);
+        Ok(system)
     }
 
     fn save_system(&self, system: SysDCSystem) -> Result<(), Box<dyn Error>> {
