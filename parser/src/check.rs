@@ -386,7 +386,7 @@ impl DefinesManager {
 
 #[cfg(test)]
 mod test {
-    use crate::parser::Parser;
+    use crate::Parser;
 
     #[test]
     fn primitive_member_only_data() {

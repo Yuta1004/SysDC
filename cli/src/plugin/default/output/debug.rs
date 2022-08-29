@@ -1,4 +1,4 @@
-use sysdc::parser::structure::SysDCSystem;
+use sysdc_parser::structure::SysDCSystem;
 
 use crate::plugin::OutputPlugin;
 

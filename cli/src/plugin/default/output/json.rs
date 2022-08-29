@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Write;
 
 use serde_json;
-use sysdc::parser::structure::SysDCSystem;
+use sysdc_parser::structure::SysDCSystem;
 
 use crate::plugin::{ OutputPlugin, PluginError };
 
