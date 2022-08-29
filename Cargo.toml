@@ -2,7 +2,6 @@
 members = [
     "cli",
     "parser",
-    "tools/tool",
     "tools/debug",
     "tools/json"
 ]
