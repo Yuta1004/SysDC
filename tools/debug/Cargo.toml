@@ -1,0 +1,7 @@
+[package]
+name = "sysdc_tool_debug"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+sysdc_parser = { path = "../../parser" }

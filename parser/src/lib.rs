@@ -9,38 +9,38 @@ pub mod structure;
 use std::error::Error;
 
 use name::Name;
-use parse::Parser;
 use token::Tokenizer;
+use parse::UnitParser;
 use check::Checker;
 use structure::SysDCSystem;
 use structure::unchecked;
 
-pub struct Compiler {
+pub struct Parser {
     units: Vec<unchecked::SysDCUnit>
 }
 
-impl Compiler {
-    pub fn new() -> Compiler {
-        Compiler { units: vec!() }
+impl Parser {
+    pub fn new() -> Parser {
+        Parser { units: vec!() }
     }
 
-    pub fn add_unit(&mut self, program: String) -> Result<(), Box<dyn Error>> {
-        self.units.push(Parser::parse(Tokenizer::new(&program), Name::new_root())?);
+    pub fn parse(&mut self, program: String) -> Result<(), Box<dyn Error>> {
+        self.units.push(UnitParser::parse(Tokenizer::new(&program), Name::new_root())?);
         Ok(())
     }
 
-    pub fn generate_system(self) -> Result<SysDCSystem, Box<dyn Error>> {
+    pub fn check(self) -> Result<SysDCSystem, Box<dyn Error>> {
         Checker::check(unchecked::SysDCSystem::new(self.units))
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::Compiler;
+    use super::Parser;
 
     #[test]
-    fn compile() {
-        let mut compiler = Compiler::new();
+    fn parse() {
+        let mut parser = Parser::new();
         let programs = [
             "unit test.A; data A {}",
             "unit test.B; data B {}",
@@ -49,8 +49,8 @@ mod test {
             "unit test.E; data E {}"
         ];
         for program in programs {
-            compiler.add_unit(program.to_string()).unwrap();
+            parser.parse(program.to_string()).unwrap();
         }
-        compiler.generate_system().unwrap();
+        parser.check().unwrap();
     }
 }

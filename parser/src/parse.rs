@@ -36,13 +36,13 @@ enum Annotation {
     Spawn(SysDCSpawn)
 }
 
-pub struct Parser<'a> {
+pub struct UnitParser<'a> {
     tokenizer: Tokenizer<'a>
 }
 
-impl<'a> Parser<'a> {
+impl<'a> UnitParser<'a> {
     pub fn parse(tokenizer: Tokenizer<'a>, namespace: Name) -> Result<SysDCUnit, Box<dyn Error>> {
-        let mut parser = Parser { tokenizer };
+        let mut parser = UnitParser { tokenizer };
         parser.parse_root(namespace)
     }
 
@@ -362,7 +362,7 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod test {
-    use super::Parser;
+    use super::UnitParser;
     use super::super::name::Name;
     use super::super::types::Type;
     use super::super::token::Tokenizer;
@@ -806,6 +806,6 @@ mod test {
     fn parse(program: &str) -> SysDCUnit {
         let program = program.to_string();
         let tokenizer = Tokenizer::new(&program);
-        Parser::parse(tokenizer, Name::new_root()).unwrap()
+        UnitParser::parse(tokenizer, Name::new_root()).unwrap()
     }
 }
