@@ -16,14 +16,7 @@ CLI
 
 ### tools
 
-#### tools/debug (lib)
-
-内部表現を標準出力
-
-#### tools/json (lib)
-
-内部表現をJSON形式で標準出力する  
-`--args` オプションを指定することでファイルに出力することも可能
+内部表現を利用するツール群
 
 ```
     out.sysdc
