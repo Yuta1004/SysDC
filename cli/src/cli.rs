@@ -1,6 +1,8 @@
 mod parse;
 mod exec;
 
+use std::process::exit;
+
 use clap::{ AppSettings, Parser, Subcommand };
 
 use parse::ParseCmd;
@@ -31,8 +33,12 @@ impl App {
             AppSub::parse(cmd) => cmd.run(),
             AppSub::exec(cmd) => cmd.run()
         };
-        if let Err(err) = result {
-            println!("[ERROR] {}", err);
+        match result {
+            Ok(_) => exit(0),
+            Err(err) => {
+                println!("[ERROR] {}", err);
+                exit(1);
+            }
         }
     }
 }
