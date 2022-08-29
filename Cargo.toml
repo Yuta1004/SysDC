@@ -1,5 +1,8 @@
 [workspace]
 members = [
     "cli",
-    "parser"
+    "parser",
+    "tools/tool",
+    "tools/debug",
+    "tools/json"
 ]

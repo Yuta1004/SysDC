@@ -285,6 +285,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "sysdc_tool"
+version = "0.0.1"
+dependencies = [
+ "sysdc_parser",
+]
+
+[[package]]
+name = "sysdc_tool_debug"
+version = "0.0.1"
+dependencies = [
+ "sysdc_parser",
+ "sysdc_tool",
+]
+
+[[package]]
+name = "sysdc_tool_json"
+version = "0.0.1"
+dependencies = [
+ "serde_json",
+ "sysdc_parser",
+ "sysdc_tool",
+]
+
+[[package]]
 name = "termcolor"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
