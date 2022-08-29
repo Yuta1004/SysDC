@@ -21,11 +21,8 @@ pub struct ParseCmd {
 }
 
 impl ParseCmd {
-    pub fn run(&self) {
-        match self.read_files() {
-            Ok(system) => self.save_system(system),
-            Err(err) => println!("[ERROR] {}", err)
-        }
+    pub fn run(&self) -> Result<(), Box<dyn Error>> {
+        self.save_system(self.read_files()?)
     }
 
     fn read_files(&self) -> Result<SysDCSystem, Box<dyn Error>> {
@@ -48,12 +45,12 @@ impl ParseCmd {
         parser.check()
     }
 
-    fn save_system(&self, system: SysDCSystem) {
+    fn save_system(&self, system: SysDCSystem) -> Result<(), Box<dyn Error>> {
         let mut serialized_system = vec!();
-        system.serialize(&mut Serializer::new(&mut serialized_system)).unwrap();
+        system.serialize(&mut Serializer::new(&mut serialized_system))?;
 
-        let mut f = File::create(&self.output).unwrap();
-        f.write_all(&serialized_system).unwrap();
-        f.flush().unwrap();
+        let mut f = File::create(&self.output)?;
+        f.write_all(&serialized_system)?;
+        Ok(f.flush()?)
     }
 }

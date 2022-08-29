@@ -27,9 +27,12 @@ enum AppSub {
 
 impl App {
     pub fn run() {
-        match App::parse().sub {
+        let result = match App::parse().sub {
             AppSub::parse(cmd) => cmd.run(),
             AppSub::exec(cmd) => cmd.run()
+        };
+        if let Err(err) = result {
+            println!("[ERROR] {}", err);
         }
     }
 }
