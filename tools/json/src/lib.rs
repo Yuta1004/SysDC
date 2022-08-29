@@ -7,7 +7,7 @@ use sysdc_parser::structure::SysDCSystem;
 pub struct JSONTool;
 
 impl JSONTool {
-    pub fn exec(system: &SysDCSystem, args: Vec<String>) {
+    pub fn exec(system: &SysDCSystem, args: &Vec<String>) {
         let serialized_system = serde_json::to_string(system).unwrap();
         match args.len() {
             0 => println!("{}", serialized_system),
