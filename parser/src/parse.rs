@@ -339,23 +339,11 @@ impl<'a> UnitParser<'a> {
     }
 
     /**
-     * <type> ::= { \[ } <id> { \] }
+     * <type> ::= <id>
      */
     fn parse_type(&mut self) -> Result<Type, Box<dyn Error>> {
-        // { \[ }
-        let mut array_nest_cnt = 0;
-        while let Some(_) = self.tokenizer.expect(TokenKind::ArrayBegin)? {
-            array_nest_cnt += 1;
-        }
-
         // <id>
         let id = self.tokenizer.request(TokenKind::Identifier)?.get_id()?;
-
-        // { \] }
-        for _ in 0..array_nest_cnt {
-            self.tokenizer.request(TokenKind::ArrayEnd)?;
-        }
-
         Ok(Type::from(id))
     }
 }
