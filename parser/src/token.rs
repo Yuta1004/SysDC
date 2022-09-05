@@ -108,10 +108,10 @@ impl<'a> Tokenizer<'a> {
         tokenizer
     }
 
-    pub fn get_now_ref_pos(&self) -> (i32, i32) {
+    pub fn get_now_ref_pos(&mut self) -> (i32, i32) {
         match &self.hold_token {
             Some(token) => (token.row, token.col),
-            None => (-1, -1)
+            None => (self.now_ref_row, self.now_ref_col)
         }
     }
 

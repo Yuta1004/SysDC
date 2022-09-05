@@ -49,11 +49,11 @@ impl<'a> UnitParser<'a> {
      * <sentence> ::= unit <id_chain>; { <import> | <data> | <module> }
      */
     fn parse_root(&mut self, namespace: Name) -> PResult<unchecked::SysDCUnit> {
-        // unit
+        // unit <id_chain> ;
         self.tokenizer.request(TokenKind::Unit)?;
         let namespace = match self.parse_id_chain(&namespace)? {
             Some((found_name, _)) => Name::from(&namespace, found_name.name),
-            None => return PError::new(PErrorKind::UnitNameNotSpecified)
+            None => return PError::new_with_pos(PErrorKind::UnitNameNotSpecified, self.tokenizer.get_now_ref_pos())
         };
         self.tokenizer.request(TokenKind::Semicolon)?;
 
@@ -61,7 +61,7 @@ impl<'a> UnitParser<'a> {
         let (mut imports, mut data, mut modules) = (vec!(), vec!(), vec!());
         while self.tokenizer.exists_next() {
             match (self.parse_import()?, self.parse_data(&namespace)?, self.parse_module(&namespace)?) {
-                (None, None, None) => return PError::new(PErrorKind::DataOrModuleNotFound),
+                (None, None, None) => return PError::new_with_pos(PErrorKind::DataOrModuleNotFound, self.tokenizer.get_now_ref_pos()),
                 (i, d, m) => {
                     if i.is_some() { imports.extend(i.unwrap()); }
                     if d.is_some() { data.push(d.unwrap()); }
@@ -82,10 +82,10 @@ impl<'a> UnitParser<'a> {
             return Ok(None)
         }
 
-        // from <id_chain>
+        // <id_chain>
         let from_namespace = match self.parse_id_chain(&Name::new_root())? {
             Some((found_name, _)) => Name::from(&Name::new_root(), found_name.name),
-            None => return PError::new(PErrorKind::FromNamespaceNotSpecified)
+            None => return PError::new_with_pos(PErrorKind::FromNamespaceNotSpecified, self.tokenizer.get_now_ref_pos())
         };
 
         // import <id_list, delimiter=','> ;
@@ -177,7 +177,7 @@ impl<'a> UnitParser<'a> {
             match annotation {
                 Annotation::Return(ret) => {
                     if returns.is_some() {
-                        return PError::new(PErrorKind::ReturnExistsMultiple);
+                        return PError::new_with_pos(PErrorKind::ReturnExistsMultiple, self.tokenizer.get_now_ref_pos());
                     }
                     returns = Some(ret)
                 }
@@ -185,7 +185,7 @@ impl<'a> UnitParser<'a> {
             }
         }
         if returns.is_none() {
-            return PError::new(PErrorKind::ReturnNotExists);
+            return PError::new_with_pos(PErrorKind::ReturnNotExists, self.tokenizer.get_now_ref_pos());
         }
         Ok((returns.unwrap(), spawns))
     }
@@ -232,7 +232,7 @@ impl<'a> UnitParser<'a> {
         // <id_type_mapping>
         let spawn_result = self.parse_id_type_mapping(namespace)?;
         if spawn_result.is_none() {
-            return PError::new(PErrorKind::ResultOfSpawnNotSpecified);
+            return PError::new_with_pos(PErrorKind::ResultOfSpawnNotSpecified, self.tokenizer.get_now_ref_pos());
         }
 
         // ( \{ { <annotation_spawn_detail > } \} )
@@ -272,7 +272,7 @@ impl<'a> UnitParser<'a> {
             // <id_chain>
             let func = match self.parse_id_chain(namespace)? {
                 Some((func, _)) => func.name,
-                None => return PError::new(PErrorKind::FunctionNameNotFound)
+                None => return PError::new_with_pos(PErrorKind::FunctionNameNotFound, self.tokenizer.get_now_ref_pos())
             };
 
             // \( <id_chain_list, delimiter=',') \)
@@ -304,7 +304,7 @@ impl<'a> UnitParser<'a> {
                     self.tokenizer.request(TokenKind::Semicolon)?;
                     return Ok(Some(vec!(unchecked::SysDCSpawnChild::new_return(name, Type::new_unsovled_nohint()))));
                 },
-                None => return PError::new(PErrorKind::ResultOfSpawnNotSpecified)
+                None => return PError::new_with_pos(PErrorKind::ResultOfSpawnNotSpecified, self.tokenizer.get_now_ref_pos())
             }
         }
 
