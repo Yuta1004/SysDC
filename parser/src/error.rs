@@ -79,6 +79,9 @@ impl Display for PError {
             (None, Some((row, col))) => {
                 write!(f, "{} (at {}:{})", self.kind, row, col)
             },
+            (Some(filename), None) => {
+                write!(f, "{} (at {})", self.kind, filename)
+            },
             _ => write!(f, "{}", self.kind)
         }
     }
