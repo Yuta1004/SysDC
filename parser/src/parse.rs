@@ -39,9 +39,9 @@ pub struct UnitParser<'a> {
 }
 
 impl<'a> UnitParser<'a> {
-    pub fn parse(tokenizer: Tokenizer<'a>, namespace: Name) -> PResult<SysDCUnit> {
+    pub fn parse(tokenizer: Tokenizer<'a>) -> PResult<SysDCUnit> {
         let mut parser = UnitParser { tokenizer };
-        parser.parse_root(namespace)
+        parser.parse_root(Name::new_root())
     }
 
     /**
@@ -792,6 +792,6 @@ mod test {
     fn parse(program: &str) -> SysDCUnit {
         let program = program.to_string();
         let tokenizer = Tokenizer::new(&program);
-        UnitParser::parse(tokenizer, Name::new_root()).unwrap()
+        UnitParser::parse(tokenizer).unwrap()
     }
 }

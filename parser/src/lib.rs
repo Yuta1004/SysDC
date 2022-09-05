@@ -8,7 +8,6 @@ pub mod structure;
 
 use std::error::Error;
 
-use name::Name;
 use token::Tokenizer;
 use parse::UnitParser;
 use check::Checker;
@@ -25,9 +24,8 @@ impl Parser {
     }
 
     pub fn parse(&mut self, program: String) -> Result<(), Box<dyn Error>> {
-        let root_name = Name::new_root();
         let tokenizer = Tokenizer::new(&program);
-        self.units.push(UnitParser::parse(tokenizer, root_name)?);
+        self.units.push(UnitParser::parse(tokenizer)?);
         Ok(())
     }
 
