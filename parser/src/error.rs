@@ -64,6 +64,7 @@ impl Display for PErrorKind {
 #[derive(Debug)]
 pub struct PError {
     kind: PErrorKind,
+    filename: Option<String>,
     pos: Option<(i32, i32)>
 }
 
@@ -71,20 +72,29 @@ impl Error for PError {}
 
 impl Display for PError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match &self.pos {
-            Some((row, col)) => write!(f, "{} (at {}:{})", self.kind, row, col),
-            None => write!(f, "{}", self.kind)
+        match (&self.filename, self.pos) {
+            (Some(filename), Some((row, col))) => {
+                write!(f, "{} (at {}:{}:{})", self.kind, filename, row, col)
+            },
+            (None, Some((row, col))) => {
+                write!(f, "{} (at {}:{})", self.kind, row, col)
+            },
+            _ => write!(f, "{}", self.kind)
         }
     }
 }
 
 impl PError {
     pub fn new<T>(kind: PErrorKind) -> PResult<T> {
-        Err(PError { kind, pos: None })
+        Err(PError { kind, filename: None, pos: None })
     }
 
     pub fn new_with_pos<T>(kind: PErrorKind, pos: (i32, i32)) -> PResult<T> {
-        Err(PError { kind, pos: Some(pos) })
+        Err(PError { kind, filename: None, pos: Some(pos) })
+    }
+
+    pub fn append_filename(&mut self, filename: String) {
+        self.filename = Some(filename);
     }
 
     pub fn upgrade<T>(self) -> Result<T, Box<dyn Error>> {
