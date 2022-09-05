@@ -98,7 +98,7 @@ impl PError {
         Err(PError { kind, filename: None, pos: Some(pos) })
     }
 
-    pub fn append_filename(&mut self, filename: String) {
+    pub fn set_filename(&mut self, filename: String) {
         self.filename = Some(filename);
     }
 

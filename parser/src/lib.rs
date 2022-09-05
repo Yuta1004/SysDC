@@ -31,7 +31,7 @@ impl Parser {
                 Ok(())
             },
             Err(mut err) => {
-                err.append_filename(filename);
+                err.set_filename(filename);
                 err.upgrade()
             }
         }
