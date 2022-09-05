@@ -23,10 +23,18 @@ impl Parser {
         Parser { units: vec!() }
     }
 
-    pub fn parse(&mut self, program: String) -> Result<(), Box<dyn Error>> {
-        let tokenizer = Tokenizer::new(&program);
-        self.units.push(UnitParser::parse(tokenizer)?);
-        Ok(())
+    pub fn parse(&mut self, filename: String, program: &String) -> Result<(), Box<dyn Error>> {
+        let tokenizer = Tokenizer::new(program);
+        match UnitParser::parse(tokenizer) {
+            Ok(unit) => {
+                self.units.push(unit);
+                Ok(())
+            },
+            Err(mut err) => {
+                err.append_filename(filename);
+                err.upgrade()
+            }
+        }
     }
 
     pub fn check(self) -> Result<SysDCSystem, Box<dyn Error>> {
@@ -45,14 +53,14 @@ mod test {
     fn parse() {
         let mut parser = Parser::new();
         let programs = [
-            "unit test.A; data A {}",
-            "unit test.B; data B {}",
-            "unit test.C; data C {}",
-            "unit test.D; data D {}",
-            "unit test.E; data E {}"
+            ("A.def", "unit test.A; data A {}"),
+            ("B.def", "unit test.B; data B {}"),
+            ("C.def", "unit test.C; data C {}"),
+            ("D.def", "unit test.D; data D {}"),
+            ("E.def", "unit test.E; data E {}")
         ];
-        for program in programs {
-            parser.parse(program.to_string()).unwrap();
+        for (filename, program) in programs {
+            parser.parse(filename.to_string(), &program.to_string()).unwrap();
         }
         parser.check().unwrap();
     }
