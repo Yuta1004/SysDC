@@ -1,7 +1,7 @@
 use std::str::Chars;
 use std::error::Error;
 
-use super::error::{ CompileError, CompileErrorKind };
+use super::error::{ PError, PErrorKind };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
@@ -138,8 +138,8 @@ impl<'a> Tokenizer<'a> {
     pub fn request(&mut self, kind: TokenKind) -> Result<Token, Box<dyn Error>> {
         match self.expect(kind.clone())? {
             Some(token) => Ok(token),
-            None => CompileError::new_with_pos(
-                CompileErrorKind::RequestedTokenNotFound(kind),
+            None => PError::new_with_pos(
+                PErrorKind::RequestedTokenNotFound(kind),
                 (self.now_ref_row, self.now_ref_col)
             )
         }
@@ -167,8 +167,8 @@ impl<'a> Tokenizer<'a> {
 
                 // Ng(panic)
                 (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) =>
-                    return CompileError::new_with_pos(
-                        CompileErrorKind::FoundUnregisteredSymbol,
+                    return PError::new_with_pos(
+                        PErrorKind::FoundUnregisteredSymbol,
                         (self.now_ref_row, self.now_ref_col)
                     ),
 
@@ -184,7 +184,7 @@ impl<'a> Tokenizer<'a> {
     fn adopt(&mut self) -> Result<(), Box<dyn Error>> {
         match self.hold_char {
             Some(c) => self.hold_chars.push(c),
-            None => return CompileError::new(CompileErrorKind::UnexpectedEOF)
+            None => return PError::new(PErrorKind::UnexpectedEOF)
         }
         self.hold_char = self.chars.next();
         self.now_ref_col += 1;

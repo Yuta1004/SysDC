@@ -3,7 +3,7 @@ use std::error::Error;
 use super::name::Name;
 use super::types::Type;
 use super::token::{ TokenKind, Tokenizer };
-use super::error::{ CompileError, CompileErrorKind };
+use super::error::{ PError, PErrorKind };
 use super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
 
 // 複数要素を一気にパースするためのマクロ
@@ -55,7 +55,7 @@ impl<'a> UnitParser<'a> {
         self.tokenizer.request(TokenKind::Unit)?;
         let namespace = match self.parse_id_chain(&namespace)? {
             Some((found_name, _)) => Name::from(&namespace, found_name.name),
-            None => return CompileError::new(CompileErrorKind::UnitNameNotSpecified)
+            None => return PError::new(PErrorKind::UnitNameNotSpecified)
         };
         self.tokenizer.request(TokenKind::Semicolon)?;
 
@@ -63,7 +63,7 @@ impl<'a> UnitParser<'a> {
         let (mut imports, mut data, mut modules) = (vec!(), vec!(), vec!());
         while self.tokenizer.exists_next() {
             match (self.parse_import()?, self.parse_data(&namespace)?, self.parse_module(&namespace)?) {
-                (None, None, None) => return CompileError::new(CompileErrorKind::UnexpectedEOF),
+                (None, None, None) => return PError::new(PErrorKind::UnexpectedEOF),
                 (i, d, m) => {
                     if i.is_some() { imports.extend(i.unwrap()); }
                     if d.is_some() { data.push(d.unwrap()); }
@@ -87,7 +87,7 @@ impl<'a> UnitParser<'a> {
         // from <id_chain>
         let from_namespace = match self.parse_id_chain(&Name::new_root())? {
             Some((found_name, _)) => Name::from(&Name::new_root(), found_name.name),
-            None => return CompileError::new(CompileErrorKind::FromNamespaceNotSpecified)
+            None => return PError::new(PErrorKind::FromNamespaceNotSpecified)
         };
 
         // import <id_list, delimiter=','> ;
@@ -179,7 +179,7 @@ impl<'a> UnitParser<'a> {
             match annotation {
                 Annotation::Return(ret) => {
                     if returns.is_some() {
-                        return CompileError::new(CompileErrorKind::ReturnExistsMultiple);
+                        return PError::new(PErrorKind::ReturnExistsMultiple);
                     }
                     returns = Some(ret)
                 }
@@ -187,7 +187,7 @@ impl<'a> UnitParser<'a> {
             }
         }
         if returns.is_none() {
-            return CompileError::new(CompileErrorKind::ReturnNotExists);
+            return PError::new(PErrorKind::ReturnNotExists);
         }
         Ok((returns.unwrap(), spawns))
     }
@@ -234,7 +234,7 @@ impl<'a> UnitParser<'a> {
         // <id_type_mapping>
         let spawn_result = self.parse_id_type_mapping(namespace)?;
         if spawn_result.is_none() {
-            return CompileError::new(CompileErrorKind::ResultOfSpawnNotSpecified);
+            return PError::new(PErrorKind::ResultOfSpawnNotSpecified);
         }
 
         // ( \{ { <annotation_spawn_detail > } \} )
@@ -274,7 +274,7 @@ impl<'a> UnitParser<'a> {
             // <id_chain>
             let func = match self.parse_id_chain(namespace)? {
                 Some((func, _)) => func.name,
-                None => return CompileError::new(CompileErrorKind::FunctionNameNotFound)
+                None => return PError::new(PErrorKind::FunctionNameNotFound)
             };
 
             // \( <id_chain_list, delimiter=',') \)
@@ -306,7 +306,7 @@ impl<'a> UnitParser<'a> {
                     self.tokenizer.request(TokenKind::Semicolon)?;
                     return Ok(Some(vec!(SysDCSpawnChild::new_return(name, Type::new_unsovled_nohint()))));
                 },
-                None => return CompileError::new(CompileErrorKind::ResultOfSpawnNotSpecified)
+                None => return PError::new(PErrorKind::ResultOfSpawnNotSpecified)
             }
         }
 

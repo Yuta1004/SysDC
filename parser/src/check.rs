@@ -2,7 +2,7 @@ use std::error::Error;
 
 use super::name::Name;
 use super::types::{ Type, TypeKind };
-use super::error::{ CompileError, CompileErrorKind };
+use super::error::{ PError, PErrorKind };
 use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild  };
 use super::structure::unchecked;
 
@@ -58,7 +58,7 @@ impl Checker {
 
         let act_ret_type = &func.returns.as_ref().unwrap().1;
         if &req_ret_type != act_ret_type {
-            return CompileError::new(CompileErrorKind::TypeUnmatch2(req_ret_type, act_ret_type.clone()));
+            return PError::new(PErrorKind::TypeUnmatch2(req_ret_type, act_ret_type.clone()));
         }
         Ok(func)
     }
@@ -75,7 +75,7 @@ impl Checker {
             match spawn_child {
                 SysDCSpawnChild::Return(_, act_ret_type) =>
                     if &req_ret_type != act_ret_type {
-                        return CompileError::new(CompileErrorKind::TypeUnmatch2(req_ret_type, act_ret_type.clone()));
+                        return PError::new(PErrorKind::TypeUnmatch2(req_ret_type, act_ret_type.clone()));
                     }
                 _ => {}
             }
@@ -103,7 +103,7 @@ impl Checker {
             SysDCSpawnChild::LetTo { func: (func, _), args, .. } => {
                 for ((_, act_arg_type), req_arg_type) in args.iter().zip(self.def_manager.get_args_type(&func, &self.imports)?.iter()) {
                     if act_arg_type != req_arg_type {
-                        return CompileError::new(CompileErrorKind::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone()));
+                        return PError::new(PErrorKind::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone()));
                     }
                 }
             }
@@ -151,7 +151,7 @@ impl DefinesManager {
     pub fn check_can_import(&self, name: Name, imports: &Vec<Name>) -> Result<(), Box<dyn Error>> {
         match self.find(name.clone(), &name.name, imports)?.kind {
             DefineKind::Data | DefineKind::Module => Ok(()),
-            _ => CompileError::new(CompileErrorKind::NotDefined(name.name))
+            _ => PError::new(PErrorKind::NotDefined(name.name))
         }
     }
 
@@ -168,18 +168,18 @@ impl DefinesManager {
             return match found_def.kind {
                 DefineKind::Data =>
                     match tails {
-                        Some(_) => CompileError::new(CompileErrorKind::IllegalAccess),
+                        Some(_) => PError::new(PErrorKind::IllegalAccess),
                         None => Ok((name, Type::new(TypeKind::Data, Some(found_def.refs))))
                     }
                 DefineKind::Module =>
                     match tails {
                         Some(tails) => self.get_func_in_module(&found_def.refs, &tails, imports),
-                        None => CompileError::new(CompileErrorKind::MissingFunctionName)
+                        None => PError::new(PErrorKind::MissingFunctionName)
                     }
                 DefineKind::Function(_) => {
                     self.get_func_in_module(&name.get_namespace(true), &hint, imports)
                 }
-                _ => CompileError::new(CompileErrorKind::TypeUnmatch1(types))
+                _ => PError::new(PErrorKind::TypeUnmatch1(types))
             }
         }
 
@@ -214,7 +214,7 @@ impl DefinesManager {
                     None => self.resolve_from_name(use_ref, imports)
                 }
             }
-            _ => CompileError::new(CompileErrorKind::NotDefined(name.name))
+            _ => PError::new(PErrorKind::NotDefined(name.name))
         }
     }
 
@@ -241,7 +241,7 @@ impl DefinesManager {
                     let (_, types) = self.resolve_from_type((refs.clone(), types.clone()), imports)?;
                     if types.kind.is_primitive() {
                         return match tails {
-                            Some(_) => CompileError::new(CompileErrorKind::IllegalAccess),
+                            Some(_) => PError::new(PErrorKind::IllegalAccess),
                             None => Ok((refs.clone(), types))
                         };
                     }
@@ -255,7 +255,7 @@ impl DefinesManager {
                 }
             }
         }
-        CompileError::new(CompileErrorKind::MemberNotDefinedInData(member.clone(), data.name.clone()))
+        PError::new(PErrorKind::MemberNotDefinedInData(member.clone(), data.name.clone()))
     }
 
     // module(Module)内のfunc(Function)の定義を探す
@@ -267,7 +267,7 @@ impl DefinesManager {
                 }
             }
         }
-        CompileError::new(CompileErrorKind::FuncNotDefinedInModule(func.clone(), module.name.clone()))
+        PError::new(PErrorKind::FuncNotDefinedInModule(func.clone(), module.name.clone()))
     }
 
     // namespace内に存在する定義を対象に，nameと同じ名前を持つ定義を探して返す
@@ -295,7 +295,7 @@ impl DefinesManager {
             }
         }
 
-        CompileError::new(CompileErrorKind::NotFound(name.clone()))
+        PError::new(PErrorKind::NotFound(name.clone()))
     }
 
     fn split_name(hint: &String) -> (String, Option<String>) {
@@ -312,7 +312,7 @@ impl DefinesManager {
                 match (kind, &def.kind) {
                     (DefineKind::Argument(_), _) => {},
                     (_, DefineKind::Argument(_)) => {},
-                    _ => return CompileError::new(CompileErrorKind::AlreadyDefined(def.refs.name))
+                    _ => return PError::new(PErrorKind::AlreadyDefined(def.refs.name))
                 }
             Err(_) => {}
         }
