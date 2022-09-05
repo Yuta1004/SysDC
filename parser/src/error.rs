@@ -16,6 +16,7 @@ pub enum PErrorKind {
     /* パース時に発生したエラー */
     UnitNameNotSpecified,
     FromNamespaceNotSpecified,
+    DataOrModuleNotFound,
     UnexpectedEOF,
     ReturnExistsMultiple,
     ReturnNotExists,
@@ -42,7 +43,8 @@ impl Display for PErrorKind {
 
             PErrorKind::UnitNameNotSpecified => write!(f, "Unit name is not specified"),
             PErrorKind::FromNamespaceNotSpecified => write!(f, "From namespace is not specified"),
-            PErrorKind::UnexpectedEOF => write!(f, "Expected Data or Module definition, but not found"),
+            PErrorKind::DataOrModuleNotFound => write!(f, "Expected Data or Module definition, but not found"),
+            PErrorKind::UnexpectedEOF => write!(f, "Unexpected EOF found"),
             PErrorKind::ReturnExistsMultiple => write!(f, "Annotation \"return\" exists multiple"),
             PErrorKind::ReturnNotExists => write!(f, "Annotation \"return\" not existed"),
             PErrorKind::ResultOfSpawnNotSpecified => write!(f, "Missing to specify the result of spawn"),

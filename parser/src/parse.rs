@@ -57,11 +57,11 @@ impl<'a> UnitParser<'a> {
         };
         self.tokenizer.request(TokenKind::Semicolon)?;
 
-        // { <data> | <module> }
+        // { <import> | <data> | <module> }
         let (mut imports, mut data, mut modules) = (vec!(), vec!(), vec!());
         while self.tokenizer.exists_next() {
             match (self.parse_import()?, self.parse_data(&namespace)?, self.parse_module(&namespace)?) {
-                (None, None, None) => return PError::new(PErrorKind::UnexpectedEOF),
+                (None, None, None) => return PError::new(PErrorKind::DataOrModuleNotFound),
                 (i, d, m) => {
                     if i.is_some() { imports.extend(i.unwrap()); }
                     if d.is_some() { data.push(d.unwrap()); }
