@@ -15,7 +15,6 @@ pub enum TokenKind {
     Let,                // let
     Use,                // use
 
-
     /* Symbol */
     Allow,              // ->
     Mapping,            // :
@@ -109,6 +108,13 @@ impl<'a> Tokenizer<'a> {
         tokenizer
     }
 
+    pub fn get_now_ref_pos(&self) -> (i32, i32) {
+        match &self.hold_token {
+            Some(token) => (token.row, token.col),
+            None => (-1, -1)
+        }
+    }
+
     pub fn exists_next(&mut self) -> bool {
         match self.hold_char {
             c@Some(_) => self.hold_char = c,
@@ -137,10 +143,7 @@ impl<'a> Tokenizer<'a> {
     pub fn request(&mut self, kind: TokenKind) -> PResult<Token> {
         match self.expect(kind.clone())? {
             Some(token) => Ok(token),
-            None => PError::new_with_pos(
-                PErrorKind::RequestedTokenNotFound(kind),
-                (self.now_ref_row, self.now_ref_col)
-            )
+            None => PError::new_with_pos(PErrorKind::RequestedTokenNotFound(kind), self.get_now_ref_pos())
         }
     }
 
@@ -166,10 +169,7 @@ impl<'a> Tokenizer<'a> {
 
                 // Ng(panic)
                 (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) =>
-                    return PError::new_with_pos(
-                        PErrorKind::FoundUnregisteredSymbol,
-                        (self.now_ref_row, self.now_ref_col)
-                    ),
+                    return PError::new_with_pos(PErrorKind::FoundUnregisteredSymbol, self.get_now_ref_pos()),
 
                 // Ok(force stop)
                 _ => break
@@ -183,7 +183,7 @@ impl<'a> Tokenizer<'a> {
     fn adopt(&mut self) -> PResult<()> {
         match self.hold_char {
             Some(c) => self.hold_chars.push(c),
-            None => return PError::new(PErrorKind::UnexpectedEOF)
+            None => return PError::new_with_pos(PErrorKind::UnexpectedEOF, self.get_now_ref_pos())
         }
         self.hold_char = self.chars.next();
         self.now_ref_col += 1;
