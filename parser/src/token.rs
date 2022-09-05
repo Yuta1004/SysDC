@@ -1,7 +1,6 @@
 use std::str::Chars;
-use std::error::Error;
 
-use super::error::{ PError, PErrorKind };
+use super::error::{ PResult, PError, PErrorKind };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
@@ -78,7 +77,7 @@ impl Token {
         Token { kind, row, col, orig }
     }
 
-    pub fn get_id(&self) -> Result<String, Box<dyn Error>> {
+    pub fn get_id(&self) -> PResult<String> {
         match &self.orig {
             Some(id) => Ok(id.clone()),
             None => panic!("Internal Error")
@@ -121,7 +120,7 @@ impl<'a> Tokenizer<'a> {
         self.hold_char.is_some()
     }
 
-    pub fn expect(&mut self, kind: TokenKind) -> Result<Option<Token>, Box<dyn Error>> {
+    pub fn expect(&mut self, kind: TokenKind) -> PResult<Option<Token>> {
         if let Some(token) = self.tokenize()? {
             if token.kind == kind {
                 self.hold_token = None;
@@ -135,7 +134,7 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    pub fn request(&mut self, kind: TokenKind) -> Result<Token, Box<dyn Error>> {
+    pub fn request(&mut self, kind: TokenKind) -> PResult<Token> {
         match self.expect(kind.clone())? {
             Some(token) => Ok(token),
             None => PError::new_with_pos(
@@ -145,7 +144,7 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    fn tokenize(&mut self) -> Result<Option<Token>, Box<dyn Error>> {
+    fn tokenize(&mut self) -> PResult<Option<Token>> {
         if !self.hold_token.is_none() {
             return Ok(self.hold_token.clone());
         }
@@ -181,7 +180,7 @@ impl<'a> Tokenizer<'a> {
         Ok(Some(Token::from(self.collect(), self.now_ref_row, self.now_ref_col)))
     }
 
-    fn adopt(&mut self) -> Result<(), Box<dyn Error>> {
+    fn adopt(&mut self) -> PResult<()> {
         match self.hold_char {
             Some(c) => self.hold_chars.push(c),
             None => return PError::new(PErrorKind::UnexpectedEOF)

@@ -5,6 +5,8 @@ use std::error::Error;
 use super::types::Type;
 use super::token::TokenKind;
 
+pub type PResult<T> = Result<T, PError>;
+
 #[derive(Debug)]
 pub enum PErrorKind {
     /* トークン分割時に発生したエラー */
@@ -77,11 +79,15 @@ impl Display for PError {
 }
 
 impl PError {
-    pub fn new<T>(kind: PErrorKind) -> Result<T, Box<dyn Error>> {
-        Err(Box::new(PError { kind, pos: None }))
+    pub fn new<T>(kind: PErrorKind) -> PResult<T> {
+        Err(PError { kind, pos: None })
     }
 
-    pub fn new_with_pos<T>(kind: PErrorKind, pos: (i32, i32)) -> Result<T, Box<dyn Error>> {
-        Err(Box::new(PError { kind, pos: Some(pos) }))
+    pub fn new_with_pos<T>(kind: PErrorKind, pos: (i32, i32)) -> PResult<T> {
+        Err(PError { kind, pos: Some(pos) })
+    }
+
+    pub fn upgrade<T>(self) -> Result<T, Box<dyn Error>> {
+        Err(Box::new(self))
     }
 }

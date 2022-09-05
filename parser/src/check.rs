@@ -1,8 +1,6 @@
-use std::error::Error;
-
 use super::name::Name;
 use super::types::{ Type, TypeKind };
-use super::error::{ PError, PErrorKind };
+use super::error::{ PResult, PError, PErrorKind };
 use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild  };
 use super::structure::unchecked;
 
@@ -12,12 +10,12 @@ pub struct Checker {
 }
 
 impl Checker {
-    pub fn check(system: unchecked::SysDCSystem) -> Result<SysDCSystem, Box<dyn Error>> {
+    pub fn check(system: unchecked::SysDCSystem) -> PResult<SysDCSystem> {
         let mut checker = Checker { def_manager: DefinesManager::new(&system)?, imports: vec!() };
         system.convert(|unit| checker.check_unit(unit))
     }
 
-    fn check_unit(&mut self, unit: unchecked::SysDCUnit) -> Result<SysDCUnit, Box<dyn Error>> {
+    fn check_unit(&mut self, unit: unchecked::SysDCUnit) -> PResult<SysDCUnit> {
         let mut imports = vec!();
         for import in unit.imports.clone() {
             self.def_manager.check_can_import(import.clone(), &vec!())?;
@@ -31,7 +29,7 @@ impl Checker {
         )
     }
 
-    fn check_data(&self, data: unchecked::SysDCData) -> Result<SysDCData, Box<dyn Error>> {
+    fn check_data(&self, data: unchecked::SysDCData) -> PResult<SysDCData>{
         data.convert(|(name, types): (Name, Type)|
             if types.kind.is_primitive() {
                 Ok((name, types))
@@ -41,11 +39,11 @@ impl Checker {
         )
     }
 
-    fn check_module(&self, module: unchecked::SysDCModule) -> Result<SysDCModule, Box<dyn Error>> {
+    fn check_module(&self, module: unchecked::SysDCModule) -> PResult<SysDCModule> {
         module.convert(|func| self.check_function(func))
     }
 
-    fn check_function(&self, func: unchecked::SysDCFunction) -> Result<SysDCFunction, Box<dyn Error>> {
+    fn check_function(&self, func: unchecked::SysDCFunction) -> PResult<SysDCFunction> {
         let req_ret_type = self.def_manager.resolve_from_type(func.returns.clone().unwrap(), &self.imports)?.1;
 
         let a_converter = |arg| self.def_manager.resolve_from_type(arg, &self.imports);
@@ -63,7 +61,7 @@ impl Checker {
         Ok(func)
     }
 
-    fn check_spawn(&self, spawn: unchecked::SysDCSpawn) -> Result<SysDCSpawn, Box<dyn Error>> {
+    fn check_spawn(&self, spawn: unchecked::SysDCSpawn) -> PResult<SysDCSpawn> {
         let req_ret_type = self.def_manager.resolve_from_type(spawn.result.clone(), &self.imports)?.1;
 
         let spawn = spawn.convert(
@@ -83,7 +81,7 @@ impl Checker {
         Ok(spawn)
     }
 
-    fn check_spawn_child(&self, spawn_child: unchecked::SysDCSpawnChild) -> Result<SysDCSpawnChild, Box<dyn Error>> {
+    fn check_spawn_child(&self, spawn_child: unchecked::SysDCSpawnChild) -> PResult<SysDCSpawnChild> {
         let ur_converter = |(name, _): (Name, Type)| self.def_manager.resolve_from_name(name.clone(), &self.imports);
         let l_converter = |name: Name, func: (Name, Type), args: Vec<(Name, Type)>| {
             if let Type { kind: TypeKind::Unsolved(_), .. } = func.1 {
@@ -141,14 +139,14 @@ struct DefinesManager {
 }
 
 impl DefinesManager {
-    pub fn new(system: &unchecked::SysDCSystem) -> Result<DefinesManager, Box<dyn Error>> {
+    pub fn new(system: &unchecked::SysDCSystem) -> PResult<DefinesManager> {
         let mut def_manager = DefinesManager { defines: vec!() };
         def_manager.listup_defines(system)?;
         Ok(def_manager)
     }
 
     // 与えられたnameと同じ名前を持つ定義が存在するかどうかを確認する
-    pub fn check_can_import(&self, name: Name, imports: &Vec<Name>) -> Result<(), Box<dyn Error>> {
+    pub fn check_can_import(&self, name: Name, imports: &Vec<Name>) -> PResult<()> {
         match self.find(name.clone(), &name.name, imports)?.kind {
             DefineKind::Data | DefineKind::Module => Ok(()),
             _ => PError::new(PErrorKind::NotDefined(name.name))
@@ -157,7 +155,7 @@ impl DefinesManager {
 
     // 与えられたnameから参照可能なすべての範囲またはimports内を対象に，typesと一致する定義を探す (Data, Module, Function)
     // ※name, typesはともに関連している状態を想定
-    pub fn resolve_from_type(&self, (name, types): (Name, Type), imports: &Vec<Name>) -> Result<(Name, Type), Box<dyn Error>> {
+    pub fn resolve_from_type(&self, (name, types): (Name, Type), imports: &Vec<Name>) -> PResult<(Name, Type)> {
         if types.kind.is_primitive() || types.kind == TypeKind::Data {
             return Ok((name, types))
         }
@@ -187,7 +185,7 @@ impl DefinesManager {
     }
 
     // nameから参照可能なすべての範囲またはimports内を対象に，nameと一致する名前をもつ定義を探す (Variable)
-    pub fn resolve_from_name(&self, name: Name, imports: &Vec<Name>) -> Result<(Name, Type), Box<dyn Error>> {
+    pub fn resolve_from_name(&self, name: Name, imports: &Vec<Name>) -> PResult<(Name, Type)> {
         let (head, tails) = DefinesManager::split_name(&name.name);
         let found_def = self.find(name.clone(), &head, &vec!())?;
         match found_def.kind {
@@ -219,7 +217,7 @@ impl DefinesManager {
     }
 
     // 与えられた関数名に対応する関数を探し，関数に登録されている引数の型の一覧を返す
-    pub fn get_args_type(&self, func_name: &Name, imports: &Vec<Name>) -> Result<Vec<Type>, Box<dyn Error>> {
+    pub fn get_args_type(&self, func_name: &Name, imports: &Vec<Name>) -> PResult<Vec<Type>> {
         let func_name = func_name.get_full_name();
         let mut args = vec!();
         for Define { kind, refs } in &self.defines {
@@ -233,7 +231,7 @@ impl DefinesManager {
     }
 
     // data(Data)内のmember(Member)の定義を探す
-    fn get_member_in_data(&self, data: &Name, member: &String, imports: &Vec<Name>) -> Result<(Name, Type), Box<dyn Error>> {
+    fn get_member_in_data(&self, data: &Name, member: &String, imports: &Vec<Name>) -> PResult<(Name, Type)> {
         let (head, tails) = DefinesManager::split_name(&member);
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
@@ -259,7 +257,7 @@ impl DefinesManager {
     }
 
     // module(Module)内のfunc(Function)の定義を探す
-    fn get_func_in_module(&self, module: &Name, func: &String, imports: &Vec<Name>) -> Result<(Name, Type), Box<dyn Error>> {
+    fn get_func_in_module(&self, module: &Name, func: &String, imports: &Vec<Name>) -> PResult<(Name, Type)> {
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Function(types) = kind {
                 if module == &refs.get_par_name(true) && func == &refs.name {
@@ -273,7 +271,7 @@ impl DefinesManager {
     // namespace内に存在する定義を対象に，nameと同じ名前を持つ定義を探して返す
     // namespace内に存在しない場合はimports内の名前を探して返す
     // ※namespaceはルートにたどり着くまで再帰的に更新されながら検索が続く (.a.b.c -> .a.b -> .a -> .)
-    fn find(&self, mut namespace: Name, name: &String, imports: &Vec<Name>) -> Result<Define, Box<dyn Error>> {
+    fn find(&self, mut namespace: Name, name: &String, imports: &Vec<Name>) -> PResult<Define> {
         let had_underscore = namespace.has_underscore();
         while namespace.name.len() > 0 {
             for Define{ kind, refs } in &self.defines {
@@ -306,7 +304,7 @@ impl DefinesManager {
         }
     }
 
-    fn define(&mut self, def: Define) -> Result<(), Box<dyn Error>> {
+    fn define(&mut self, def: Define) -> PResult<()> {
         match &self.find(def.refs.clone(), &def.refs.name, &vec!()) {
             Ok(Define{ kind, .. }) =>
                 match (kind, &def.kind) {
@@ -320,14 +318,14 @@ impl DefinesManager {
         Ok(())
     }
 
-    fn listup_defines(&mut self, system: &unchecked::SysDCSystem) -> Result<(), Box<dyn Error>> {
+    fn listup_defines(&mut self, system: &unchecked::SysDCSystem) -> PResult<()> {
         for unit in &system.units {
             self.listup_defines_unit(unit)?;
         }
         Ok(())
     }
 
-    fn listup_defines_unit(&mut self, unit: &unchecked::SysDCUnit) -> Result<(), Box<dyn Error>> {
+    fn listup_defines_unit(&mut self, unit: &unchecked::SysDCUnit) -> PResult<()> {
         for data in &unit.data {
             self.define(Define::new(DefineKind::Data, data.name.clone()))?;
             self.listup_defines_data(data)?;
@@ -339,14 +337,14 @@ impl DefinesManager {
         Ok(())
     }
 
-    fn listup_defines_data(&mut self, data: &unchecked::SysDCData) -> Result<(), Box<dyn Error>> {
+    fn listup_defines_data(&mut self, data: &unchecked::SysDCData) -> PResult<()> {
         for (name, types) in &data.members {
             self.define(Define::new(DefineKind::DataMember(types.clone()), name.clone()))?;
         }
         Ok(())
     }
 
-    fn listup_defines_module(&mut self, module: &unchecked::SysDCModule) -> Result<(), Box<dyn Error>> {
+    fn listup_defines_module(&mut self, module: &unchecked::SysDCModule) -> PResult<()> {
         for func in &module.functions {
             self.define(Define::new(DefineKind::Function(func.returns.as_ref().unwrap().1.clone()), func.name.clone()))?;
             self.listup_defines_function(func)?;
@@ -354,7 +352,7 @@ impl DefinesManager {
         Ok(())
     }
 
-    fn listup_defines_function(&mut self, func: &unchecked::SysDCFunction) -> Result<(), Box<dyn Error>> {
+    fn listup_defines_function(&mut self, func: &unchecked::SysDCFunction) -> PResult<()> {
         for (name, types) in &func.args {
             self.define(Define::new(DefineKind::Variable(types.clone()), name.clone()))?;
             self.define(Define::new(DefineKind::Argument(types.clone()), name.clone()))?;
@@ -366,7 +364,7 @@ impl DefinesManager {
         Ok(())
     }
 
-    fn listup_defines_function_spawn_details(&mut self, spawn: &unchecked::SysDCSpawn) -> Result<(), Box<dyn Error>> {
+    fn listup_defines_function_spawn_details(&mut self, spawn: &unchecked::SysDCSpawn) -> PResult<()> {
         for detail in &spawn.details {
             match detail {
                 unchecked::SysDCSpawnChild::Use(name, _) => {

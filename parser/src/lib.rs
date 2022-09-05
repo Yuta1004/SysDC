@@ -25,12 +25,17 @@ impl Parser {
     }
 
     pub fn parse(&mut self, program: String) -> Result<(), Box<dyn Error>> {
-        self.units.push(UnitParser::parse(Tokenizer::new(&program), Name::new_root())?);
+        let root_name = Name::new_root();
+        let tokenizer = Tokenizer::new(&program);
+        self.units.push(UnitParser::parse(tokenizer, root_name)?);
         Ok(())
     }
 
     pub fn check(self) -> Result<SysDCSystem, Box<dyn Error>> {
-        Checker::check(unchecked::SysDCSystem::new(self.units))
+        match Checker::check(unchecked::SysDCSystem::new(self.units)) {
+            Ok(system) => Ok(system),
+            Err(err) => err.upgrade()
+        }
     }
 }
 

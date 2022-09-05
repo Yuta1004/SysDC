@@ -1,9 +1,7 @@
-use std::error::Error;
-
 use super::name::Name;
 use super::types::Type;
 use super::token::{ TokenKind, Tokenizer };
-use super::error::{ PError, PErrorKind };
+use super::error::{ PResult, PError, PErrorKind };
 use super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
 
 // 複数要素を一気にパースするためのマクロ
@@ -41,7 +39,7 @@ pub struct UnitParser<'a> {
 }
 
 impl<'a> UnitParser<'a> {
-    pub fn parse(tokenizer: Tokenizer<'a>, namespace: Name) -> Result<SysDCUnit, Box<dyn Error>> {
+    pub fn parse(tokenizer: Tokenizer<'a>, namespace: Name) -> PResult<SysDCUnit> {
         let mut parser = UnitParser { tokenizer };
         parser.parse_root(namespace)
     }
@@ -50,7 +48,7 @@ impl<'a> UnitParser<'a> {
      * <root> ::= { <sentence> }
      * <sentence> ::= unit <id_chain>; { <import> | <data> | <module> }
      */
-    fn parse_root(&mut self, namespace: Name) -> Result<SysDCUnit, Box<dyn Error>> {
+    fn parse_root(&mut self, namespace: Name) -> PResult<SysDCUnit> {
         // unit
         self.tokenizer.request(TokenKind::Unit)?;
         let namespace = match self.parse_id_chain(&namespace)? {
@@ -78,7 +76,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <import> ::= from <id_chain> import <id_list, delimiter=','> ;
      */
-    fn parse_import(&mut self) -> Result<Option<Vec<Name>>, Box<dyn Error>> {
+    fn parse_import(&mut self) -> PResult<Option<Vec<Name>>> {
         // from
         if self.tokenizer.expect(TokenKind::From)?.is_none() {
             return Ok(None)
@@ -104,7 +102,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <data> ::= data <id> \{ <id_type_mapping_list, delimiter=,> \}
      */
-    fn parse_data(&mut self, namespace: &Name) -> Result<Option<SysDCData>, Box<dyn Error>> {
+    fn parse_data(&mut self, namespace: &Name) -> PResult<Option<SysDCData>> {
         // data
         if self.tokenizer.expect(TokenKind::Data)?.is_none() {
             return Ok(None)
@@ -124,7 +122,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <module> ::= module <id> \{ <function_list, delimiter=None> \}
      */
-    fn parse_module(&mut self, namespace: &Name) -> Result<Option<SysDCModule>, Box<dyn Error>> {
+    fn parse_module(&mut self, namespace: &Name) -> PResult<Option<SysDCModule>> {
         // module
         if self.tokenizer.expect(TokenKind::Module)?.is_none() {
             return Ok(None);
@@ -144,7 +142,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <function> ::= <id> <id_type_mapping_list, delimiter=,> -> <id> \{ <function_body> \}
      */
-    fn parse_function(&mut self, namespace: &Name) -> Result<Option<SysDCFunction>, Box<dyn Error>> {
+    fn parse_function(&mut self, namespace: &Name) -> PResult<Option<SysDCFunction>> {
         // <id>
         let name = if let Some(name_token) = self.tokenizer.expect(TokenKind::Identifier)? {
             Name::from(namespace, name_token.get_id()?)
@@ -172,7 +170,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <function_body> = <annotation_list, delimiter=''>
      */
-    fn parse_function_body(&mut self, namespace: &Name) -> Result<(Name, Vec<SysDCSpawn>), Box<dyn Error>> {
+    fn parse_function_body(&mut self, namespace: &Name) -> PResult<(Name, Vec<SysDCSpawn>)> {
         let mut returns: Option<Name> = None;
         let mut spawns = vec!();
         while let Some(annotation) = self.parse_annotation(namespace)? {
@@ -195,7 +193,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <annotation> = @ ( <annotation_spawn> | <annotation_return> )
      */
-    fn parse_annotation(&mut self, namespace: &Name) -> Result<Option<Annotation>, Box<dyn Error>> {
+    fn parse_annotation(&mut self, namespace: &Name) -> PResult<Option<Annotation>> {
         // @
         if self.tokenizer.expect(TokenKind::AtMark)?.is_none() {
             return Ok(None);
@@ -214,7 +212,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <annotation_return> ::= return <id>
      */
-    fn parse_annotation_return(&mut self, namespace: &Name) -> Result<Option<Annotation>, Box<dyn Error>> {
+    fn parse_annotation_return(&mut self, namespace: &Name) -> PResult<Option<Annotation>> {
         if self.tokenizer.expect(TokenKind::Return)?.is_none() {
             return Ok(None);
         }
@@ -225,7 +223,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <annotation_spawn> ::= spawn <id_type_mapping> ( \{ { <annotation_spawn_detail> } \} )
      */
-    fn parse_annotation_spawn(&mut self, namespace: &Name) -> Result<Option<Annotation>, Box<dyn Error>> {
+    fn parse_annotation_spawn(&mut self, namespace: &Name) -> PResult<Option<Annotation>> {
         // spawn
         if self.tokenizer.expect(TokenKind::Spawn)?.is_none() {
             return Ok(None);
@@ -262,7 +260,7 @@ impl<'a> UnitParser<'a> {
      *      return <id> ;
      * )
      */
-    fn parse_annotation_spawn_detail(&mut self, namespace: &Name) -> Result<Option<Vec<SysDCSpawnChild>>, Box<dyn Error>> {
+    fn parse_annotation_spawn_detail(&mut self, namespace: &Name) -> PResult<Option<Vec<SysDCSpawnChild>>> {
         // let
         if self.tokenizer.expect(TokenKind::Let)?.is_some() {
             // <id>
@@ -316,7 +314,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <id_chain> ::= <id_list, delimiter=.>
      */
-    fn parse_id_chain(&mut self, namespace: &Name) -> Result<Option<(Name, Type)>, Box<dyn Error>> {
+    fn parse_id_chain(&mut self, namespace: &Name) -> PResult<Option<(Name, Type)>> {
         let name_elems = parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Accessor);
         let var = name_elems.iter().map(|x| x.get_id().unwrap()).collect::<Vec<String>>().join(".");
         match var.len() {
@@ -328,7 +326,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <id_type_mapping> ::= <id> : <type>
      */
-    fn parse_id_type_mapping(&mut self, namespace: &Name) -> Result<Option<(Name, Type)>, Box<dyn Error>> {
+    fn parse_id_type_mapping(&mut self, namespace: &Name) -> PResult<Option<(Name, Type)>> {
         let id1 = if let Some(id1_token) = self.tokenizer.expect(TokenKind::Identifier)? {
             id1_token.get_id()?
         } else {
@@ -341,7 +339,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <type> ::= <id>
      */
-    fn parse_type(&mut self) -> Result<Type, Box<dyn Error>> {
+    fn parse_type(&mut self) -> PResult<Type> {
         // <id>
         let id = self.tokenizer.request(TokenKind::Identifier)?.get_id()?;
         Ok(Type::from(id))
