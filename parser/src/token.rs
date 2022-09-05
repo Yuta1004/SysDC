@@ -36,8 +36,7 @@ pub enum TokenKind {
 #[derive(Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
-    pub row: i32,
-    pub col: i32,
+    pub pos: (i32, i32),
     orig: Option<String>,
 }
 
@@ -67,13 +66,13 @@ impl Token {
             "+"         => TokenKind::Plus,
             _           => TokenKind::Identifier,
         };
-        let col = col-(orig.len() as i32);
+        let pos = (row, col-(orig.len() as i32));
         let orig = match kind {
             TokenKind::Identifier => Some(orig),
             _ => None
         };
 
-        Token { kind, row, col, orig }
+        Token { kind, pos, orig }
     }
 
     pub fn get_id(&self) -> PResult<String> {
@@ -110,7 +109,7 @@ impl<'a> Tokenizer<'a> {
 
     pub fn get_now_ref_pos(&mut self) -> (i32, i32) {
         match &self.hold_token {
-            Some(token) => (token.row, token.col),
+            Some(token) => token.pos,
             None => (self.now_ref_row, self.now_ref_col)
         }
     }
