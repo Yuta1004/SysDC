@@ -36,8 +36,8 @@ pub enum TokenKind {
 #[derive(Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
-    pub pos: (i32, i32),
-    orig: Option<String>,
+    pub orig: String,
+    pub pos: (i32, i32)
 }
 
 impl Token {
@@ -67,19 +67,7 @@ impl Token {
             _           => TokenKind::Identifier,
         };
         let pos = (row, col-(orig.len() as i32));
-        let orig = match kind {
-            TokenKind::Identifier => Some(orig),
-            _ => None
-        };
-
-        Token { kind, pos, orig }
-    }
-
-    pub fn get_id(&self) -> PResult<String> {
-        match &self.orig {
-            Some(id) => Ok(id.clone()),
-            None => panic!("Internal Error")
-        }
+        Token { kind, orig, pos }
     }
 }
 
@@ -288,16 +276,10 @@ mod test {
         }
 
         #[test]
-        #[should_panic]
-        fn get_identifer_from_reserved_token() {
-            Token::from("->".to_string(), 0, 0).get_id().unwrap();
-        }
-
-        #[test]
         fn get_identifer_from_identifer_token() {
-            let id = Token::from("test".to_string(), 0, 0).get_id().unwrap();
+            let id = Token::from("test".to_string(), 0, 0).orig;
             assert_eq!(id, "test");
-            Token::from("test".to_string(), 0, 0).get_id().unwrap();
+            Token::from("test".to_string(), 0, 0).orig;
         }
     }
 

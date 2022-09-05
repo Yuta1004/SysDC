@@ -92,7 +92,7 @@ impl<'a> UnitParser<'a> {
         self.tokenizer.request(TokenKind::Import)?;
         let mut importes = vec!();
         for import in parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Separater) {
-            importes.push(Name::from(&from_namespace, import.get_id()?));
+            importes.push(Name::from(&from_namespace, import.orig));
         }
         self.tokenizer.request(TokenKind::Semicolon)?;
 
@@ -109,7 +109,7 @@ impl<'a> UnitParser<'a> {
         }
 
         // <id>
-        let name = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier)?.get_id()?);
+        let name = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
 
         // \{ <id_type_mapping_list, delimiter=,> \}
         self.tokenizer.request(TokenKind::BracketBegin)?;
@@ -129,7 +129,7 @@ impl<'a> UnitParser<'a> {
         }
 
         // <id>
-        let name = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier)?.get_id()?);
+        let name = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
 
         // \{ <function_list, delimiter=None> \}
         self.tokenizer.request(TokenKind::BracketBegin)?;
@@ -145,7 +145,7 @@ impl<'a> UnitParser<'a> {
     fn parse_function(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCFunction>> {
         // <id>
         let name = if let Some(name_token) = self.tokenizer.expect(TokenKind::Identifier)? {
-            Name::from(namespace, name_token.get_id()?)
+            Name::from(namespace, name_token.orig)
         } else {
             return Ok(None);
         };
@@ -157,7 +157,7 @@ impl<'a> UnitParser<'a> {
 
         // -> <id>
         self.tokenizer.request(TokenKind::Allow)?;
-        let return_type = Type::from(self.tokenizer.request(TokenKind::Identifier)?.get_id()?);   // TODO: Checker
+        let return_type = Type::from(self.tokenizer.request(TokenKind::Identifier)?.orig);   // TODO: Checker
 
         // \{ <function_body> \}
         self.tokenizer.request(TokenKind::BracketBegin)?;
@@ -216,7 +216,7 @@ impl<'a> UnitParser<'a> {
         if self.tokenizer.expect(TokenKind::Return)?.is_none() {
             return Ok(None);
         }
-        let returns = self.tokenizer.request(TokenKind::Identifier)?.get_id()?;
+        let returns = self.tokenizer.request(TokenKind::Identifier)?.orig;
         Ok(Some(Annotation::Return(Name::from(namespace, returns))))
     }
 
@@ -264,7 +264,7 @@ impl<'a> UnitParser<'a> {
         // let
         if self.tokenizer.expect(TokenKind::Let)?.is_some() {
             // <id>
-            let let_to = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier)?.get_id()?);
+            let let_to = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
 
             // =
             self.tokenizer.request(TokenKind::Equal)?;
@@ -290,8 +290,7 @@ impl<'a> UnitParser<'a> {
         if self.tokenizer.expect(TokenKind::Use)?.is_some() {
             let mut var_list = vec!();
             for token in parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Separater) {
-                let name = token.get_id()?;
-                var_list.push(unchecked::SysDCSpawnChild::new_use(Name::from(namespace, name), Type::new_unsovled_nohint()))
+                var_list.push(unchecked::SysDCSpawnChild::new_use(Name::from(namespace, token.orig), Type::new_unsovled_nohint()))
             }
             self.tokenizer.request(TokenKind::Semicolon)?;
             return Ok(Some(var_list));
@@ -316,7 +315,7 @@ impl<'a> UnitParser<'a> {
      */
     fn parse_id_chain(&mut self, namespace: &Name) -> PResult<Option<(Name, Type)>> {
         let name_elems = parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Accessor);
-        let var = name_elems.iter().map(|x| x.get_id().unwrap()).collect::<Vec<String>>().join(".");
+        let var = name_elems.into_iter().map(|x| x.orig).collect::<Vec<String>>().join(".");
         match var.len() {
             0 => Ok(None),
             _ => Ok(Some((Name::from(namespace, var), Type::new_unsovled_nohint())))
@@ -328,7 +327,7 @@ impl<'a> UnitParser<'a> {
      */
     fn parse_id_type_mapping(&mut self, namespace: &Name) -> PResult<Option<(Name, Type)>> {
         let id1 = if let Some(id1_token) = self.tokenizer.expect(TokenKind::Identifier)? {
-            id1_token.get_id()?
+            id1_token.orig
         } else {
             return Ok(None);
         };
@@ -341,7 +340,7 @@ impl<'a> UnitParser<'a> {
      */
     fn parse_type(&mut self) -> PResult<Type> {
         // <id>
-        let id = self.tokenizer.request(TokenKind::Identifier)?.get_id()?;
+        let id = self.tokenizer.request(TokenKind::Identifier)?.orig;
         Ok(Type::from(id))
     }
 }
