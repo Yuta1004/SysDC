@@ -2,9 +2,9 @@ use std::fmt;
 use std::fmt::{ Display, Formatter };
 use std::error::Error;
 
-use super::util::Location;
 use super::types::Type;
 use super::token::TokenKind;
+use super::location::Location;
 
 pub type PResult<T> = Result<T, PError>;
 

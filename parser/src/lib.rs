@@ -1,8 +1,8 @@
-mod util;
 mod parse;
 mod token;
 mod check;
 mod error;
+mod location;
 pub mod name;
 pub mod types;
 pub mod structure;
