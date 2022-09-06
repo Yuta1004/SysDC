@@ -1,7 +1,7 @@
 use std::str::Chars;
-use std::error::Error;
 
-use super::error::{ CompileError, CompileErrorKind };
+use super::util::Location;
+use super::error::{ PResult, PErrorKind };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
@@ -15,7 +15,6 @@ pub enum TokenKind {
     Spawn,              // spawn
     Let,                // let
     Use,                // use
-
 
     /* Symbol */
     Allow,              // ->
@@ -38,9 +37,8 @@ pub enum TokenKind {
 #[derive(Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
-    pub row: i32,
-    pub col: i32,
-    orig: Option<String>,
+    pub orig: String,
+    pub location: Location
 }
 
 impl Token {
@@ -69,20 +67,8 @@ impl Token {
             "+"         => TokenKind::Plus,
             _           => TokenKind::Identifier,
         };
-        let col = col-(orig.len() as i32);
-        let orig = match kind {
-            TokenKind::Identifier => Some(orig),
-            _ => None
-        };
-
-        Token { kind, row, col, orig }
-    }
-
-    pub fn get_id(&self) -> Result<String, Box<dyn Error>> {
-        match &self.orig {
-            Some(id) => Ok(id.clone()),
-            None => panic!("Internal Error")
-        }
+        let location = Location::new_with_coord((row, col-(orig.len() as i32)));
+        Token { kind, orig, location }
     }
 }
 
@@ -110,6 +96,13 @@ impl<'a> Tokenizer<'a> {
         tokenizer
     }
 
+    pub fn get_now_ref_loc(&mut self) -> Location {
+        match &self.hold_token {
+            Some(token) => token.location.clone(),
+            None => Location::new_with_coord((self.now_ref_row, self.now_ref_col))
+        }
+    }
+
     pub fn exists_next(&mut self) -> bool {
         match self.hold_char {
             c@Some(_) => self.hold_char = c,
@@ -121,7 +114,7 @@ impl<'a> Tokenizer<'a> {
         self.hold_char.is_some()
     }
 
-    pub fn expect(&mut self, kind: TokenKind) -> Result<Option<Token>, Box<dyn Error>> {
+    pub fn expect(&mut self, kind: TokenKind) -> PResult<Option<Token>> {
         if let Some(token) = self.tokenize()? {
             if token.kind == kind {
                 self.hold_token = None;
@@ -135,17 +128,14 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    pub fn request(&mut self, kind: TokenKind) -> Result<Token, Box<dyn Error>> {
+    pub fn request(&mut self, kind: TokenKind) -> PResult<Token> {
         match self.expect(kind.clone())? {
             Some(token) => Ok(token),
-            None => CompileError::new_with_pos(
-                CompileErrorKind::RequestedTokenNotFound(kind),
-                (self.now_ref_row, self.now_ref_col)
-            )
+            None => PErrorKind::RequestedTokenNotFound(kind).to_err_with_loc(self.get_now_ref_loc())
         }
     }
 
-    fn tokenize(&mut self) -> Result<Option<Token>, Box<dyn Error>> {
+    fn tokenize(&mut self) -> PResult<Option<Token>> {
         if !self.hold_token.is_none() {
             return Ok(self.hold_token.clone());
         }
@@ -167,10 +157,7 @@ impl<'a> Tokenizer<'a> {
 
                 // Ng(panic)
                 (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) =>
-                    return CompileError::new_with_pos(
-                        CompileErrorKind::FoundUnregisteredSymbol,
-                        (self.now_ref_row, self.now_ref_col)
-                    ),
+                    return PErrorKind::FoundUnregisteredSymbol.to_err_with_loc(self.get_now_ref_loc()),
 
                 // Ok(force stop)
                 _ => break
@@ -181,10 +168,10 @@ impl<'a> Tokenizer<'a> {
         Ok(Some(Token::from(self.collect(), self.now_ref_row, self.now_ref_col)))
     }
 
-    fn adopt(&mut self) -> Result<(), Box<dyn Error>> {
+    fn adopt(&mut self) -> PResult<()> {
         match self.hold_char {
             Some(c) => self.hold_chars.push(c),
-            None => return CompileError::new(CompileErrorKind::UnexpectedEOF)
+            None => return PErrorKind::UnexpectedEOF.to_err_with_loc(self.get_now_ref_loc())
         }
         self.hold_char = self.chars.next();
         self.now_ref_col += 1;
@@ -290,16 +277,10 @@ mod test {
         }
 
         #[test]
-        #[should_panic]
-        fn get_identifer_from_reserved_token() {
-            Token::from("->".to_string(), 0, 0).get_id().unwrap();
-        }
-
-        #[test]
         fn get_identifer_from_identifer_token() {
-            let id = Token::from("test".to_string(), 0, 0).get_id().unwrap();
+            let id = Token::from("test".to_string(), 0, 0).orig;
             assert_eq!(id, "test");
-            Token::from("test".to_string(), 0, 0).get_id().unwrap();
+            Token::from("test".to_string(), 0, 0).orig;
         }
     }
 

@@ -37,8 +37,8 @@ impl ParseCmd {
                                             .to_str().unwrap()
                                             .to_string();
                         let program = fs::read_to_string(&entry)?;
-                        parser.parse(program)?;
-                        println!("Load: {}", filename);
+                        println!("Loading: {}", filename);
+                        parser.parse(filename, &program)?;
                         load_unit_cnt += 1;
                     }
                 }

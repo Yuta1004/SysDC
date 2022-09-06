@@ -1,3 +1,4 @@
+mod util;
 mod parse;
 mod token;
 mod check;
@@ -8,7 +9,6 @@ pub mod structure;
 
 use std::error::Error;
 
-use name::Name;
 use token::Tokenizer;
 use parse::UnitParser;
 use check::Checker;
@@ -24,13 +24,25 @@ impl Parser {
         Parser { units: vec!() }
     }
 
-    pub fn parse(&mut self, program: String) -> Result<(), Box<dyn Error>> {
-        self.units.push(UnitParser::parse(Tokenizer::new(&program), Name::new_root())?);
-        Ok(())
+    pub fn parse(&mut self, filename: String, program: &String) -> Result<(), Box<dyn Error>> {
+        let tokenizer = Tokenizer::new(program);
+        match UnitParser::parse(tokenizer) {
+            Ok(unit) => {
+                self.units.push(unit);
+                Ok(())
+            },
+            Err(mut err) => {
+                err.set_filename(filename);
+                err.upgrade()
+            }
+        }
     }
 
     pub fn check(self) -> Result<SysDCSystem, Box<dyn Error>> {
-        Checker::check(unchecked::SysDCSystem::new(self.units))
+        match Checker::check(unchecked::SysDCSystem::new(self.units)) {
+            Ok(system) => Ok(system),
+            Err(err) => err.upgrade()
+        }
     }
 }
 
@@ -42,14 +54,14 @@ mod test {
     fn parse() {
         let mut parser = Parser::new();
         let programs = [
-            "unit test.A; data A {}",
-            "unit test.B; data B {}",
-            "unit test.C; data C {}",
-            "unit test.D; data D {}",
-            "unit test.E; data E {}"
+            ("A.def", "unit test.A; data A {}"),
+            ("B.def", "unit test.B; data B {}"),
+            ("C.def", "unit test.C; data C {}"),
+            ("D.def", "unit test.D; data D {}"),
+            ("E.def", "unit test.E; data E {}")
         ];
-        for program in programs {
-            parser.parse(program.to_string()).unwrap();
+        for (filename, program) in programs {
+            parser.parse(filename.to_string(), &program.to_string()).unwrap();
         }
         parser.check().unwrap();
     }

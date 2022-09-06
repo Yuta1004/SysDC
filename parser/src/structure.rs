@@ -18,7 +18,7 @@ pub struct SysDCUnit {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SysDCData {
     pub name: Name,
-    pub members: Vec<(Name, Type)> 
+    pub members: Vec<(Name, Type)>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -49,10 +49,9 @@ pub enum SysDCSpawnChild {
 }
 
 pub mod unchecked {
-    use std::error::Error;
-
     use super::Name;
     use super::Type;
+    use super::super::error::PResult;
 
     #[derive(Debug)]
     pub struct SysDCSystem {
@@ -64,9 +63,9 @@ pub mod unchecked {
             SysDCSystem { units }
         }
 
-        pub fn convert<F>(self, mut converter: F) -> Result<super::SysDCSystem, Box<dyn Error>>
+        pub fn convert<F>(self, mut converter: F) -> PResult<super::SysDCSystem>
         where
-            F: FnMut(SysDCUnit) -> Result<super::SysDCUnit, Box<dyn Error>>
+            F: FnMut(SysDCUnit) -> PResult<super::SysDCUnit>
         {
             let mut units = vec!();
             for unit in self.units {
@@ -89,10 +88,10 @@ pub mod unchecked {
             SysDCUnit { name, data, modules, imports }
         }
 
-        pub fn convert<F, G>(self, d_converter: F, m_converter: G) -> Result<super::SysDCUnit, Box<dyn Error>>
+        pub fn convert<F, G>(self, d_converter: F, m_converter: G) -> PResult<super::SysDCUnit>
         where
-            F: Fn(SysDCData) -> Result<super::SysDCData, Box<dyn Error>>,
-            G: Fn(SysDCModule) -> Result<super::SysDCModule, Box<dyn Error>>
+            F: Fn(SysDCData) -> PResult<super::SysDCData>,
+            G: Fn(SysDCModule) -> PResult<super::SysDCModule>
         {
             let (mut data, mut modules) = (vec!(), vec!());
             for _data in self.data {
@@ -108,7 +107,7 @@ pub mod unchecked {
     #[derive(Debug)]
     pub struct SysDCData {
         pub name: Name,
-        pub members: Vec<(Name, Type)> 
+        pub members: Vec<(Name, Type)>
     }
 
     impl SysDCData {
@@ -116,9 +115,9 @@ pub mod unchecked {
             SysDCData { name, members }
         }
 
-        pub fn convert<F>(self, converter: F) -> Result<super::SysDCData, Box<dyn Error>>
+        pub fn convert<F>(self, converter: F) -> PResult<super::SysDCData>
         where
-            F: Fn((Name, Type)) -> Result<(Name, Type), Box<dyn Error>>
+            F: Fn((Name, Type)) -> PResult<(Name, Type)>
         {
             let mut members = vec!();
             for member in self.members {
@@ -139,9 +138,9 @@ pub mod unchecked {
             SysDCModule { name, functions }
         }
 
-        pub fn convert<F>(self, converter: F) -> Result<super::SysDCModule, Box<dyn Error>>
+        pub fn convert<F>(self, converter: F) -> PResult<super::SysDCModule>
         where
-            F: Fn(SysDCFunction) -> Result<super::SysDCFunction, Box<dyn Error>> 
+            F: Fn(SysDCFunction) -> PResult<super::SysDCFunction>
         {
             let mut functions = vec!();
             for func in self.functions {
@@ -164,11 +163,11 @@ pub mod unchecked {
             SysDCFunction { name, args, returns: Some(returns), spawns }
         }
 
-        pub fn convert<F, G, H>(self, a_convert: F, r_convert: G, s_convert: H) -> Result<super::SysDCFunction, Box<dyn Error>>
+        pub fn convert<F, G, H>(self, a_convert: F, r_convert: G, s_convert: H) -> PResult<super::SysDCFunction>
         where
-            F: Fn((Name, Type)) -> Result<(Name, Type), Box<dyn Error>>,
-            G: Fn(Option<(Name, Type)>) -> Result<Option<(Name, Type)>, Box<dyn Error>>,
-            H: Fn(SysDCSpawn) -> Result<super::SysDCSpawn, Box<dyn Error>>
+            F: Fn((Name, Type)) -> PResult<(Name, Type)>,
+            G: Fn(Option<(Name, Type)>) -> PResult<Option<(Name, Type)>>,
+            H: Fn(SysDCSpawn) -> PResult<super::SysDCSpawn>
         {
             let (returns, mut args, mut spawns) = (r_convert(self.returns)?, vec!(), vec!());
             for arg in self.args {
@@ -192,10 +191,10 @@ pub mod unchecked {
             SysDCSpawn { result, details }
         }
 
-        pub fn convert<F, G>(self, r_converter: F, d_converter: G) -> Result<super::SysDCSpawn, Box<dyn Error>>
+        pub fn convert<F, G>(self, r_converter: F, d_converter: G) -> PResult<super::SysDCSpawn>
         where
-            F: Fn((Name, Type)) -> Result<(Name, Type), Box<dyn Error>>,
-            G: Fn(SysDCSpawnChild) -> Result<super::SysDCSpawnChild, Box<dyn Error>> 
+            F: Fn((Name, Type)) -> PResult<(Name, Type)>,
+            G: Fn(SysDCSpawnChild) -> PResult<super::SysDCSpawnChild>
         {
             let (result, mut details) = (r_converter(self.result)?, vec!());
             for detail in self.details {
@@ -225,10 +224,10 @@ pub mod unchecked {
             SysDCSpawnChild::LetTo { name, func, args }
         }
 
-        pub fn convert<F, G>(self, u_converter: F, r_converter: F, l_converter: G) -> Result<super::SysDCSpawnChild, Box<dyn Error>>
+        pub fn convert<F, G>(self, u_converter: F, r_converter: F, l_converter: G) -> PResult<super::SysDCSpawnChild>
         where
-            F: Fn((Name, Type)) -> Result<(Name, Type), Box<dyn Error>>,
-            G: Fn(Name, (Name, Type), Vec<(Name, Type)>) -> Result<(Name, (Name, Type), Vec<(Name, Type)>), Box<dyn Error>>, 
+            F: Fn((Name, Type)) -> PResult<(Name, Type)>,
+            G: Fn(Name, (Name, Type), Vec<(Name, Type)>) -> PResult<(Name, (Name, Type), Vec<(Name, Type)>)>,
         {
             match self {
                 SysDCSpawnChild::Use(name, types) => {
