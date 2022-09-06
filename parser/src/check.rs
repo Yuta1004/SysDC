@@ -1,117 +1,32 @@
 mod utils;
+mod resolve;
+mod matches;
 
-use super::name::Name;
-use super::types::{ Type, TypeKind };
-use super::error::{ PResult, PErrorKind };
-use super::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild  };
+use super::error::PResult;
+use super::structure::SysDCSystem;
 use super::structure::unchecked;
 use utils::define::DefinesManager;
+use resolve::TypeResolver;
+use matches::TypeMatchChecker;
 
-pub struct Checker {
-    def_manager: DefinesManager,
-    imports: Vec<Name>
-}
-
-impl Checker {
-    pub fn check(system: unchecked::SysDCSystem) -> PResult<SysDCSystem> {
-        let mut checker = Checker { def_manager: DefinesManager::new(&system)?, imports: vec!() };
-        system.convert(|unit| checker.check_unit(unit))
-    }
-
-    fn check_unit(&mut self, unit: unchecked::SysDCUnit) -> PResult<SysDCUnit> {
-        let mut imports = vec!();
-        for import in unit.imports.clone() {
-            self.def_manager.check_can_import(import.clone(), &vec!())?;
-            imports.push(import);
+pub fn check(system: unchecked::SysDCSystem) -> PResult<SysDCSystem> {
+    // 0. 準備
+    let def_manager = DefinesManager::new(&system)?;
+    let mut imports = vec!();
+    for unit in &system.units {
+        for import in &unit.imports {
+            def_manager.check_can_import(import, &vec!())?;
+            imports.push((*import).clone());
         }
-        self.imports = imports;
-
-        unit.convert(
-            |data| self.check_data(data,),
-            |module| self.check_module(module),
-        )
     }
 
-    fn check_data(&self, data: unchecked::SysDCData) -> PResult<SysDCData>{
-        data.convert(|(name, types): (Name, Type)|
-            if types.kind.is_primitive() {
-                Ok((name, types))
-            } else {
-                self.def_manager.resolve_from_type((name, types), &self.imports)
-            }
-        )
-    }
+    // 1. 型解決
+    let system = TypeResolver::resolve(system, &def_manager, &imports)?;
 
-    fn check_module(&self, module: unchecked::SysDCModule) -> PResult<SysDCModule> {
-        module.convert(|func| self.check_function(func))
-    }
+    // 2. 型適合チェック
+    TypeMatchChecker::check(&system, &def_manager, &imports)?;
 
-    fn check_function(&self, func: unchecked::SysDCFunction) -> PResult<SysDCFunction> {
-        let req_ret_type = self.def_manager.resolve_from_type(func.returns.clone().unwrap(), &self.imports)?.1;
-
-        let a_converter = |arg| self.def_manager.resolve_from_type(arg, &self.imports);
-        let r_converter = |returns: Option<(Name, Type)>| {
-            let (ret_name, _) = returns.unwrap();
-            let ret = self.def_manager.resolve_from_name(ret_name.clone(), &self.imports)?;
-            Ok(Some(ret))
-        };
-        let func = func.convert(a_converter, r_converter, |spawn| self.check_spawn(spawn))?;
-
-        let act_ret_type = &func.returns.as_ref().unwrap().1;
-        if &req_ret_type != act_ret_type {
-            return PErrorKind::TypeUnmatch2(req_ret_type, act_ret_type.clone()).to_err();
-        }
-        Ok(func)
-    }
-
-    fn check_spawn(&self, spawn: unchecked::SysDCSpawn) -> PResult<SysDCSpawn> {
-        let req_ret_type = self.def_manager.resolve_from_type(spawn.result.clone(), &self.imports)?.1;
-
-        let spawn = spawn.convert(
-            |(name, _)| self.def_manager.resolve_from_name(name.clone(), &self.imports),
-            |spawn_child| self.check_spawn_child(spawn_child)
-        )?;
-
-        for spawn_child in &spawn.details {
-            match spawn_child {
-                SysDCSpawnChild::Return(_, act_ret_type) =>
-                    if &req_ret_type != act_ret_type {
-                        return PErrorKind::TypeUnmatch2(req_ret_type, act_ret_type.clone()).to_err();
-                    }
-                _ => {}
-            }
-        }
-        Ok(spawn)
-    }
-
-    fn check_spawn_child(&self, spawn_child: unchecked::SysDCSpawnChild) -> PResult<SysDCSpawnChild> {
-        let ur_converter = |(name, _): (Name, Type)| self.def_manager.resolve_from_name(name.clone(), &self.imports);
-        let l_converter = |name: Name, func: (Name, Type), args: Vec<(Name, Type)>| {
-            if let Type { kind: TypeKind::Unsolved(_), .. } = func.1 {
-                let mut let_to_args = vec!();
-                for (arg_name, _) in args {
-                    let (arg_name, arg_type) = self.def_manager.resolve_from_name(arg_name.clone(), &self.imports)?;
-                    let_to_args.push((arg_name, arg_type));
-                }
-                let resolved_func = self.def_manager.resolve_from_type((name.clone(), func.1), &self.imports)?;
-                return Ok((name, resolved_func, let_to_args));
-            }
-            panic!("Internal Error")
-        };
-        let spawn_child = spawn_child.convert(ur_converter, ur_converter, l_converter)?;
-
-        match &spawn_child {
-            SysDCSpawnChild::LetTo { func: (func, _), args, .. } => {
-                for ((_, act_arg_type), req_arg_type) in args.iter().zip(self.def_manager.get_args_type(&func, &self.imports)?.iter()) {
-                    if act_arg_type != req_arg_type {
-                        return PErrorKind::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone()).to_err();
-                    }
-                }
-            }
-            _ => {}
-        }
-        Ok(spawn_child)
-    }
+    Ok(system)
 }
 
 #[cfg(test)]

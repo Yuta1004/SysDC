@@ -40,10 +40,10 @@ impl DefinesManager {
     }
 
     // 与えられたnameと同じ名前を持つ定義が存在するかどうかを確認する
-    pub fn check_can_import(&self, name: Name, imports: &Vec<Name>) -> PResult<()> {
+    pub fn check_can_import(&self, name: &Name, imports: &Vec<Name>) -> PResult<()> {
         match self.find(name.clone(), &name.name, imports)?.kind {
             DefineKind::Data | DefineKind::Module => Ok(()),
-            _ => PErrorKind::NotDefined(name.name).to_err()
+            _ => PErrorKind::NotDefined(name.name.clone()).to_err()
         }
     }
 

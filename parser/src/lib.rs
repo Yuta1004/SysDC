@@ -11,7 +11,6 @@ use std::error::Error;
 
 use token::Tokenizer;
 use parse::UnitParser;
-use check::Checker;
 use structure::SysDCSystem;
 use structure::unchecked;
 
@@ -39,7 +38,7 @@ impl Parser {
     }
 
     pub fn check(self) -> Result<SysDCSystem, Box<dyn Error>> {
-        match Checker::check(unchecked::SysDCSystem::new(self.units)) {
+        match check::check(unchecked::SysDCSystem::new(self.units)) {
             Ok(system) => Ok(system),
             Err(err) => err.upgrade()
         }
