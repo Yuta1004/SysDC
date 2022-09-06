@@ -1,6 +1,6 @@
 use std::str::Chars;
 
-use super::util::Location;
+use super::location::Location;
 use super::error::{ PResult, PErrorKind };
 
 #[derive(Debug, Clone, PartialEq)]
