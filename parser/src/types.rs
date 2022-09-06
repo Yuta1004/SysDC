@@ -26,8 +26,10 @@ impl Type {
             refs: None
         }
     }
+}
 
-    pub fn from(name: String) -> Type {
+impl From<String> for Type {
+    fn from(name: String) -> Type {
         Type { kind: TypeKind::from(name), refs: None }
     }
 }
@@ -50,17 +52,6 @@ pub enum TypeKind {
 }
 
 impl TypeKind {
-    fn from(name: String) -> TypeKind {
-        match name.as_str() {
-            "i32" => TypeKind::Int32,
-            "u32" => TypeKind::UInt32,
-            "f32" => TypeKind::Float32,
-            "bool" => TypeKind::Boolean,
-            "char" => TypeKind::Char,
-            _ => TypeKind::Unsolved(name)
-        }
-    }
-
     pub fn is_primitive(&self) -> bool {
         match self {
             TypeKind::Int32 |
@@ -69,6 +60,19 @@ impl TypeKind {
             TypeKind::Boolean |
             TypeKind::Char => true,
             _ => false
+        }
+    }
+}
+
+impl From<String> for TypeKind {
+    fn from(name: String) -> TypeKind {
+        match name.as_str() {
+            "i32" => TypeKind::Int32,
+            "u32" => TypeKind::UInt32,
+            "f32" => TypeKind::Float32,
+            "bool" => TypeKind::Boolean,
+            "char" => TypeKind::Char,
+            _ => TypeKind::Unsolved(name)
         }
     }
 }

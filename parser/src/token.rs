@@ -42,7 +42,7 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn from(orig: String, row: i32, col: i32) -> Token {
+    pub fn new(orig: String, row: i32, col: i32) -> Token {
         let kind = match orig.as_str() {
             "unit"      => TokenKind::Unit,
             "from"      => TokenKind::From,
@@ -165,7 +165,7 @@ impl<'a> Tokenizer<'a> {
             self.adopt()?;
         }
         self.skip_space();
-        Ok(Some(Token::from(self.collect(), self.now_ref_row, self.now_ref_col)))
+        Ok(Some(Token::new(self.collect(), self.now_ref_row, self.now_ref_col)))
     }
 
     fn adopt(&mut self) -> PResult<()> {
@@ -222,7 +222,7 @@ enum CharType {
     Other
 }
 
-impl CharType {
+impl From<char> for CharType {
     fn from(c: char) -> CharType {
         match c {
             '0'..='9' => CharType::Number,
@@ -272,15 +272,15 @@ mod test {
                 ("+",       TokenKind::Plus)
             ];
             for (_str, kind) in str_kind_mapping {
-                assert_eq!(Token::from(_str.to_string(), 0, 0).kind, kind);
+                assert_eq!(Token::new(_str.to_string(), 0, 0).kind, kind);
             }
         }
 
         #[test]
         fn get_identifer_from_identifer_token() {
-            let id = Token::from("test".to_string(), 0, 0).orig;
+            let id = Token::new("test".to_string(), 0, 0).orig;
             assert_eq!(id, "test");
-            Token::from("test".to_string(), 0, 0).orig;
+            Token::new("test".to_string(), 0, 0).orig;
         }
     }
 

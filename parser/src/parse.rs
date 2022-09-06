@@ -52,7 +52,7 @@ impl<'a> UnitParser<'a> {
         // unit <id_chain> ;
         self.tokenizer.request(TokenKind::Unit)?;
         let namespace = match self.parse_id_chain(&namespace)? {
-            Some((found_name, _)) => Name::from(&namespace, found_name.name),
+            Some((found_name, _)) => Name::new(&namespace, found_name.name),
             None => return PErrorKind::UnitNameNotSpecified.to_err_with_loc(self.tokenizer.get_now_ref_loc())
         };
         self.tokenizer.request(TokenKind::Semicolon)?;
@@ -84,7 +84,7 @@ impl<'a> UnitParser<'a> {
 
         // <id_chain>
         let from_namespace = match self.parse_id_chain(&Name::new_root())? {
-            Some((found_name, _)) => Name::from(&Name::new_root(), found_name.name),
+            Some((found_name, _)) => Name::new(&Name::new_root(), found_name.name),
             None => return PErrorKind::FromNamespaceNotSpecified.to_err_with_loc(self.tokenizer.get_now_ref_loc())
         };
 
@@ -92,7 +92,7 @@ impl<'a> UnitParser<'a> {
         self.tokenizer.request(TokenKind::Import)?;
         let mut importes = vec!();
         for import in parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Separater) {
-            importes.push(Name::from(&from_namespace, import.orig));
+            importes.push(Name::new(&from_namespace, import.orig));
         }
         self.tokenizer.request(TokenKind::Semicolon)?;
 
@@ -109,7 +109,7 @@ impl<'a> UnitParser<'a> {
         }
 
         // <id>
-        let name = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
+        let name = Name::new(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
 
         // \{ <id_type_mapping_list, delimiter=,> \}
         self.tokenizer.request(TokenKind::BracketBegin)?;
@@ -129,7 +129,7 @@ impl<'a> UnitParser<'a> {
         }
 
         // <id>
-        let name = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
+        let name = Name::new(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
 
         // \{ <function_list, delimiter=None> \}
         self.tokenizer.request(TokenKind::BracketBegin)?;
@@ -145,7 +145,7 @@ impl<'a> UnitParser<'a> {
     fn parse_function(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCFunction>> {
         // <id>
         let name = if let Some(name_token) = self.tokenizer.expect(TokenKind::Identifier)? {
-            Name::from(namespace, name_token.orig)
+            Name::new(namespace, name_token.orig)
         } else {
             return Ok(None);
         };
@@ -217,7 +217,7 @@ impl<'a> UnitParser<'a> {
             return Ok(None);
         }
         let returns = self.tokenizer.request(TokenKind::Identifier)?.orig;
-        Ok(Some(Annotation::Return(Name::from(namespace, returns))))
+        Ok(Some(Annotation::Return(Name::new(namespace, returns))))
     }
 
     /**
@@ -238,14 +238,14 @@ impl<'a> UnitParser<'a> {
         // ( \{ { <annotation_spawn_detail > } \} )
         let mut details = vec!();
         if self.tokenizer.expect(TokenKind::BracketBegin)?.is_some() {
-            let mut namespace = Name::from(&namespace, "_".to_string());
+            let mut namespace = Name::new(&namespace, "_".to_string());
             while let Some(new_details) = self.parse_annotation_spawn_detail(&namespace)? {
                 let for_cmp = new_details[0].clone();
                 details.extend(new_details);
                 if let unchecked::SysDCSpawnChild::Return{..} = for_cmp {
                     break;
                 }
-                namespace = Name::from(&namespace, "_".to_string());
+                namespace = Name::new(&namespace, "_".to_string());
             }
             self.tokenizer.request(TokenKind::BracketEnd)?;
         }
@@ -264,7 +264,7 @@ impl<'a> UnitParser<'a> {
         // let
         if self.tokenizer.expect(TokenKind::Let)?.is_some() {
             // <id>
-            let let_to = Name::from(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
+            let let_to = Name::new(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
 
             // =
             self.tokenizer.request(TokenKind::Equal)?;
@@ -290,7 +290,7 @@ impl<'a> UnitParser<'a> {
         if self.tokenizer.expect(TokenKind::Use)?.is_some() {
             let mut var_list = vec!();
             for token in parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Separater) {
-                var_list.push(unchecked::SysDCSpawnChild::new_use(Name::from(namespace, token.orig), Type::new_unsovled_nohint()))
+                var_list.push(unchecked::SysDCSpawnChild::new_use(Name::new(namespace, token.orig), Type::new_unsovled_nohint()))
             }
             self.tokenizer.request(TokenKind::Semicolon)?;
             return Ok(Some(var_list));
@@ -318,7 +318,7 @@ impl<'a> UnitParser<'a> {
         let var = name_elems.into_iter().map(|x| x.orig).collect::<Vec<String>>().join(".");
         match var.len() {
             0 => Ok(None),
-            _ => Ok(Some((Name::from(namespace, var), Type::new_unsovled_nohint())))
+            _ => Ok(Some((Name::new(namespace, var), Type::new_unsovled_nohint())))
         }
     }
 
@@ -332,7 +332,7 @@ impl<'a> UnitParser<'a> {
             return Ok(None);
         };
         self.tokenizer.request(TokenKind::Mapping)?;
-        Ok(Some((Name::from(namespace, id1), self.parse_type()?)))
+        Ok(Some((Name::new(namespace, id1), self.parse_type()?)))
     }
 
     /**
@@ -369,8 +369,8 @@ mod test {
         ";
 
         let name = Name::new_root();
-        let name_import_1 = Name::from(&Name::from(&name, "outer".to_string()), "A".to_string());
-        let name_import_2 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "B".to_string());
+        let name_import_1 = Name::new(&Name::new(&name, "outer".to_string()), "A".to_string());
+        let name_import_2 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "B".to_string());
         let name_imports = vec!(name_import_1, name_import_2);
 
         compare_unit(program, SysDCUnit::new(generate_name_for_test(), vec!(), vec!(), name_imports));
@@ -386,11 +386,11 @@ mod test {
         ";
 
         let name = Name::new_root();
-        let name_import_1 = Name::from(&Name::from(&name, "outer".to_string()), "A".to_string());
-        let name_import_2 = Name::from(&Name::from(&name, "outer".to_string()), "B".to_string());
-        let name_import_3 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "C".to_string());
-        let name_import_4 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "D".to_string());
-        let name_import_5 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "E".to_string());
+        let name_import_1 = Name::new(&Name::new(&name, "outer".to_string()), "A".to_string());
+        let name_import_2 = Name::new(&Name::new(&name, "outer".to_string()), "B".to_string());
+        let name_import_3 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "C".to_string());
+        let name_import_4 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "D".to_string());
+        let name_import_5 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "E".to_string());
         let name_imports = vec!(name_import_1, name_import_2, name_import_3, name_import_4, name_import_5);
 
         compare_unit(program, SysDCUnit::new(generate_name_for_test(), vec!(), vec!(), name_imports));
@@ -418,11 +418,11 @@ mod test {
         let name = generate_name_for_test();
 
         let data = vec!(
-            SysDCData::new(Name::from(&name, "A".to_string()), vec!()),
-            SysDCData::new(Name::from(&name, "B".to_string()), vec!()),
-            SysDCData::new(Name::from(&name, "C".to_string()), vec!()),
-            SysDCData::new(Name::from(&name, "D".to_string()), vec!()),
-            SysDCData::new(Name::from(&name, "E".to_string()), vec!())
+            SysDCData::new(Name::new(&name, "A".to_string()), vec!()),
+            SysDCData::new(Name::new(&name, "B".to_string()), vec!()),
+            SysDCData::new(Name::new(&name, "C".to_string()), vec!()),
+            SysDCData::new(Name::new(&name, "D".to_string()), vec!()),
+            SysDCData::new(Name::new(&name, "E".to_string()), vec!())
         );
         let unit = SysDCUnit::new(name, data, vec!(), vec!());
 
@@ -441,11 +441,11 @@ mod test {
         ";
 
         let name = generate_name_for_test();
-        let name_box = Name::from(&name, "Box".to_string());
+        let name_box = Name::new(&name, "Box".to_string());
 
         let member = vec!(
-            (Name::from(&name_box, "x".to_string()), Type::from("i32".to_string())),
-            (Name::from(&name_box, "y".to_string()), Type::from("UserDefinedData".to_string()))
+            (Name::new(&name_box, "x".to_string()), Type::from("i32".to_string())),
+            (Name::new(&name_box, "y".to_string()), Type::from("UserDefinedData".to_string()))
         );
         let data = SysDCData::new(name_box, member);
         let unit = SysDCUnit::new(name, vec!(data), vec!(), vec!());
@@ -516,11 +516,11 @@ mod test {
         let name = generate_name_for_test();
 
         let module = vec!(
-            SysDCModule::new(Name::from(&name, "A".to_string()), vec!()),
-            SysDCModule::new(Name::from(&name, "B".to_string()), vec!()),
-            SysDCModule::new(Name::from(&name, "C".to_string()), vec!()),
-            SysDCModule::new(Name::from(&name, "D".to_string()), vec!()),
-            SysDCModule::new(Name::from(&name, "E".to_string()), vec!())
+            SysDCModule::new(Name::new(&name, "A".to_string()), vec!()),
+            SysDCModule::new(Name::new(&name, "B".to_string()), vec!()),
+            SysDCModule::new(Name::new(&name, "C".to_string()), vec!()),
+            SysDCModule::new(Name::new(&name, "D".to_string()), vec!()),
+            SysDCModule::new(Name::new(&name, "E".to_string()), vec!())
         );
         let unit = SysDCUnit::new(name, vec!(), module, vec!());
 
@@ -540,9 +540,9 @@ mod test {
         ";
 
         let name = generate_name_for_test();
-        let name_module = Name::from(&name, "BoxModule".to_string());
-        let name_func = Name::from(&name_module, "new".to_string());
-        let name_func_ret = Name::from(&name_func, "box".to_string());
+        let name_module = Name::new(&name, "BoxModule".to_string());
+        let name_func = Name::new(&name_module, "new".to_string());
+        let name_func_ret = Name::new(&name_func, "box".to_string());
 
         let func_returns = (name_func_ret, Type::from("Box".to_string()));
         let func = SysDCFunction::new(name_func, vec!(), func_returns, vec!());
@@ -568,10 +568,10 @@ mod test {
         ";
 
         let name = generate_name_for_test();
-        let name_module = Name::from(&name, "BoxModule".to_string());
-        let name_func = Name::from(&name_module, "new".to_string());
-        let name_func_spawn_box = Name::from(&name_func, "box".to_string());
-        let name_func_ret = Name::from(&name_func, "box".to_string());
+        let name_module = Name::new(&name, "BoxModule".to_string());
+        let name_func = Name::new(&name_module, "new".to_string());
+        let name_func_spawn_box = Name::new(&name_func, "box".to_string());
+        let name_func_ret = Name::new(&name_func, "box".to_string());
 
         let func_spawns = vec!(
             SysDCSpawn::new((name_func_spawn_box, Type::from("Box".to_string())), vec!())
@@ -607,19 +607,19 @@ mod test {
         ";
 
         let name = generate_name_for_test();
-        let name_module = Name::from(&name, "BoxModule".to_string());
-        let name_func = Name::from(&name_module, "move".to_string());
-        let name_func_arg_box = Name::from(&name_func, "box".to_string());
-        let name_func_arg_dx = Name::from(&name_func, "dx".to_string());
-        let name_func_arg_dy = Name::from(&name_func, "dy".to_string());
-        let name_func_spawn_box = Name::from(&name_func, "movedBox".to_string());
-        let name_func_spawn_use_box = Name::from(&name_func, "_.box".to_string());
-        let name_func_spawn_use_dx = Name::from(&name_func, "_._.dx".to_string());
-        let name_func_spawn_use_dy = Name::from(&name_func, "_._.dy".to_string());
-        let name_func_spawn_let_name = Name::from(&name_func, "_._._.movedBox".to_string());
-        let name_func_spawn_let_arg_dx = Name::from(&name_func, "_._._.dx".to_string());
-        let name_func_spawn_ret = Name::from(&name_func, "_._._._.movedBox".to_string());
-        let name_func_ret = Name::from(&name_func, "movedBox".to_string());
+        let name_module = Name::new(&name, "BoxModule".to_string());
+        let name_func = Name::new(&name_module, "move".to_string());
+        let name_func_arg_box = Name::new(&name_func, "box".to_string());
+        let name_func_arg_dx = Name::new(&name_func, "dx".to_string());
+        let name_func_arg_dy = Name::new(&name_func, "dy".to_string());
+        let name_func_spawn_box = Name::new(&name_func, "movedBox".to_string());
+        let name_func_spawn_use_box = Name::new(&name_func, "_.box".to_string());
+        let name_func_spawn_use_dx = Name::new(&name_func, "_._.dx".to_string());
+        let name_func_spawn_use_dy = Name::new(&name_func, "_._.dy".to_string());
+        let name_func_spawn_let_name = Name::new(&name_func, "_._._.movedBox".to_string());
+        let name_func_spawn_let_arg_dx = Name::new(&name_func, "_._._.dx".to_string());
+        let name_func_spawn_ret = Name::new(&name_func, "_._._._.movedBox".to_string());
+        let name_func_ret = Name::new(&name_func, "movedBox".to_string());
 
         let func_args = vec!(
             (name_func_arg_box, Type::from("Box".to_string())),
@@ -722,29 +722,29 @@ mod test {
         ";
 
         let name = Name::new_root();
-        let name_import_1 = Name::from(&Name::from(&name, "outer".to_string()), "A".to_string());
-        let name_import_2 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "C".to_string());
-        let name_import_3 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "D".to_string());
-        let name_import_4 = Name::from(&Name::from(&Name::from(&name, "outer2".to_string()), "in".to_string()), "E".to_string());
+        let name_import_1 = Name::new(&Name::new(&name, "outer".to_string()), "A".to_string());
+        let name_import_2 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "C".to_string());
+        let name_import_3 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "D".to_string());
+        let name_import_4 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "E".to_string());
         let name_imports = vec!(name_import_1, name_import_2, name_import_3, name_import_4);
 
         let name = generate_name_for_test();
-        let name_data = Name::from(&name, "Box".to_string());
-        let name_data_x = Name::from(&name_data, "x".to_string());
-        let name_data_y = Name::from(&name_data, "y".to_string());
-        let name_module = Name::from(&name, "BoxModule".to_string());
-        let name_func = Name::from(&name_module, "move".to_string());
-        let name_func_arg_box = Name::from(&name_func, "box".to_string());
-        let name_func_arg_dx = Name::from(&name_func, "dx".to_string());
-        let name_func_arg_dy = Name::from(&name_func, "dy".to_string());
-        let name_func_spawn_box = Name::from(&name_func, "movedBox".to_string());
-        let name_func_spawn_use_box = Name::from(&name_func, "_.box".to_string());
-        let name_func_spawn_use_dx = Name::from(&name_func, "_.dx".to_string());
-        let name_func_spawn_use_dy = Name::from(&name_func, "_.dy".to_string());
-        let name_func_spawn_let_name = Name::from(&name_func, "_._.movedBox".to_string());
-        let name_func_spawn_let_arg_dx = Name::from(&name_func, "_._.dx".to_string());
-        let name_func_spawn_ret = Name::from(&name_func, "_._._.movedBox".to_string());
-        let name_func_ret = Name::from(&name_func, "movedBox".to_string());
+        let name_data = Name::new(&name, "Box".to_string());
+        let name_data_x = Name::new(&name_data, "x".to_string());
+        let name_data_y = Name::new(&name_data, "y".to_string());
+        let name_module = Name::new(&name, "BoxModule".to_string());
+        let name_func = Name::new(&name_module, "move".to_string());
+        let name_func_arg_box = Name::new(&name_func, "box".to_string());
+        let name_func_arg_dx = Name::new(&name_func, "dx".to_string());
+        let name_func_arg_dy = Name::new(&name_func, "dy".to_string());
+        let name_func_spawn_box = Name::new(&name_func, "movedBox".to_string());
+        let name_func_spawn_use_box = Name::new(&name_func, "_.box".to_string());
+        let name_func_spawn_use_dx = Name::new(&name_func, "_.dx".to_string());
+        let name_func_spawn_use_dy = Name::new(&name_func, "_.dy".to_string());
+        let name_func_spawn_let_name = Name::new(&name_func, "_._.movedBox".to_string());
+        let name_func_spawn_let_arg_dx = Name::new(&name_func, "_._.dx".to_string());
+        let name_func_spawn_ret = Name::new(&name_func, "_._._.movedBox".to_string());
+        let name_func_ret = Name::new(&name_func, "movedBox".to_string());
 
         let func_args = vec!(
             (name_func_arg_box, Type::from("Box".to_string())),
@@ -781,7 +781,7 @@ mod test {
 
 
     fn generate_name_for_test() -> Name {
-        Name::from(&Name::new_root(), "test".to_string())
+        Name::new(&Name::new_root(), "test".to_string())
     }
 
     fn compare_unit(program: &str, unit: SysDCUnit) {
