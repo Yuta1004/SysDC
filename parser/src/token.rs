@@ -1,5 +1,6 @@
 use std::str::Chars;
 
+use super::util::Location;
 use super::error::{ PResult, PError, PErrorKind };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -37,7 +38,7 @@ pub enum TokenKind {
 pub struct Token {
     pub kind: TokenKind,
     pub orig: String,
-    pub pos: (i32, i32)
+    pub location: Location
 }
 
 impl Token {
@@ -66,8 +67,8 @@ impl Token {
             "+"         => TokenKind::Plus,
             _           => TokenKind::Identifier,
         };
-        let pos = (row, col-(orig.len() as i32));
-        Token { kind, orig, pos }
+        let location = Location::new_with_coord((row, col-(orig.len() as i32)));
+        Token { kind, orig, location }
     }
 }
 
@@ -95,10 +96,10 @@ impl<'a> Tokenizer<'a> {
         tokenizer
     }
 
-    pub fn get_now_ref_pos(&mut self) -> (i32, i32) {
+    pub fn get_now_ref_loc(&mut self) -> Location {
         match &self.hold_token {
-            Some(token) => token.pos,
-            None => (self.now_ref_row, self.now_ref_col)
+            Some(token) => token.location.clone(),
+            None => Location::new_with_coord((self.now_ref_row, self.now_ref_col))
         }
     }
 
@@ -130,7 +131,7 @@ impl<'a> Tokenizer<'a> {
     pub fn request(&mut self, kind: TokenKind) -> PResult<Token> {
         match self.expect(kind.clone())? {
             Some(token) => Ok(token),
-            None => PError::new_with_pos(PErrorKind::RequestedTokenNotFound(kind), self.get_now_ref_pos())
+            None => PError::new_with_loc(PErrorKind::RequestedTokenNotFound(kind), self.get_now_ref_loc())
         }
     }
 
@@ -156,7 +157,7 @@ impl<'a> Tokenizer<'a> {
 
                 // Ng(panic)
                 (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) =>
-                    return PError::new_with_pos(PErrorKind::FoundUnregisteredSymbol, self.get_now_ref_pos()),
+                    return PError::new_with_loc(PErrorKind::FoundUnregisteredSymbol, self.get_now_ref_loc()),
 
                 // Ok(force stop)
                 _ => break
@@ -170,7 +171,7 @@ impl<'a> Tokenizer<'a> {
     fn adopt(&mut self) -> PResult<()> {
         match self.hold_char {
             Some(c) => self.hold_chars.push(c),
-            None => return PError::new_with_pos(PErrorKind::UnexpectedEOF, self.get_now_ref_pos())
+            None => return PError::new_with_loc(PErrorKind::UnexpectedEOF, self.get_now_ref_loc())
         }
         self.hold_char = self.chars.next();
         self.now_ref_col += 1;

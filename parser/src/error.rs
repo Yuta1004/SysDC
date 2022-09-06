@@ -2,6 +2,7 @@ use std::fmt;
 use std::fmt::{ Display, Formatter };
 use std::error::Error;
 
+use super::util::Location;
 use super::types::Type;
 use super::token::TokenKind;
 
@@ -66,40 +67,28 @@ impl Display for PErrorKind {
 #[derive(Debug)]
 pub struct PError {
     kind: PErrorKind,
-    filename: Option<String>,
-    pos: Option<(i32, i32)>
+    happen_at: Location
 }
 
 impl Error for PError {}
 
 impl Display for PError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match (&self.filename, self.pos) {
-            (Some(filename), Some((row, col))) => {
-                write!(f, "{} (at {}:{}:{})", self.kind, filename, row, col)
-            },
-            (None, Some((row, col))) => {
-                write!(f, "{} (at {}:{})", self.kind, row, col)
-            },
-            (Some(filename), None) => {
-                write!(f, "{} (at {})", self.kind, filename)
-            },
-            _ => write!(f, "{}", self.kind)
-        }
+        write!(f, "{} (at {})", self.kind, self.happen_at)
     }
 }
 
 impl PError {
     pub fn new<T>(kind: PErrorKind) -> PResult<T> {
-        Err(PError { kind, filename: None, pos: None })
+        Err(PError { kind, happen_at: Location::new() })
     }
 
-    pub fn new_with_pos<T>(kind: PErrorKind, pos: (i32, i32)) -> PResult<T> {
-        Err(PError { kind, filename: None, pos: Some(pos) })
+    pub fn new_with_loc<T>(kind: PErrorKind, happen_at: Location) -> PResult<T> {
+        Err(PError { kind, happen_at })
     }
 
     pub fn set_filename(&mut self, filename: String) {
-        self.filename = Some(filename);
+        self.happen_at.set_filename(filename);
     }
 
     pub fn upgrade<T>(self) -> Result<T, Box<dyn Error>> {

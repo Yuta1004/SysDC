@@ -53,7 +53,7 @@ impl<'a> UnitParser<'a> {
         self.tokenizer.request(TokenKind::Unit)?;
         let namespace = match self.parse_id_chain(&namespace)? {
             Some((found_name, _)) => Name::from(&namespace, found_name.name),
-            None => return PError::new_with_pos(PErrorKind::UnitNameNotSpecified, self.tokenizer.get_now_ref_pos())
+            None => return PError::new_with_loc(PErrorKind::UnitNameNotSpecified, self.tokenizer.get_now_ref_loc())
         };
         self.tokenizer.request(TokenKind::Semicolon)?;
 
@@ -61,7 +61,7 @@ impl<'a> UnitParser<'a> {
         let (mut imports, mut data, mut modules) = (vec!(), vec!(), vec!());
         while self.tokenizer.exists_next() {
             match (self.parse_import()?, self.parse_data(&namespace)?, self.parse_module(&namespace)?) {
-                (None, None, None) => return PError::new_with_pos(PErrorKind::DataOrModuleNotFound, self.tokenizer.get_now_ref_pos()),
+                (None, None, None) => return PError::new_with_loc(PErrorKind::DataOrModuleNotFound, self.tokenizer.get_now_ref_loc()),
                 (i, d, m) => {
                     if i.is_some() { imports.extend(i.unwrap()); }
                     if d.is_some() { data.push(d.unwrap()); }
@@ -85,7 +85,7 @@ impl<'a> UnitParser<'a> {
         // <id_chain>
         let from_namespace = match self.parse_id_chain(&Name::new_root())? {
             Some((found_name, _)) => Name::from(&Name::new_root(), found_name.name),
-            None => return PError::new_with_pos(PErrorKind::FromNamespaceNotSpecified, self.tokenizer.get_now_ref_pos())
+            None => return PError::new_with_loc(PErrorKind::FromNamespaceNotSpecified, self.tokenizer.get_now_ref_loc())
         };
 
         // import <id_list, delimiter=','> ;
@@ -177,7 +177,7 @@ impl<'a> UnitParser<'a> {
             match annotation {
                 Annotation::Return(ret) => {
                     if returns.is_some() {
-                        return PError::new_with_pos(PErrorKind::ReturnExistsMultiple, self.tokenizer.get_now_ref_pos());
+                        return PError::new_with_loc(PErrorKind::ReturnExistsMultiple, self.tokenizer.get_now_ref_loc());
                     }
                     returns = Some(ret)
                 }
@@ -185,7 +185,7 @@ impl<'a> UnitParser<'a> {
             }
         }
         if returns.is_none() {
-            return PError::new_with_pos(PErrorKind::ReturnNotExists, self.tokenizer.get_now_ref_pos());
+            return PError::new_with_loc(PErrorKind::ReturnNotExists, self.tokenizer.get_now_ref_loc());
         }
         Ok((returns.unwrap(), spawns))
     }
@@ -232,7 +232,7 @@ impl<'a> UnitParser<'a> {
         // <id_type_mapping>
         let spawn_result = self.parse_id_type_mapping(namespace)?;
         if spawn_result.is_none() {
-            return PError::new_with_pos(PErrorKind::ResultOfSpawnNotSpecified, self.tokenizer.get_now_ref_pos());
+            return PError::new_with_loc(PErrorKind::ResultOfSpawnNotSpecified, self.tokenizer.get_now_ref_loc());
         }
 
         // ( \{ { <annotation_spawn_detail > } \} )
@@ -272,7 +272,7 @@ impl<'a> UnitParser<'a> {
             // <id_chain>
             let func = match self.parse_id_chain(namespace)? {
                 Some((func, _)) => func.name,
-                None => return PError::new_with_pos(PErrorKind::FunctionNameNotFound, self.tokenizer.get_now_ref_pos())
+                None => return PError::new_with_loc(PErrorKind::FunctionNameNotFound, self.tokenizer.get_now_ref_loc())
             };
 
             // \( <id_chain_list, delimiter=',') \)
@@ -303,7 +303,7 @@ impl<'a> UnitParser<'a> {
                     self.tokenizer.request(TokenKind::Semicolon)?;
                     return Ok(Some(vec!(unchecked::SysDCSpawnChild::new_return(name, Type::new_unsovled_nohint()))));
                 },
-                None => return PError::new_with_pos(PErrorKind::ResultOfSpawnNotSpecified, self.tokenizer.get_now_ref_pos())
+                None => return PError::new_with_loc(PErrorKind::ResultOfSpawnNotSpecified, self.tokenizer.get_now_ref_loc())
             }
         }
 

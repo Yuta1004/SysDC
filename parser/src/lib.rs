@@ -1,3 +1,4 @@
+mod util;
 mod parse;
 mod token;
 mod check;
