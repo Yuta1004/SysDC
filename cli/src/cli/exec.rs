@@ -7,8 +7,8 @@ use clap::Parser;
 use rmp_serde;
 
 use sysdc_parser::structure::SysDCSystem;
-use sysdc_tool_debug::DebugTool;
-use sysdc_tool_json::JSONTool;
+use sysdc_tool_debug;
+use sysdc_tool_json;
 
 #[derive(Debug)]
 enum ExecError {
@@ -42,8 +42,8 @@ impl ExecCmd {
     pub fn run(&self) -> Result<(), Box<dyn Error>> {
         let system = self.load_system()?;
         match self.tool.as_str() {
-            "debug" => DebugTool::exec(&system),
-            "json" => JSONTool::exec(&system, &self.args),
+            "debug" => sysdc_tool_debug::exec(&system),
+            "json" => sysdc_tool_json::exec(&system, &self.args),
             t => return Err(Box::new(ExecError::ToolNotFound(t.to_string())))
         }
         Ok(())
