@@ -207,7 +207,7 @@ impl DefinesManager {
                 match tails {
                     Some(_) => {
                         let (dname, _) = self.resolve_from_name(use_ref, imports)?;
-                        self.resolve_from_name(Name::from(&dname.get_par_name(false), name.name.clone()), imports)
+                        self.resolve_from_name(Name::new(&dname.get_par_name(false), name.name.clone()), imports)
                     },
                     None => self.resolve_from_name(use_ref, imports)
                 }
@@ -369,7 +369,7 @@ impl DefinesManager {
             match detail {
                 unchecked::SysDCSpawnChild::Use(name, _) => {
                     let outer_spawn_namespace = name.clone().get_par_name(true);
-                    let outer_use_name = Name::from(&outer_spawn_namespace, name.clone().name);
+                    let outer_use_name = Name::new(&outer_spawn_namespace, name.clone().name);
                     self.define(Define::new(DefineKind::Use(outer_use_name.clone()), name.clone()))?;
                 }
                 unchecked::SysDCSpawnChild::LetTo { name, func: (_, func), ..} => {
