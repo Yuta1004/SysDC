@@ -44,24 +44,3 @@ impl Parser {
         }
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::Parser;
-
-    #[test]
-    fn parse() {
-        let mut parser = Parser::new();
-        let programs = [
-            ("A.def", "unit test.A; data A {}"),
-            ("B.def", "unit test.B; data B {}"),
-            ("C.def", "unit test.C; data C {}"),
-            ("D.def", "unit test.D; data D {}"),
-            ("E.def", "unit test.E; data E {}")
-        ];
-        for (filename, program) in programs {
-            parser.parse(filename.to_string(), &program.to_string()).unwrap();
-        }
-        parser.check().unwrap();
-    }
-}
