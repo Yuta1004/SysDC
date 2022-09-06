@@ -7,9 +7,11 @@ use crate::structure::unchecked;
 enum DefineKind {
     Data,
     DataMember(Type),
+
     Module,
     Function(Type),
     Argument(Type),
+
     Variable(Type),
     Use(Name)
 }
@@ -53,7 +55,7 @@ impl DefinesManager {
         }
 
         if let TypeKind::Unsolved(hint) = &types.kind {
-            let (head, tails) = DefinesManager::split_name(&hint);
+            let (head, tails) = split_name(&hint);
             let found_def = self.find(name.clone(), &head, &imports)?;
             return match found_def.kind {
                 DefineKind::Data =>
@@ -78,7 +80,7 @@ impl DefinesManager {
 
     // nameから参照可能なすべての範囲またはimports内を対象に，nameと一致する名前をもつ定義を探す (Variable)
     pub fn resolve_from_name(&self, name: Name, imports: &Vec<Name>) -> PResult<(Name, Type)> {
-        let (head, tails) = DefinesManager::split_name(&name.name);
+        let (head, tails) = split_name(&name.name);
         let found_def = self.find(name.clone(), &head, &vec!())?;
         match found_def.kind {
             DefineKind::Variable(types) => {
@@ -124,7 +126,7 @@ impl DefinesManager {
 
     // data(Data)内のmember(Member)の定義を探す
     fn get_member_in_data(&self, data: &Name, member: &String, imports: &Vec<Name>) -> PResult<(Name, Type)> {
-        let (head, tails) = DefinesManager::split_name(&member);
+        let (head, tails) = split_name(&member);
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
                 if data.get_full_name() == refs.namespace && head == refs.name {
@@ -188,13 +190,7 @@ impl DefinesManager {
         PErrorKind::NotFound(name.clone()).to_err()
     }
 
-    fn split_name(hint: &String) -> (String, Option<String>) {
-        let splitted_hint = hint.split(".").collect::<Vec<&str>>();
-        match splitted_hint.len() {
-            1 => (splitted_hint[0].to_string(), None),
-            _ => (splitted_hint[0].to_string(), Some(splitted_hint[1..].join(".")))
-        }
-    }
+    /* ----- ↓前処理用↓ ----- */
 
     fn define(&mut self, def: Define) -> PResult<()> {
         match &self.find(def.refs.clone(), &def.refs.name, &vec!()) {
@@ -271,5 +267,13 @@ impl DefinesManager {
             }
         }
         Ok(())
+    }
+}
+
+fn split_name(s: &String) -> (String, Option<String>) {
+    let splitted = s.split(".").collect::<Vec<&str>>();
+    match splitted.len() {
+        1 => (splitted[0].to_string(), None),
+        _ => (splitted[0].to_string(), Some(splitted[1..].join(".")))
     }
 }
