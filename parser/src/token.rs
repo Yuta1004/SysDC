@@ -1,7 +1,7 @@
 use std::str::Chars;
 
 use super::util::Location;
-use super::error::{ PResult, PError, PErrorKind };
+use super::error::{ PResult, PErrorKind };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
@@ -131,7 +131,7 @@ impl<'a> Tokenizer<'a> {
     pub fn request(&mut self, kind: TokenKind) -> PResult<Token> {
         match self.expect(kind.clone())? {
             Some(token) => Ok(token),
-            None => PError::new_with_loc(PErrorKind::RequestedTokenNotFound(kind), self.get_now_ref_loc())
+            None => PErrorKind::RequestedTokenNotFound(kind).to_err_with_loc(self.get_now_ref_loc())
         }
     }
 
@@ -157,7 +157,7 @@ impl<'a> Tokenizer<'a> {
 
                 // Ng(panic)
                 (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) =>
-                    return PError::new_with_loc(PErrorKind::FoundUnregisteredSymbol, self.get_now_ref_loc()),
+                    return PErrorKind::FoundUnregisteredSymbol.to_err_with_loc(self.get_now_ref_loc()),
 
                 // Ok(force stop)
                 _ => break
@@ -171,7 +171,7 @@ impl<'a> Tokenizer<'a> {
     fn adopt(&mut self) -> PResult<()> {
         match self.hold_char {
             Some(c) => self.hold_chars.push(c),
-            None => return PError::new_with_loc(PErrorKind::UnexpectedEOF, self.get_now_ref_loc())
+            None => return PErrorKind::UnexpectedEOF.to_err_with_loc(self.get_now_ref_loc())
         }
         self.hold_char = self.chars.next();
         self.now_ref_col += 1;

@@ -64,6 +64,19 @@ impl Display for PErrorKind {
     }
 }
 
+impl PErrorKind {
+    pub fn to_err<T>(self) -> PResult<T> {
+        Err(PError {
+            kind: self,
+            happen_at: Location::new()
+        })
+    }
+
+    pub fn to_err_with_loc<T>(self, happen_at: Location) -> PResult<T> {
+        Err(PError { kind: self, happen_at })
+    }
+}
+
 #[derive(Debug)]
 pub struct PError {
     kind: PErrorKind,
@@ -79,14 +92,6 @@ impl Display for PError {
 }
 
 impl PError {
-    pub fn new<T>(kind: PErrorKind) -> PResult<T> {
-        Err(PError { kind, happen_at: Location::new() })
-    }
-
-    pub fn new_with_loc<T>(kind: PErrorKind, happen_at: Location) -> PResult<T> {
-        Err(PError { kind, happen_at })
-    }
-
     pub fn set_filename(&mut self, filename: String) {
         self.happen_at.set_filename(filename);
     }
