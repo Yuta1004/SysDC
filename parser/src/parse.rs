@@ -135,15 +135,16 @@ impl<'a> UnitParser<'a> {
     }
 
     /**
-     * <function> ::= <id> <id_type_mapping_list, delimiter=,> -> <id> \{ <function_body> \}
+     * <function> ::= func <id> <id_type_mapping_list, delimiter=,> -> <id> \{ <function_body> \}
      */
     fn parse_function(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCFunction>> {
-        // <id>
-        let name = if let Some(name_token) = self.tokenizer.expect(TokenKind::Identifier)? {
-            Name::new(namespace, name_token.orig)
-        } else {
+        // func
+        if self.tokenizer.expect(TokenKind::Func)?.is_none() {
             return Ok(None);
-        };
+        }
+
+        // <id>
+        let name = Name::new(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
 
         // <id_type_mapping_list, delimiter=,>
         self.tokenizer.request(TokenKind::ParenthesisBegin)?;
@@ -528,7 +529,7 @@ mod test {
             unit test;
 
             module BoxModule {
-                new() -> Box {
+                func new() -> Box {
                     @return box
                 }
             }
@@ -554,7 +555,7 @@ mod test {
             unit test;
 
             module BoxModule {
-                new() -> Box {
+                func new() -> Box {
                     @return box
 
                     @spawn box: Box
@@ -586,7 +587,7 @@ mod test {
             unit test;
 
             module BoxModule {
-                move(box: Box, dx: i32, dy: i32) -> Box {
+                func move(box: Box, dx: i32, dy: i32) -> Box {
                     @return movedBox
 
                     @spawn movedBox: Box {
@@ -650,7 +651,7 @@ mod test {
             unit test;
 
             module BoxModule {
-                move() -> {
+                func move() -> {
 
                 }
             }
@@ -665,7 +666,7 @@ mod test {
             unit test;
 
             module BoxModule {
-                move(box: Box, dx: i32, dy: ) -> i32 {
+                func move(box: Box, dx: i32, dy: ) -> i32 {
 
                 }
             }
@@ -680,8 +681,23 @@ mod test {
             unit test;
 
             module BoxModule {
-                move() {
+                func move() {
 
+                }
+            }
+        ";
+        parse(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn illegal_function_4() {
+        let program = "
+            unit test;
+
+            module BoxModule {
+                move() -> i32 {
+                    @return a
                 }
             }
         ";
@@ -702,7 +718,7 @@ mod test {
             }
 
             module BoxModule {
-                move(box: Box, dx: i32, dy: i32) -> Box {
+                func move(box: Box, dx: i32, dy: i32) -> Box {
                     @return movedBox
 
                     @spawn movedBox: Box {

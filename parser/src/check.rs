@@ -102,7 +102,7 @@ mod test {
             }
 
             module TestModule {
-                test(a: A) -> A {
+                func test(a: A) -> A {
                     @return a
                 }
             }
@@ -131,7 +131,7 @@ mod test {
             }
 
             module TestModule {
-                test(a: A) -> A {
+                func test(a: A) -> A {
                     @return b
 
                     @spawn b: A {
@@ -154,22 +154,22 @@ mod test {
                     }
                 }
 
-                receiveA(a: A) -> i32 {
+                func receiveA(a: A) -> i32 {
                     @return tmp
                     @spawn tmp: i32
                 }
 
-                receiveB(b: B) -> i32 {
+                func receiveB(b: B) -> i32 {
                     @return tmp
                     @spawn tmp: i32
                 }
 
-                receiveC(c: C) -> i32 {
+                func receiveC(c: C) -> i32 {
                     @return tmp
                     @spawn tmp: i32
                 }
 
-                receiveInt32(i: i32) -> i32 {
+                func receiveInt32(i: i32) -> i32 {
                     @return tmp
                     @spawn tmp: i32
                 }
@@ -190,7 +190,7 @@ mod test {
             }
 
             module TestModule {
-                test(a: A) -> A {
+                func test(a: A) -> A {
                     @return b
 
                     @spawn b: A {
@@ -214,7 +214,7 @@ mod test {
             }
 
             module TestModule {
-                test(a: A) -> A {
+                func test(a: A) -> A {
                     @return b
 
                     @spawn b: A {
@@ -223,7 +223,7 @@ mod test {
                     }
                 }
 
-                receiveInt32(i: i32) -> i32 {
+                func receiveInt32(i: i32) -> i32 {
                     @return tmp
                     @spawn tmp: i32
                 }
@@ -254,7 +254,7 @@ mod test {
             }
 
             module TestModule {
-                test(a: A) -> A {
+                func test(a: A) -> A {
                     @return b
 
                     @spawn b: A {
@@ -274,7 +274,7 @@ mod test {
             data A {}
 
             module AModule {
-                new() -> A {
+                func new() -> A {
                     @return a
 
                     @spawn a: A
@@ -282,7 +282,7 @@ mod test {
             }
 
             module TestModule {
-                test() -> A {
+                func test() -> A {
                     @return a
 
                     @spawn a: A {
@@ -303,13 +303,13 @@ mod test {
             data A {}
 
             module TestModule {
-                new() -> A {
+                func new() -> A {
                     @return a
 
                     @spawn a: A
                 }
 
-                test() -> A {
+                func test() -> A {
                     @return a
 
                     @spawn a: A {
@@ -330,13 +330,13 @@ mod test {
             data A {}
 
             module TestModule {
-                new() -> A {
+                func new() -> A {
                     @return a
 
                     @spawn a: A
                 }
 
-                test() -> A {
+                func test() -> A {
                     @return a
 
                     @spawn a: A {
@@ -358,13 +358,13 @@ mod test {
             data A {}
 
             module TestModule {
-                new() -> A {
+                func new() -> A {
                     @return a
 
                     @spawn a: A
                 }
 
-                test() -> A {
+                func test() -> A {
                     @return a
 
                     @spawn a: A {
@@ -386,13 +386,13 @@ mod test {
             data A {}
 
             module TestModule {
-                new() -> A {
+                func new() -> A {
                     @return a
 
                     @spawn a: A
                 }
 
-                test() -> A {
+                func test() -> A {
                     @return a
 
                     @spawn a: A {
@@ -415,7 +415,7 @@ mod test {
             data C {}
 
             module TestModule {
-                test() -> A {
+                func test() -> A {
                     @return a
 
                     @spawn a: A {
@@ -425,13 +425,13 @@ mod test {
                     }
                 }
 
-                genA() -> A {
+                func genA() -> A {
                     @return a
 
                     @spawn a: A
                 }
 
-                genB(a: A) -> B {
+                func genB(a: A) -> B {
                     @return b
 
                     @spawn b: B {
@@ -439,7 +439,7 @@ mod test {
                     }
                 }
 
-                genC(a: A, b: B) -> C {
+                func genC(a: A, b: B) -> C {
                     @return c
 
                     @spawn c: C {
@@ -462,7 +462,7 @@ mod test {
             data C {}
 
             module TestModule {
-                test() -> A {
+                func test() -> A {
                     @return a
 
                     @spawn a: A {
@@ -472,13 +472,13 @@ mod test {
                     }
                 }
 
-                genA() -> A {
+                func genA() -> A {
                     @return a
 
                     @spawn a: A
                 }
 
-                genB(a: A) -> B {
+                func genB(a: A) -> B {
                     @return b
 
                     @spawn b: B {
@@ -486,7 +486,7 @@ mod test {
                     }
                 }
 
-                genC(a: A, b: B) -> C {
+                func genC(a: A, b: B) -> C {
                     @return c
 
                     @spawn c: C {
@@ -504,7 +504,7 @@ mod test {
             unit test;
 
             module TestModule {
-                test() -> i32 {
+                func test() -> i32 {
                     @return a
 
                     @spawn a: i32
@@ -523,7 +523,7 @@ mod test {
             data A {}
 
             module TestModule {
-                test() -> i32 {
+                func test() -> i32 {
                     @return a
 
                     @spawn a: A
@@ -539,7 +539,7 @@ mod test {
             unit test;
 
             module TestModule {
-                test() -> i32 {
+                func test() -> i32 {
                     @return a
 
                     @spawn a: i32 {
@@ -548,7 +548,7 @@ mod test {
                     }
                 }
 
-                gen_i32() -> i32 {
+                func gen_i32() -> i32 {
                     @return a
 
                     @spawn a: i32
@@ -567,7 +567,7 @@ mod test {
             data A {}
 
             module TestModule {
-                test() -> i32 {
+                func test() -> i32 {
                     @return a
 
                     @spawn a: i32 {
@@ -576,7 +576,7 @@ mod test {
                     }
                 }
 
-                gen_A() -> A {
+                func gen_A() -> A {
                     @return a
 
                     @spawn a: A
@@ -628,12 +628,12 @@ mod test {
             from test.A import A;
 
             module TestModule {
-                new() -> A {
+                func new() -> A {
                     @return a
                     @spawn a: A
                 }
 
-                test() -> i32 {
+                func test() -> i32 {
                     @return v
 
                     @spawn v: i32 {
@@ -652,7 +652,7 @@ mod test {
             unit test.A;
 
             module TestModule {
-                test() -> i32 {
+                func test() -> i32 {
                     @return a
 
                     @spawn a: i32
@@ -665,7 +665,7 @@ mod test {
             from test.A import TestModule;
 
             module TestModule2 {
-                test() -> i32 {
+                func test() -> i32 {
                     @return a
 
                     @spawn a: i32 {
@@ -687,7 +687,7 @@ mod test {
             data A {}
 
             module TestModule {
-                test() -> A {
+                func test() -> A {
                     @return a
 
                     @spawn a: A
@@ -700,7 +700,7 @@ mod test {
             from test.A import A, TestModule;
 
             module TestModule2 {
-                test() -> i32 {
+                func test() -> i32 {
                     @return a
 
                     @spawn a: i32 {
@@ -759,13 +759,13 @@ mod test {
             unit test;
 
             module TestModule {
-                a() -> i32 {
+                func a() -> i32 {
                     @return b
 
                     @spawn b: i32
                 }
 
-                a() -> i32 {
+                func a() -> i32 {
                     @return c
 
                     @spawn c: i32
@@ -782,7 +782,7 @@ mod test {
             unit test;
 
             module TestModule {
-                a() -> i32 {
+                func a() -> i32 {
                     @return a
 
                     @spawn a: i32
@@ -799,7 +799,7 @@ mod test {
             unit test;
 
             module TestModule {
-                a(arg: i32) -> i32 {
+                func a(arg: i32) -> i32 {
                     @return val
 
                     @spawn val: i32 {
@@ -818,7 +818,7 @@ mod test {
             unit test;
 
             module TestModule {
-                a(arg: i32) -> i32 {
+                func a(arg: i32) -> i32 {
                     @return val
 
                     @spawn val: i32 {
@@ -838,7 +838,7 @@ mod test {
             unit test;
 
             module TestModule {
-                a(arg: i32) -> i32 {
+                func a(arg: i32) -> i32 {
                     @return val
 
                     @spawn val: i32 {
@@ -848,7 +848,7 @@ mod test {
                     }
                 }
 
-                new() -> i32 {
+                func new() -> i32 {
                     @return val
 
                     @spawn val: i32

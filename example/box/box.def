@@ -8,7 +8,7 @@ data Box {
 }
 
 module BoxModule {
-    new(x: i32, y: i32, w: i32, h: i32) -> Box {
+    func new(x: i32, y: i32, w: i32, h: i32) -> Box {
         @return box
 
         @spawn box: Box {
@@ -16,7 +16,7 @@ module BoxModule {
         }
     }
 
-    move(box: Box, dx: i32, dy: i32) -> Box {
+    func move(box: Box, dx: i32, dy: i32) -> Box {
         @return movedBox
 
         @spawn movedBox: Box {
@@ -25,7 +25,7 @@ module BoxModule {
         }
     }
 
-    changeSize(box: Box, w: i32, h: i32) -> Box {
+    func changeSize(box: Box, w: i32, h: i32) -> Box {
         @return changedBox
 
         @spawn changedBox: Box {
