@@ -12,6 +12,7 @@ pub enum TokenKind {
     Data,               // data
     Module,             // module
     Func,               // func
+    Proc,               // proc
     Return,             // return
     Spawn,              // spawn
     Let,                // let
@@ -51,6 +52,7 @@ impl Token {
             "data"      => TokenKind::Data,
             "module"    => TokenKind::Module,
             "func"      => TokenKind::Func,
+            "proc"      => TokenKind::Proc,
             "return"    => TokenKind::Return,
             "let"       => TokenKind::Let,
             "spawn"     => TokenKind::Spawn,
