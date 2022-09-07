@@ -267,6 +267,96 @@ mod test {
     }
 
     #[test]
+    fn user_defind_type_mix_module_with_modify_1() {
+        let program = "
+            unit test;
+
+            data A {}
+
+            data B {}
+
+            data C {}
+
+            module TestModule {
+                proc test(a: A, b: B, c: C) {
+                    @modify a {
+                        use b, c;
+                    }
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    fn user_defind_type_mix_module_with_modify_2() {
+        let program = "
+            unit test;
+
+            data A {}
+
+            data B {}
+
+            data C {}
+
+            module TestModule {
+                proc test(a: A, b: B, c: C) {
+                    @modify a
+                    @modify b
+                    @modify c
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    #[should_panic]
+    fn user_defind_type_mix_module_with_modify_failure_1() {
+        let program = "
+            unit test;
+
+            data A {}
+
+            data B {
+                a: i32
+            }
+
+            module TestModule {
+                proc test(a: A, b: B, c: C) {
+                    @modify a {
+                        use b.a;
+                    }
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    #[should_panic]
+    fn user_defind_type_mix_module_with_modify_failure_2() {
+        let program = "
+            unit test;
+
+            data A {}
+
+            data B {
+                a: i32
+            }
+
+            module TestModule {
+                proc test(a: A, b: B, c: C) {
+                    @modify a {
+                        use b, c;
+                    }
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
     fn let_by_user_defined_function_using_completed_name_1() {
         let program = "
             unit test;

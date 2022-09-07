@@ -37,7 +37,8 @@ pub struct SysDCFunction {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SysDCAnnotation {
-    Spawn { result: (Name, Type), details: Vec<SysDCSpawnDetail> }
+    Spawn { result: (Name, Type), details: Vec<SysDCSpawnDetail> },
+    Modify { target: (Name, Type), uses: Vec<(Name, Type)> }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -199,14 +200,19 @@ pub mod unchecked {
             SysDCAnnotation::Modify { target, uses }
         }
 
-        pub fn convert<F>(self, s_converter: F) -> PResult<super::SysDCAnnotation>
+        pub fn convert<F, G>(self, s_converter: F, m_converter: G) -> PResult<super::SysDCAnnotation>
         where
-            F: Fn((Name, Type), Vec<SysDCSpawnDetail>) -> PResult<((Name, Type), Vec<super::SysDCSpawnDetail>)>
+            F: Fn((Name, Type), Vec<SysDCSpawnDetail>) -> PResult<((Name, Type), Vec<super::SysDCSpawnDetail>)>,
+            G: Fn((Name, Type), Vec<(Name, Type)>) -> PResult<((Name, Type), Vec<(Name, Type)>)>
         {
             match self {
                 SysDCAnnotation::Spawn { result, details } => {
                     let (result, details) = s_converter(result, details)?;
                     Ok(super::SysDCAnnotation::Spawn { result, details })
+                },
+                SysDCAnnotation::Modify { target, uses } => {
+                    let (target, uses) = m_converter(target, uses)?;
+                    Ok(super::SysDCAnnotation::Modify { target, uses })
                 }
                 _ => panic!("Internal error")
             }
