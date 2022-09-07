@@ -20,6 +20,14 @@ fn parse_example_compiler() {
     ]);
 }
 
+#[test]
+fn parse_example_logger() {
+    parse_files(&[
+        "../example/logger/logger.def",
+        "../example/logger/std.def"
+    ])
+}
+
 fn parse_files(pathes: &[&str]) {
     let mut parser = Parser::new();
     for path in pathes {
