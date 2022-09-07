@@ -204,7 +204,7 @@ impl<'a> UnitParser<'a> {
         while let Some(annotation) = self.parse_annotation(namespace)? {
             match annotation {
                 unchecked::SysDCAnnotation::Return(_) => {
-                    unimplemented!()
+                    return PErrorKind::ReturnExistsOnProcedure.to_err_with_loc(self.tokenizer.get_now_ref_loc());
                 },
                 _ => annotations.push(annotation)
             }
