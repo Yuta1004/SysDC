@@ -182,7 +182,8 @@ pub mod unchecked {
     #[derive(Debug, Clone)]
     pub enum SysDCAnnotation {
         Return(Name),
-        Spawn { result: (Name, Type), details: Vec<SysDCSpawnDetail> }
+        Spawn { result: (Name, Type), details: Vec<SysDCSpawnDetail> },
+        Modify { target: (Name, Type), uses: Vec<(Name, Type)>}
     }
 
     impl SysDCAnnotation {
@@ -192,6 +193,10 @@ pub mod unchecked {
 
         pub fn new_spawn(result: (Name, Type), details: Vec<SysDCSpawnDetail>) -> SysDCAnnotation {
             SysDCAnnotation::Spawn { result, details }
+        }
+
+        pub fn new_modify(target: (Name, Type), uses: Vec<(Name, Type)>) -> SysDCAnnotation {
+            SysDCAnnotation::Modify { target, uses }
         }
 
         pub fn convert<F>(self, s_converter: F) -> PResult<super::SysDCAnnotation>
