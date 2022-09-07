@@ -111,6 +111,159 @@ mod test {
     }
 
     #[test]
+    fn user_defined_type_mix_module_with_affect_1() {
+        let program = "
+            unit test;
+
+            data A {}
+
+            data B {}
+
+            module TestModuleA {
+                proc test(a: A, b: B) {}
+            }
+
+            module TestModuleB {
+                proc test(a: A, b: B) {
+                    @affect TestModuleA.test(a, b)
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    fn user_defined_type_mix_module_with_affect_2() {
+        let program = "
+            unit test;
+
+            data A {}
+
+            data B {}
+
+            module TestModuleA {
+                proc test(a: A, b: B) {
+                    @affect test2(a, b)
+                }
+
+                proc test2(a: A, b: B) {}
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    #[should_panic]
+    fn user_defined_type_mix_module_with_affect_failure_1() {
+        let program = "
+            unit test;
+
+            data A {}
+
+            data B {}
+
+            module TestModuleA {
+                proc test(a: A, b: B) {
+                    @affect test2(a)
+                }
+
+                proc test2(a: A, b: B) {}
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    fn user_defind_type_mix_module_with_modify_1() {
+        let program = "
+            unit test;
+
+            data A {}
+
+            data B {}
+
+            data C {}
+
+            module TestModule {
+                proc test(a: A, b: B, c: C) {
+                    @modify a {
+                        use b, c;
+                    }
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    fn user_defind_type_mix_module_with_modify_2() {
+        let program = "
+            unit test;
+
+            data A {}
+
+            data B {}
+
+            data C {}
+
+            module TestModule {
+                proc test(a: A, b: B, c: C) {
+                    @modify a
+                    @modify b
+                    @modify c
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    #[should_panic]
+    fn user_defind_type_mix_module_with_modify_failure_1() {
+        let program = "
+            unit test;
+
+            data A {}
+
+            data B {
+                a: i32
+            }
+
+            module TestModule {
+                proc test(a: A, b: B, c: C) {
+                    @modify a {
+                        use b.a;
+                    }
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
+    #[should_panic]
+    fn user_defind_type_mix_module_with_modify_failure_2() {
+        let program = "
+            unit test;
+
+            data A {}
+
+            data B {
+                a: i32
+            }
+
+            module TestModule {
+                proc test(a: A, b: B, c: C) {
+                    @modify a {
+                        use b, c;
+                    }
+                }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
     fn user_defined_type_mix_module_with_spawn() {
         let program = "
             unit test;
@@ -259,96 +412,6 @@ mod test {
 
                     @spawn b: A {
                         use a.b.a.c;
-                    }
-                }
-            }
-        ";
-        check(vec!(program));
-    }
-
-    #[test]
-    fn user_defind_type_mix_module_with_modify_1() {
-        let program = "
-            unit test;
-
-            data A {}
-
-            data B {}
-
-            data C {}
-
-            module TestModule {
-                proc test(a: A, b: B, c: C) {
-                    @modify a {
-                        use b, c;
-                    }
-                }
-            }
-        ";
-        check(vec!(program));
-    }
-
-    #[test]
-    fn user_defind_type_mix_module_with_modify_2() {
-        let program = "
-            unit test;
-
-            data A {}
-
-            data B {}
-
-            data C {}
-
-            module TestModule {
-                proc test(a: A, b: B, c: C) {
-                    @modify a
-                    @modify b
-                    @modify c
-                }
-            }
-        ";
-        check(vec!(program));
-    }
-
-    #[test]
-    #[should_panic]
-    fn user_defind_type_mix_module_with_modify_failure_1() {
-        let program = "
-            unit test;
-
-            data A {}
-
-            data B {
-                a: i32
-            }
-
-            module TestModule {
-                proc test(a: A, b: B, c: C) {
-                    @modify a {
-                        use b.a;
-                    }
-                }
-            }
-        ";
-        check(vec!(program));
-    }
-
-    #[test]
-    #[should_panic]
-    fn user_defind_type_mix_module_with_modify_failure_2() {
-        let program = "
-            unit test;
-
-            data A {}
-
-            data B {
-                a: i32
-            }
-
-            module TestModule {
-                proc test(a: A, b: B, c: C) {
-                    @modify a {
-                        use b, c;
                     }
                 }
             }

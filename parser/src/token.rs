@@ -14,8 +14,9 @@ pub enum TokenKind {
     Func,               // func
     Proc,               // proc
     Return,             // return
-    Spawn,              // spawn
+    Affect,             // affect
     Modify,             // modify
+    Spawn,              // spawn
     Let,                // let
     Use,                // use
 
@@ -55,9 +56,10 @@ impl Token {
             "func"      => TokenKind::Func,
             "proc"      => TokenKind::Proc,
             "return"    => TokenKind::Return,
-            "let"       => TokenKind::Let,
-            "spawn"     => TokenKind::Spawn,
+            "affect"    => TokenKind::Affect,
             "modify"    => TokenKind::Modify,
+            "spawn"     => TokenKind::Spawn,
+            "let"       => TokenKind::Let,
             "use"       => TokenKind::Use,
             "->"        => TokenKind::Allow,
             ":"         => TokenKind::Mapping,
@@ -261,8 +263,10 @@ mod test {
                 ("data",    TokenKind::Data),
                 ("module",  TokenKind::Module),
                 ("return",  TokenKind::Return),
-                ("let",     TokenKind::Let),
+                ("affect",  TokenKind::Affect),
+                ("modify",  TokenKind::Modify),
                 ("spawn",   TokenKind::Spawn),
+                ("let",     TokenKind::Let),
                 ("use",     TokenKind::Use),
                 ("->",      TokenKind::Allow),
                 (":",       TokenKind::Mapping),
@@ -304,6 +308,7 @@ mod test {
             let text = "
                 unit box;
 
+                from std import IO;
                 from square import Square;
 
                 data Box {
@@ -321,6 +326,8 @@ mod test {
                             あああ？
                         %
 
+                        @affect IO.stdout(box)
+
                         @modify box {
                             use dx, dy;
                         }
@@ -332,6 +339,11 @@ mod test {
                 }".to_string();
             let correct_token_kinds = [
                 TokenKind::Unit,
+                TokenKind::Identifier,
+                TokenKind::Semicolon,
+                TokenKind::From,
+                TokenKind::Identifier,
+                TokenKind::Import,
                 TokenKind::Identifier,
                 TokenKind::Semicolon,
                 TokenKind::From,
@@ -374,6 +386,14 @@ mod test {
                 TokenKind::AtMark,
                 TokenKind::Return,
                 TokenKind::Identifier,
+                TokenKind::AtMark,
+                TokenKind::Affect,
+                TokenKind::Identifier,
+                TokenKind::Accessor,
+                TokenKind::Identifier,
+                TokenKind::ParenthesisBegin,
+                TokenKind::Identifier,
+                TokenKind::ParenthesisEnd,
                 TokenKind::AtMark,
                 TokenKind::Modify,
                 TokenKind::Identifier,

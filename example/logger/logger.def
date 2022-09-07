@@ -1,0 +1,22 @@
+unit logger;
+
+from std import String, IO;
+from std import TimeStamp, Time;
+
+module Logger {
+    proc info(msg: String) {
+        @affect IO.stdout(msg)
+
+        @modify msg {
+            use timestamp;
+        }
+
+        @spawn timestamp: TimeStamp {
+            let now = Time.getNowTime();
+            return now;
+        }
+    }
+
+    % proc warning ... %
+    % proc error ... %
+}

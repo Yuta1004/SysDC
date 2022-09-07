@@ -1,5 +1,5 @@
 use crate::name::Name;
-use crate::types::Type;
+use crate::types::{ Type, TypeKind };
 use crate::error::{ PResult, PErrorKind };
 use crate::structure::{ SysDCSystem, SysDCFunction, SysDCAnnotation, SysDCSpawnDetail };
 use super::utils::define::DefinesManager;
@@ -23,9 +23,9 @@ impl<'a> TypeMatchChecker<'a> {
     }
 
     fn check_function(&self, func: &SysDCFunction) -> PResult<()> {
-        if let Some(returns) = &func.returns {
-            let req_ret_type = &returns.1;
-            let act_ret_type = self.def_manager.resolve_from_name(returns.0.clone(), &self.imports)?.1;
+        if func.returns.1.kind != TypeKind::Void {
+            let req_ret_type = &func.returns.1;
+            let act_ret_type = self.def_manager.resolve_from_name(func.returns.0.clone(), &self.imports)?.1;
             if req_ret_type != &act_ret_type {
                 return PErrorKind::TypeUnmatch2(req_ret_type.clone(), act_ret_type).to_err();
             }
@@ -33,7 +33,8 @@ impl<'a> TypeMatchChecker<'a> {
 
         for annotation in &func.annotations {
             match annotation {
-                SysDCAnnotation::Spawn { result, details } => self.check_annotation_spawn((result, details))?,
+                SysDCAnnotation::Affect { func, args } => self.check_annotation_affect(func, args)?,
+                SysDCAnnotation::Spawn { result, details } => self.check_annotation_spawn(result, details)?,
                 _ => {}
             }
         }
@@ -41,7 +42,16 @@ impl<'a> TypeMatchChecker<'a> {
         Ok(())
     }
 
-    fn check_annotation_spawn(&self, (result, details): (&(Name, Type), &Vec<SysDCSpawnDetail>)) -> PResult<()> {
+    fn check_annotation_affect(&self, (func, _): &(Name, Type), args: &Vec<(Name, Type)>) -> PResult<()> {
+        for ((_, act_arg_type), req_arg_type) in args.iter().zip(self.def_manager.get_args_type(&func, &self.imports)?.iter()) {
+            if act_arg_type != req_arg_type {
+                return PErrorKind::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone()).to_err();
+            }
+        }
+        Ok(())
+    }
+
+    fn check_annotation_spawn(&self, result: &(Name, Type), details: &Vec<SysDCSpawnDetail>) -> PResult<()> {
         for detail in details {
             match detail {
                 SysDCSpawnDetail::Return(_, act_ret_type) =>

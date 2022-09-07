@@ -36,6 +36,9 @@ impl From<String> for Type {
 
 #[derive(Clone, PartialEq)]
 pub enum TypeKind {
+    /* 無 */
+    Void,
+
     /* プリミティブ型 */
     Int32,
     UInt32,
@@ -54,6 +57,7 @@ pub enum TypeKind {
 impl TypeKind {
     pub fn is_primitive(&self) -> bool {
         match self {
+            TypeKind::Void |
             TypeKind::Int32 |
             TypeKind::UInt32 |
             TypeKind::Float32 |
@@ -67,6 +71,7 @@ impl TypeKind {
 impl From<String> for TypeKind {
     fn from(name: String) -> TypeKind {
         match name.as_str() {
+            "void" => TypeKind::Void,
             "i32" => TypeKind::Int32,
             "u32" => TypeKind::UInt32,
             "f32" => TypeKind::Float32,
@@ -80,6 +85,7 @@ impl From<String> for TypeKind {
 impl Debug for TypeKind {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
+            TypeKind::Void => write!(f, "void"),
             TypeKind::Int32 => write!(f, "i32"),
             TypeKind::UInt32 => write!(f, "u32"),
             TypeKind::Float32 => write!(f, "f32"),
@@ -136,7 +142,8 @@ mod test {
     }
 
     #[test]
-    fn primitive() {
+    fn default() {
+        check_serialize!(TypeKind, TypeKind::Void);
         check_serialize!(TypeKind, TypeKind::Int32);
         check_serialize!(TypeKind, TypeKind::UInt32);
         check_serialize!(TypeKind, TypeKind::Float32);
