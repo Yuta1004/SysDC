@@ -183,6 +183,7 @@ pub mod unchecked {
     #[derive(Debug, Clone)]
     pub enum SysDCAnnotation {
         Return(Name),
+        Affect { func: (Name, Type), args: Vec<(Name, Type)>},
         Modify { target: (Name, Type), uses: Vec<(Name, Type)>},
         Spawn { result: (Name, Type), details: Vec<SysDCSpawnDetail> }
     }
@@ -190,6 +191,10 @@ pub mod unchecked {
     impl SysDCAnnotation {
         pub fn new_return(name: Name) -> SysDCAnnotation {
             SysDCAnnotation::Return(name)
+        }
+
+        pub fn new_affect(func: (Name, Type), args: Vec<(Name, Type)>) -> SysDCAnnotation {
+            SysDCAnnotation::Affect { func, args }
         }
 
         pub fn new_modify(target: (Name, Type), uses: Vec<(Name, Type)>) -> SysDCAnnotation {

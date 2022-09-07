@@ -213,7 +213,7 @@ impl<'a> UnitParser<'a> {
     }
 
     /**
-     * <annotation> = @ ( <annotation_return> | <annotation_modify> | <annotation_spawn>)
+     * <annotation> = @ ( <annotation_return> | <annotation_affect> | <annotation_modify> | <annotation_spawn>)
      */
     fn parse_annotation(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCAnnotation>> {
         // @
@@ -221,14 +221,17 @@ impl<'a> UnitParser<'a> {
             return Ok(None);
         }
 
-        // ( <annotation_return> | <annotation_modify> | <annotation_spawn> )
+        // ( <annotation_return> | <annotation_affect> | <annotation_modify> | <annotation_spawn> )
         if let Some(annotation) = self.parse_annotation_return(namespace)? {
             return Ok(Some(annotation));
         }
-        if let Some(annotation) = self.parse_annotation_spawn(namespace)? {
+        if let Some(annotation) = self.parse_annotation_affect(namespace)? {
             return Ok(Some(annotation));
         }
         if let Some(annotation) = self.parse_annotation_modify(namespace)? {
+            return Ok(Some(annotation));
+        }
+        if let Some(annotation) = self.parse_annotation_spawn(namespace)? {
             return Ok(Some(annotation));
         }
 
@@ -245,6 +248,29 @@ impl<'a> UnitParser<'a> {
         }
         let returns = self.tokenizer.request(TokenKind::Identifier)?.orig;
         Ok(Some(unchecked::SysDCAnnotation::new_return(Name::new(namespace, returns))))
+    }
+
+    /**
+     * <annotation_affect> ::= affect <id_chain> \( <id_chain_list, delimiter=,> \)
+     */
+    fn parse_annotation_affect(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCAnnotation>> {
+        // affect
+        if self.tokenizer.expect(TokenKind::Affect)?.is_none() {
+            return Ok(None);
+        }
+
+        // <id_chain>
+        let func = match self.parse_id_chain(namespace)? {
+            Some((name, _)) => (Name::new_root(), Type::from(name.name)),
+            None => return PErrorKind::FunctionNameNotFound.to_err_with_loc(self.tokenizer.get_now_ref_loc())
+        };
+
+        // \( <id_list, delimiter=,> \)
+        self.tokenizer.request(TokenKind::ParenthesisBegin)?;
+        let args = parse_list!(self.parse_id_chain(namespace), TokenKind::Separater);
+        self.tokenizer.request(TokenKind::ParenthesisEnd)?;
+
+        Ok(Some(unchecked::SysDCAnnotation::new_affect(func, args)))
     }
 
     /**
@@ -649,6 +675,8 @@ mod test {
                 func move(box: Box, dx: i32, dy: i32) -> Box {
                     @return movedBox
 
+                    @affect UnknownModule.function2(box, dx, dy)
+
                     @spawn movedBox: Box {
                         use box;
                         use dx, dy;
@@ -667,6 +695,9 @@ mod test {
         let name_func_arg_box = Name::new(&name_func, "box".to_string());
         let name_func_arg_dx = Name::new(&name_func, "dx".to_string());
         let name_func_arg_dy = Name::new(&name_func, "dy".to_string());
+        let name_func_affect_box = Name::new(&name_func, "box".to_string());
+        let name_func_affect_dx = Name::new(&name_func, "dx".to_string());
+        let name_func_affect_dy = Name::new(&name_func, "dy".to_string());
         let name_func_spawn_box = Name::new(&name_func, "movedBox".to_string());
         let name_func_spawn_use_box = Name::new(&name_func, "_.box".to_string());
         let name_func_spawn_use_dx = Name::new(&name_func, "_._.dx".to_string());
@@ -682,6 +713,14 @@ mod test {
             (name_func_arg_dy, Type::from("i32".to_string()))
         );
         let func_annotations = vec!(
+            SysDCAnnotation::new_affect(
+                (Name::new_root(), Type::from("UnknownModule.function2".to_string())),
+                vec!(
+                    (name_func_affect_box, Type::new_unsovled_nohint()),
+                    (name_func_affect_dx, Type::new_unsovled_nohint()),
+                    (name_func_affect_dy, Type::new_unsovled_nohint())
+                )
+            ),
             SysDCAnnotation::new_spawn((name_func_spawn_box, Type::from("Box".to_string())), vec!(
                 SysDCSpawnDetail::new_use(name_func_spawn_use_box, Type::new_unsovled_nohint()),
                 SysDCSpawnDetail::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
@@ -876,6 +915,8 @@ mod test {
                 func move(box: Box, dx: i32, dy: i32) -> Box {
                     @return movedBox
 
+                    @affect UnknownModule.function2(box, dx, dy)
+
                     @spawn movedBox: Box {
                         use box, dx, dy;
 
@@ -903,6 +944,9 @@ mod test {
         let name_func_arg_box = Name::new(&name_func, "box".to_string());
         let name_func_arg_dx = Name::new(&name_func, "dx".to_string());
         let name_func_arg_dy = Name::new(&name_func, "dy".to_string());
+        let name_func_affect_box = Name::new(&name_func, "box".to_string());
+        let name_func_affect_dx = Name::new(&name_func, "dx".to_string());
+        let name_func_affect_dy = Name::new(&name_func, "dy".to_string());
         let name_func_spawn_box = Name::new(&name_func, "movedBox".to_string());
         let name_func_spawn_use_box = Name::new(&name_func, "_.box".to_string());
         let name_func_spawn_use_dx = Name::new(&name_func, "_.dx".to_string());
@@ -918,6 +962,14 @@ mod test {
             (name_func_arg_dy, Type::from("i32".to_string()))
         );
         let func_annotations = vec!(
+            SysDCAnnotation::new_affect(
+                (Name::new_root(), Type::from("UnknownModule.function2".to_string())),
+                vec!(
+                    (name_func_affect_box, Type::new_unsovled_nohint()),
+                    (name_func_affect_dx, Type::new_unsovled_nohint()),
+                    (name_func_affect_dy, Type::new_unsovled_nohint())
+                )
+            ),
             SysDCAnnotation::new_spawn((name_func_spawn_box, Type::from("Box".to_string())), vec!(
                 SysDCSpawnDetail::new_use(name_func_spawn_use_box, Type::new_unsovled_nohint()),
                 SysDCSpawnDetail::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
