@@ -158,8 +158,8 @@ pub mod unchecked {
     }
 
     impl SysDCFunction {
-        pub fn new(name: Name, args: Vec<(Name, Type)>, returns: (Name, Type), annotations: Vec<SysDCAnnotation>) -> SysDCFunction {
-            SysDCFunction { name, args, returns: Some(returns), annotations }
+        pub fn new(name: Name, args: Vec<(Name, Type)>, returns: Option<(Name, Type)>, annotations: Vec<SysDCAnnotation>) -> SysDCFunction {
+            SysDCFunction { name, args, returns, annotations }
         }
 
         pub fn convert<F, G, H>(self, a_convert: F, r_convert: G, s_convert: H) -> PResult<super::SysDCFunction>

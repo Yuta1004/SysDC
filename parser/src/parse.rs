@@ -136,10 +136,12 @@ impl<'a> UnitParser<'a> {
 
     /**
      * <function> ::= func <id> <id_type_mapping_list, delimiter=,> -> <id> \{ <function_body> \}
+     * <procedure> ::= proc <id> <id_type_mapping_list, delimiter=,> \{ <procedure_body > \}
      */
     fn parse_function(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCFunction>> {
-        // func
-        if self.tokenizer.expect(TokenKind::Func)?.is_none() {
+        // func | proc
+        let is_func = self.tokenizer.expect(TokenKind::Func)?.is_some();
+        if !is_func && self.tokenizer.expect(TokenKind::Proc)?.is_none() {
             return Ok(None);
         }
 
@@ -151,16 +153,24 @@ impl<'a> UnitParser<'a> {
         let args = parse_list!(self.parse_id_type_mapping(&name), TokenKind::Separater);
         self.tokenizer.request(TokenKind::ParenthesisEnd)?;
 
-        // -> <id>
-        self.tokenizer.request(TokenKind::Allow)?;
-        let return_type = Type::from(self.tokenizer.request(TokenKind::Identifier)?.orig);   // TODO: Checker
+        // ( -> <id> )
+        let mut returns_type = None;
+        if is_func {
+            self.tokenizer.request(TokenKind::Allow)?;
+            returns_type = Some(Type::from(self.tokenizer.request(TokenKind::Identifier)?.orig));
+        }
 
-        // \{ <function_body> \}
+        // \{ <function_body> | <procedure_body> \}
         self.tokenizer.request(TokenKind::BracketBegin)?;
-        let (return_name, annotations) = self.parse_function_body(&name)?;
+        let (returns, annotations) = if is_func {
+            let (return_name, annotations) = self.parse_function_body(&name)?;
+            (Some((return_name, returns_type.unwrap())), annotations)
+        } else {
+            (None, self.parse_procedure_body(&name)?)
+        };
         self.tokenizer.request(TokenKind::BracketEnd)?;
 
-        Ok(Some(unchecked::SysDCFunction::new(name, args, (return_name, return_type), annotations)))
+        Ok(Some(unchecked::SysDCFunction::new(name, args, returns, annotations)))
     }
 
     /**
@@ -184,6 +194,22 @@ impl<'a> UnitParser<'a> {
             return PErrorKind::ReturnNotExists.to_err_with_loc(self.tokenizer.get_now_ref_loc());
         }
         Ok((returns.unwrap(), annotations))
+    }
+
+    /**
+     * <procedure_body> = <annotation_list, delimiter=''>
+     */
+    fn parse_procedure_body(&mut self, namespace: &Name) -> PResult<Vec<unchecked::SysDCAnnotation>> {
+        let mut annotations = vec!();
+        while let Some(annotation) = self.parse_annotation(namespace)? {
+            match annotation {
+                unchecked::SysDCAnnotation::Return(_) => {
+                    unimplemented!()
+                },
+                _ => annotations.push(annotation)
+            }
+        }
+        Ok(annotations)
     }
 
     /**
@@ -540,7 +566,7 @@ mod test {
         let name_func = Name::new(&name_module, "new".to_string());
         let name_func_ret = Name::new(&name_func, "box".to_string());
 
-        let func_returns = (name_func_ret, Type::from("Box".to_string()));
+        let func_returns = Some((name_func_ret, Type::from("Box".to_string())));
         let func = SysDCFunction::new(name_func, vec!(), func_returns, vec!());
         let module = SysDCModule::new(name_module, vec!(func));
 
@@ -572,7 +598,7 @@ mod test {
         let func_annotations = vec!(
             SysDCAnnotation::new_spawn((name_func_spawn_box, Type::from("Box".to_string())), vec!())
         );
-        let func_returns = (name_func_ret, Type::from("Box".to_string()));
+        let func_returns = Some((name_func_ret, Type::from("Box".to_string())));
         let func = SysDCFunction::new(name_func, vec!(), func_returns, func_annotations);
         let module = SysDCModule::new(name_module, vec!(func));
 
@@ -635,7 +661,7 @@ mod test {
                 SysDCSpawnDetail::new_return(name_func_spawn_ret, Type::new_unsovled_nohint())
             ))
         );
-        let func_returns = (name_func_ret, Type::from("Box".to_string()));
+        let func_returns = Some((name_func_ret, Type::from("Box".to_string())));
         let func = SysDCFunction::new(name_func, func_args, func_returns, func_annotations);
         let module = SysDCModule::new(name_module, vec!(func));
 
@@ -697,6 +723,102 @@ mod test {
 
             module BoxModule {
                 move() -> i32 {
+                    @return a
+                }
+            }
+        ";
+        parse(program);
+    }
+
+    #[test]
+    fn procedure_simple() {
+        let program = "
+            unit test;
+
+            module BoxModule {
+                proc new() {
+                }
+            }
+        ";
+
+        let name = generate_name_for_test();
+        let name_module = Name::new(&name, "BoxModule".to_string());
+        let name_proc = Name::new(&name_module, "new".to_string());
+
+        let proc = SysDCFunction::new(name_proc, vec!(), None, vec!());
+        let module = SysDCModule::new(name_module, vec!(proc));
+
+        let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
+
+        compare_unit(program, unit);
+    }
+
+    #[test]
+    fn proc_has_spawn() {
+        let program = "
+            unit test;
+
+            module BoxModule {
+                proc new() {
+                    @spawn box: Box
+                }
+            }
+        ";
+
+        let name = generate_name_for_test();
+        let name_module = Name::new(&name, "BoxModule".to_string());
+        let name_proc = Name::new(&name_module, "new".to_string());
+        let name_proc_spawn_box = Name::new(&name_proc, "box".to_string());
+
+        let proc_annotations = vec!(
+            SysDCAnnotation::new_spawn((name_proc_spawn_box, Type::from("Box".to_string())), vec!())
+        );
+        let proc = SysDCFunction::new(name_proc, vec!(), None, proc_annotations);
+        let module = SysDCModule::new(name_module, vec!(proc));
+
+        let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
+
+        compare_unit(program, unit);
+    }
+
+    #[test]
+    #[should_panic]
+    fn illegal_procedure_1() {
+        let program = "
+            unit test;
+
+            module BoxModule {
+                proc move() -> i32 {
+
+                }
+            }
+        ";
+        parse(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn illegal_procedure_2() {
+        let program = "
+            unit test;
+
+            module BoxModule {
+                proc move() -> {
+
+                }
+            }
+        ";
+        parse(program);
+    }
+
+    #[test]
+    #[should_panic]
+    fn illegal_procedure_3() {
+        let program = "
+            unit test;
+
+            module BoxModule {
+                proc move() {
                     @return a
                 }
             }
@@ -775,7 +897,7 @@ mod test {
                 SysDCSpawnDetail::new_return(name_func_spawn_ret, Type::new_unsovled_nohint())
             ))
         );
-        let func_returns = (name_func_ret, Type::from("Box".to_string()));
+        let func_returns = Some((name_func_ret, Type::from("Box".to_string())));
         let func = SysDCFunction::new(name_func, func_args, func_returns, func_annotations);
         let module = SysDCModule::new(name_module, vec!(func));
 
