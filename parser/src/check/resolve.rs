@@ -52,12 +52,20 @@ impl<'a> TypeResolver<'a> {
     }
 
     fn resolve_annotation(&self, annotation: unchecked::SysDCAnnotation) -> PResult<SysDCAnnotation> {
+        let m_converter = |(name, _), uses| {
+            let target = self.def_manager.resolve_from_name(name, &self.imports)?;
+            let mut ruses = vec!();
+            for (name, _) in uses {
+                ruses.push(self.def_manager.resolve_from_name(name, &self.imports)?);
+            }
+            Ok((target, vec!()))
+        };
         let s_converter = |(name, _): (Name, Type), details| {
-            let result = self.def_manager.resolve_from_name(name.clone(), &self.imports)?;
+            let result = self.def_manager.resolve_from_name(name, &self.imports)?;
             let details = self.resolve_annotation_spawn_details(details)?;
             Ok((result, details))
         };
-        annotation.convert(s_converter)
+        annotation.convert(m_converter, s_converter)
     }
 
     fn resolve_annotation_spawn_details(&self, details: Vec<unchecked::SysDCSpawnDetail>) -> PResult<Vec<SysDCSpawnDetail>> {

@@ -24,6 +24,7 @@ pub enum PErrorKind {
     ReturnNotExists,
     ResultOfSpawnNotSpecified,
     FunctionNameNotFound,
+    UnknownAnnotationFound(String),
 
     /* 検査時に発生したエラー */
     AlreadyDefined(String),
@@ -73,6 +74,7 @@ impl Display for PError {
             PErrorKind::ReturnNotExists => write!(f, "Annotation \"return\" not existed"),
             PErrorKind::ResultOfSpawnNotSpecified => write!(f, "Missing to specify the result of spawn"),
             PErrorKind::FunctionNameNotFound => write!(f, "Function name is requested, but not found"),
+            PErrorKind::UnknownAnnotationFound(name) => write!(f, "Unknown annotation \"{}\" found", name),
 
             PErrorKind::AlreadyDefined(name) => write!(f, "\"{}\" is already defined", name),
             PErrorKind::TypeUnmatch1(actual) => write!(f, "\"{:?}\" is defined, but type is unmatch", actual),

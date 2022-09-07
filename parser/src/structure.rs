@@ -37,6 +37,7 @@ pub struct SysDCFunction {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SysDCAnnotation {
+    Modify { target: (Name, Type), uses: Vec<(Name, Type)> },
     Spawn { result: (Name, Type), details: Vec<SysDCSpawnDetail> }
 }
 
@@ -182,6 +183,7 @@ pub mod unchecked {
     #[derive(Debug, Clone)]
     pub enum SysDCAnnotation {
         Return(Name),
+        Modify { target: (Name, Type), uses: Vec<(Name, Type)>},
         Spawn { result: (Name, Type), details: Vec<SysDCSpawnDetail> }
     }
 
@@ -190,19 +192,28 @@ pub mod unchecked {
             SysDCAnnotation::Return(name)
         }
 
+        pub fn new_modify(target: (Name, Type), uses: Vec<(Name, Type)>) -> SysDCAnnotation {
+            SysDCAnnotation::Modify { target, uses }
+        }
+
         pub fn new_spawn(result: (Name, Type), details: Vec<SysDCSpawnDetail>) -> SysDCAnnotation {
             SysDCAnnotation::Spawn { result, details }
         }
 
-        pub fn convert<F>(self, s_converter: F) -> PResult<super::SysDCAnnotation>
+        pub fn convert<F, G>(self, m_converter: F, s_converter: G) -> PResult<super::SysDCAnnotation>
         where
-            F: Fn((Name, Type), Vec<SysDCSpawnDetail>) -> PResult<((Name, Type), Vec<super::SysDCSpawnDetail>)>
+            F: Fn((Name, Type), Vec<(Name, Type)>) -> PResult<((Name, Type), Vec<(Name, Type)>)>,
+            G: Fn((Name, Type), Vec<SysDCSpawnDetail>) -> PResult<((Name, Type), Vec<super::SysDCSpawnDetail>)>
         {
             match self {
+                SysDCAnnotation::Modify { target, uses } => {
+                    let (target, uses) = m_converter(target, uses)?;
+                    Ok(super::SysDCAnnotation::Modify { target, uses })
+                },
                 SysDCAnnotation::Spawn { result, details } => {
                     let (result, details) = s_converter(result, details)?;
                     Ok(super::SysDCAnnotation::Spawn { result, details })
-                }
+                },
                 _ => panic!("Internal error")
             }
         }

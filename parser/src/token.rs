@@ -15,6 +15,7 @@ pub enum TokenKind {
     Proc,               // proc
     Return,             // return
     Spawn,              // spawn
+    Modify,             // modify
     Let,                // let
     Use,                // use
 
@@ -56,6 +57,7 @@ impl Token {
             "return"    => TokenKind::Return,
             "let"       => TokenKind::Let,
             "spawn"     => TokenKind::Spawn,
+            "modify"    => TokenKind::Modify,
             "use"       => TokenKind::Use,
             "->"        => TokenKind::Allow,
             ":"         => TokenKind::Mapping,
@@ -319,6 +321,10 @@ mod test {
                             あああ？
                         %
 
+                        @modify box {
+                            use dx, dy;
+                        }
+
                         @spawn movedBox: Box {
                             use box.x, box.y;
                         }
@@ -368,6 +374,16 @@ mod test {
                 TokenKind::AtMark,
                 TokenKind::Return,
                 TokenKind::Identifier,
+                TokenKind::AtMark,
+                TokenKind::Modify,
+                TokenKind::Identifier,
+                TokenKind::BracketBegin,
+                TokenKind::Use,
+                TokenKind::Identifier,
+                TokenKind::Separater,
+                TokenKind::Identifier,
+                TokenKind::Semicolon,
+                TokenKind::BracketEnd,
                 TokenKind::AtMark,
                 TokenKind::Spawn,
                 TokenKind::Identifier,

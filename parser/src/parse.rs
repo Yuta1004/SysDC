@@ -213,7 +213,7 @@ impl<'a> UnitParser<'a> {
     }
 
     /**
-     * <annotation> = @ ( <annotation_return> | <annotation_spawn> )
+     * <annotation> = @ ( <annotation_return> | <annotation_modify> | <annotation_spawn>)
      */
     fn parse_annotation(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCAnnotation>> {
         // @
@@ -221,14 +221,19 @@ impl<'a> UnitParser<'a> {
             return Ok(None);
         }
 
-        // ( <annotation_return> | <annotation_spawn> )
+        // ( <annotation_return> | <annotation_modify> | <annotation_spawn> )
         if let Some(annotation) = self.parse_annotation_return(namespace)? {
             return Ok(Some(annotation));
         }
         if let Some(annotation) = self.parse_annotation_spawn(namespace)? {
             return Ok(Some(annotation));
         }
-        Ok(None)
+        if let Some(annotation) = self.parse_annotation_modify(namespace)? {
+            return Ok(Some(annotation));
+        }
+
+        let annotation_name = self.tokenizer.request(TokenKind::Identifier)?.orig;
+        PErrorKind::UnknownAnnotationFound(annotation_name).to_err_with_loc(self.tokenizer.get_now_ref_loc())
     }
 
     /**
@@ -240,6 +245,34 @@ impl<'a> UnitParser<'a> {
         }
         let returns = self.tokenizer.request(TokenKind::Identifier)?.orig;
         Ok(Some(unchecked::SysDCAnnotation::new_return(Name::new(namespace, returns))))
+    }
+
+    /**
+     * <annotation_modify> ::= modify <id> ( \{ { use <id_list, delimiter=,> ; } \} )
+     */
+    fn parse_annotation_modify(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCAnnotation>> {
+        // modify
+        if self.tokenizer.expect(TokenKind::Modify)?.is_none() {
+            return Ok(None)
+        }
+
+        // <id>
+        let name_token = self.tokenizer.request(TokenKind::Identifier)?;
+        let modify_target = (Name::new(namespace, name_token.orig), Type::new_unsovled_nohint());
+
+        // ( \{ { use <id_list, delimiter=,> ; } \} )
+        let mut uses = vec!();
+        if self.tokenizer.expect(TokenKind::BracketBegin)?.is_some() {
+            while self.tokenizer.expect(TokenKind::Use)?.is_some() {
+                for name in parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Separater) {
+                    uses.push((Name::new(namespace, name.orig), Type::new_unsovled_nohint()));
+                }
+                self.tokenizer.request(TokenKind::Semicolon)?;
+            }
+            self.tokenizer.request(TokenKind::BracketEnd)?;
+        }
+
+        Ok(Some(unchecked::SysDCAnnotation::new_modify(modify_target, uses)))
     }
 
     /**

@@ -33,7 +33,8 @@ impl<'a> TypeMatchChecker<'a> {
 
         for annotation in &func.annotations {
             match annotation {
-                SysDCAnnotation::Spawn { result, details } => self.check_annotation_spawn((result, details))?
+                SysDCAnnotation::Spawn { result, details } => self.check_annotation_spawn((result, details))?,
+                _ => {}
             }
         }
 
