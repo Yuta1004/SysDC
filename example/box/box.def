@@ -16,21 +16,7 @@ module BoxModule {
         }
     }
 
-    func move(box: Box, dx: i32, dy: i32) -> Box {
-        @return movedBox
+    proc move(box: Box, dx: i32, dy: i32) {}
 
-        @spawn movedBox: Box {
-            use box;
-            use dx, dy;
-        }
-    }
-
-    func changeSize(box: Box, w: i32, h: i32) -> Box {
-        @return changedBox
-
-        @spawn changedBox: Box {
-            use box;
-            use w, h;
-        }
-    }
+    proc changeSize(box: Box, w: i32, h: i32) {}
 }

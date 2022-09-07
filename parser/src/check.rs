@@ -587,6 +587,18 @@ mod test {
     }
 
     #[test]
+    fn procedure_simple() {
+        let program = "
+            unit test;
+
+            module TestModule {
+                proc test() { }
+            }
+        ";
+        check(vec!(program));
+    }
+
+    #[test]
     fn import_data_in_other_unit_simple() {
         let program1 = "
             unit test.A;

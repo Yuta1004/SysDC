@@ -233,7 +233,9 @@ impl DefinesManager {
 
     fn listup_defines_module(&mut self, module: &unchecked::SysDCModule) -> PResult<()> {
         for func in &module.functions {
-            self.define(Define::new(DefineKind::Function(func.returns.as_ref().unwrap().1.clone()), func.name.clone()))?;
+            if let Some(returns) = &func.returns {
+                self.define(Define::new(DefineKind::Function(returns.1.clone()), func.name.clone()))?;
+            }
             self.listup_defines_function(func)?;
         }
         Ok(())
