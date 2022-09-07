@@ -1,7 +1,7 @@
 use crate::name::Name;
 use crate::types::Type;
 use crate::error::{ PResult, PErrorKind };
-use crate::structure::{ SysDCSystem, SysDCFunction, SysDCAnnotation, SysDCSpawnChild };
+use crate::structure::{ SysDCSystem, SysDCFunction, SysDCAnnotation, SysDCSpawnDetail };
 use super::utils::define::DefinesManager;
 
 pub struct TypeMatchChecker<'a> {
@@ -31,21 +31,21 @@ impl<'a> TypeMatchChecker<'a> {
 
         for annotation in &func.annotations {
             match annotation {
-                SysDCAnnotation::Spawn { result, details } => self.check_spawn((result, details))?
+                SysDCAnnotation::Spawn { result, details } => self.check_annotation_spawn((result, details))?
             }
         }
 
         Ok(())
     }
 
-    fn check_spawn(&self, (result, details): (&(Name, Type), &Vec<SysDCSpawnChild>)) -> PResult<()> {
-        for child in details {
-            match child {
-                SysDCSpawnChild::Return(_, act_ret_type) =>
+    fn check_annotation_spawn(&self, (result, details): (&(Name, Type), &Vec<SysDCSpawnDetail>)) -> PResult<()> {
+        for detail in details {
+            match detail {
+                SysDCSpawnDetail::Return(_, act_ret_type) =>
                     if &result.1 != act_ret_type {
                         return PErrorKind::TypeUnmatch2(result.1.clone(), act_ret_type.clone()).to_err();
                     },
-                SysDCSpawnChild::LetTo { func: (func, _), args, .. } =>
+                SysDCSpawnDetail::LetTo { func: (func, _), args, .. } =>
                     for ((_, act_arg_type), req_arg_type) in args.iter().zip(self.def_manager.get_args_type(&func, &self.imports)?.iter()) {
                         if act_arg_type != req_arg_type {
                             return PErrorKind::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone()).to_err();

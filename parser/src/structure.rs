@@ -37,11 +37,11 @@ pub struct SysDCFunction {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SysDCAnnotation {
-    Spawn { result: (Name, Type), details: Vec<SysDCSpawnChild> }
+    Spawn { result: (Name, Type), details: Vec<SysDCSpawnDetail> }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum SysDCSpawnChild {
+pub enum SysDCSpawnDetail {
     Use(Name, Type),
     Return(Name, Type),
     LetTo { name: Name, func: (Name, Type), args: Vec<(Name, Type)> },
@@ -182,7 +182,7 @@ pub mod unchecked {
     #[derive(Debug, Clone)]
     pub enum SysDCAnnotation {
         Return(Name),
-        Spawn { result: (Name, Type), details: Vec<SysDCSpawnChild> }
+        Spawn { result: (Name, Type), details: Vec<SysDCSpawnDetail> }
     }
 
     impl SysDCAnnotation {
@@ -190,13 +190,13 @@ pub mod unchecked {
             SysDCAnnotation::Return(name)
         }
 
-        pub fn new_spawn(result: (Name, Type), details: Vec<SysDCSpawnChild>) -> SysDCAnnotation {
+        pub fn new_spawn(result: (Name, Type), details: Vec<SysDCSpawnDetail>) -> SysDCAnnotation {
             SysDCAnnotation::Spawn { result, details }
         }
 
         pub fn convert<F>(self, s_converter: F) -> PResult<super::SysDCAnnotation>
         where
-            F: Fn((Name, Type), Vec<SysDCSpawnChild>) -> PResult<((Name, Type), Vec<super::SysDCSpawnChild>)>
+            F: Fn((Name, Type), Vec<SysDCSpawnDetail>) -> PResult<((Name, Type), Vec<super::SysDCSpawnDetail>)>
         {
             match self {
                 SysDCAnnotation::Spawn { result, details } => {
@@ -209,42 +209,42 @@ pub mod unchecked {
     }
 
     #[derive(Debug, Clone)]
-    pub enum SysDCSpawnChild {
+    pub enum SysDCSpawnDetail {
         Use(Name, Type),
         Return(Name, Type),
         LetTo { name: Name, func: (Name, Type), args: Vec<(Name, Type)> },
     }
 
-    impl SysDCSpawnChild {
-        pub fn new_use(name: Name, types: Type) -> SysDCSpawnChild {
-            SysDCSpawnChild::Use(name, types)
+    impl SysDCSpawnDetail {
+        pub fn new_use(name: Name, types: Type) -> SysDCSpawnDetail {
+            SysDCSpawnDetail::Use(name, types)
         }
 
-        pub fn new_return(name: Name, types: Type) -> SysDCSpawnChild {
-            SysDCSpawnChild::Return(name, types)
+        pub fn new_return(name: Name, types: Type) -> SysDCSpawnDetail {
+            SysDCSpawnDetail::Return(name, types)
         }
 
-        pub fn new_let_to(name: Name, func: (Name, Type), args: Vec<(Name, Type)>) -> SysDCSpawnChild {
-            SysDCSpawnChild::LetTo { name, func, args }
+        pub fn new_let_to(name: Name, func: (Name, Type), args: Vec<(Name, Type)>) -> SysDCSpawnDetail {
+            SysDCSpawnDetail::LetTo { name, func, args }
         }
 
-        pub fn convert<F, G>(self, u_converter: F, r_converter: F, l_converter: G) -> PResult<super::SysDCSpawnChild>
+        pub fn convert<F, G>(self, u_converter: F, r_converter: F, l_converter: G) -> PResult<super::SysDCSpawnDetail>
         where
             F: Fn((Name, Type)) -> PResult<(Name, Type)>,
             G: Fn(Name, (Name, Type), Vec<(Name, Type)>) -> PResult<(Name, (Name, Type), Vec<(Name, Type)>)>,
         {
             match self {
-                SysDCSpawnChild::Use(name, types) => {
+                SysDCSpawnDetail::Use(name, types) => {
                     let (name, types) = u_converter((name, types))?;
-                    Ok(super::SysDCSpawnChild::Use(name, types))
+                    Ok(super::SysDCSpawnDetail::Use(name, types))
                 },
-                SysDCSpawnChild::Return(name, types) => {
+                SysDCSpawnDetail::Return(name, types) => {
                     let (name, types) = r_converter((name, types))?;
-                    Ok(super::SysDCSpawnChild::Return(name, types))
+                    Ok(super::SysDCSpawnDetail::Return(name, types))
                 },
-                SysDCSpawnChild::LetTo { name, func, args } => {
+                SysDCSpawnDetail::LetTo { name, func, args } => {
                     let (name, func, args) = l_converter(name, func, args)?;
-                    Ok(super::SysDCSpawnChild::LetTo { name, func, args })
+                    Ok(super::SysDCSpawnDetail::LetTo { name, func, args })
                 }
             }
         }

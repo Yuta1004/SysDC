@@ -248,7 +248,7 @@ impl DefinesManager {
             match annotation {
                 unchecked::SysDCAnnotation::Spawn { result: (name, types), details } => {
                     self.define(Define::new(DefineKind::Variable(types.clone()), name.clone()))?;
-                    self.listup_defines_function_spawn_details(details)?;
+                    self.listup_defines_annotation_spawn_details(details)?;
                 },
                 _ => {}
             }
@@ -256,15 +256,15 @@ impl DefinesManager {
         Ok(())
     }
 
-    fn listup_defines_function_spawn_details(&mut self, details: &Vec<unchecked::SysDCSpawnChild>) -> PResult<()> {
+    fn listup_defines_annotation_spawn_details(&mut self, details: &Vec<unchecked::SysDCSpawnDetail>) -> PResult<()> {
         for detail in details {
             match detail {
-                unchecked::SysDCSpawnChild::Use(name, _) => {
+                unchecked::SysDCSpawnDetail::Use(name, _) => {
                     let outer_spawn_namespace = name.clone().get_par_name(true);
                     let outer_use_name = Name::new(&outer_spawn_namespace, name.clone().name);
                     self.define(Define::new(DefineKind::Use(outer_use_name.clone()), name.clone()))?;
                 }
-                unchecked::SysDCSpawnChild::LetTo { name, func: (_, func), ..} => {
+                unchecked::SysDCSpawnDetail::LetTo { name, func: (_, func), ..} => {
                     self.define(Define::new(DefineKind::Variable(func.clone()), name.clone()))?;
                 }
                 _ => {}
