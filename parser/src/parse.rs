@@ -593,7 +593,7 @@ mod test {
                         use box;
                         use dx, dy;
 
-                        let movedBox = UnknownModule.func(dx);
+                        let movedBox = UnknownModule.function(dx);
 
                         return movedBox;
                     }
@@ -628,7 +628,7 @@ mod test {
                 SysDCSpawnDetail::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
                 SysDCSpawnDetail::new_let_to(
                     name_func_spawn_let_name,
-                    (Name::new_root(), Type::from("UnknownModule.func".to_string())),
+                    (Name::new_root(), Type::from("UnknownModule.function".to_string())),
                     vec!((name_func_spawn_let_arg_dx, Type::new_unsovled_nohint()))
                 ),
                 SysDCSpawnDetail::new_return(name_func_spawn_ret, Type::new_unsovled_nohint())
@@ -708,7 +708,7 @@ mod test {
                     @spawn movedBox: Box {
                         use box, dx, dy;
 
-                        let movedBox = UnknownModule.func(dx);
+                        let movedBox = UnknownModule.function(dx);
 
                         return movedBox;
                     }
@@ -753,7 +753,7 @@ mod test {
                 SysDCSpawnDetail::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
                 SysDCSpawnDetail::new_let_to(
                     name_func_spawn_let_name,
-                    (Name::new_root(), Type::from("UnknownModule.func".to_string())),
+                    (Name::new_root(), Type::from("UnknownModule.function".to_string())),
                     vec!((name_func_spawn_let_arg_dx, Type::new_unsovled_nohint()))
                 ),
                 SysDCSpawnDetail::new_return(name_func_spawn_ret, Type::new_unsovled_nohint())

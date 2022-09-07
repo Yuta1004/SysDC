@@ -11,6 +11,7 @@ pub enum TokenKind {
     Import,             // import
     Data,               // data
     Module,             // module
+    Func,               // func
     Return,             // return
     Spawn,              // spawn
     Let,                // let
@@ -49,6 +50,7 @@ impl Token {
             "import"    => TokenKind::Import,
             "data"      => TokenKind::Data,
             "module"    => TokenKind::Module,
+            "func"      => TokenKind::Func,
             "return"    => TokenKind::Return,
             "let"       => TokenKind::Let,
             "spawn"     => TokenKind::Spawn,
@@ -306,7 +308,7 @@ mod test {
                 }
 
                 module BoxModule {
-                    move(box: Box, dx: i32, dy: i32) -> Box {
+                    func move(box: Box, dx: i32, dy: i32) -> Box {
                         @return movedBox
 
                         %
@@ -343,6 +345,7 @@ mod test {
                 TokenKind::Module,
                 TokenKind::Identifier,
                 TokenKind::BracketBegin,
+                TokenKind::Func,
                 TokenKind::Identifier,
                 TokenKind::ParenthesisBegin,
                 TokenKind::Identifier,
