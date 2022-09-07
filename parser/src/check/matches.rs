@@ -33,7 +33,8 @@ impl<'a> TypeMatchChecker<'a> {
 
         for annotation in &func.annotations {
             match annotation {
-                SysDCAnnotation::Spawn { result, details } => self.check_annotation_spawn((result, details))?,
+                SysDCAnnotation::Affect { func, args } => self.check_annotation_affect(func, args)?,
+                SysDCAnnotation::Spawn { result, details } => self.check_annotation_spawn(result, details)?,
                 _ => {}
             }
         }
@@ -41,7 +42,16 @@ impl<'a> TypeMatchChecker<'a> {
         Ok(())
     }
 
-    fn check_annotation_spawn(&self, (result, details): (&(Name, Type), &Vec<SysDCSpawnDetail>)) -> PResult<()> {
+    fn check_annotation_affect(&self, (func, _): &(Name, Type), args: &Vec<(Name, Type)>) -> PResult<()> {
+        for ((_, act_arg_type), req_arg_type) in args.iter().zip(self.def_manager.get_args_type(&func, &self.imports)?.iter()) {
+            if act_arg_type != req_arg_type {
+                return PErrorKind::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone()).to_err();
+            }
+        }
+        Ok(())
+    }
+
+    fn check_annotation_spawn(&self, result: &(Name, Type), details: &Vec<SysDCSpawnDetail>) -> PResult<()> {
         for detail in details {
             match detail {
                 SysDCSpawnDetail::Return(_, act_ret_type) =>

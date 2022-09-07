@@ -261,7 +261,7 @@ impl<'a> UnitParser<'a> {
 
         // <id_chain>
         let func = match self.parse_id_chain(namespace)? {
-            Some((name, _)) => (Name::new_root(), Type::from(name.name)),
+            Some((name, _)) => (name.clone(), Type::from(name.name)),
             None => return PErrorKind::FunctionNameNotFound.to_err_with_loc(self.tokenizer.get_now_ref_loc())
         };
 
@@ -695,6 +695,7 @@ mod test {
         let name_func_arg_box = Name::new(&name_func, "box".to_string());
         let name_func_arg_dx = Name::new(&name_func, "dx".to_string());
         let name_func_arg_dy = Name::new(&name_func, "dy".to_string());
+        let name_func_affect = Name::new(&name_func, "UnknownModule.function2".to_string());
         let name_func_affect_box = Name::new(&name_func, "box".to_string());
         let name_func_affect_dx = Name::new(&name_func, "dx".to_string());
         let name_func_affect_dy = Name::new(&name_func, "dy".to_string());
@@ -714,7 +715,7 @@ mod test {
         );
         let func_annotations = vec!(
             SysDCAnnotation::new_affect(
-                (Name::new_root(), Type::from("UnknownModule.function2".to_string())),
+                (name_func_affect, Type::from("UnknownModule.function2".to_string())),
                 vec!(
                     (name_func_affect_box, Type::new_unsovled_nohint()),
                     (name_func_affect_dx, Type::new_unsovled_nohint()),
@@ -946,6 +947,7 @@ mod test {
         let name_func_arg_box = Name::new(&name_func, "box".to_string());
         let name_func_arg_dx = Name::new(&name_func, "dx".to_string());
         let name_func_arg_dy = Name::new(&name_func, "dy".to_string());
+        let name_func_affect = Name::new(&name_func, "UnknownModule.function2".to_string());
         let name_func_affect_box = Name::new(&name_func, "box".to_string());
         let name_func_affect_dx = Name::new(&name_func, "dx".to_string());
         let name_func_affect_dy = Name::new(&name_func, "dy".to_string());
@@ -965,7 +967,7 @@ mod test {
         );
         let func_annotations = vec!(
             SysDCAnnotation::new_affect(
-                (Name::new_root(), Type::from("UnknownModule.function2".to_string())),
+                (name_func_affect, Type::from("UnknownModule.function2".to_string())),
                 vec!(
                     (name_func_affect_box, Type::new_unsovled_nohint()),
                     (name_func_affect_dx, Type::new_unsovled_nohint()),

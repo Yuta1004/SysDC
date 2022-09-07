@@ -37,6 +37,7 @@ pub struct SysDCFunction {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SysDCAnnotation {
+    Affect { func: (Name, Type), args: Vec<(Name, Type)>},
     Modify { target: (Name, Type), uses: Vec<(Name, Type)> },
     Spawn { result: (Name, Type), details: Vec<SysDCSpawnDetail> }
 }
@@ -205,12 +206,17 @@ pub mod unchecked {
             SysDCAnnotation::Spawn { result, details }
         }
 
-        pub fn convert<F, G>(self, m_converter: F, s_converter: G) -> PResult<super::SysDCAnnotation>
+        pub fn convert<F, G, H>(self, a_converter: F, m_converter: G, s_converter: H) -> PResult<super::SysDCAnnotation>
         where
             F: Fn((Name, Type), Vec<(Name, Type)>) -> PResult<((Name, Type), Vec<(Name, Type)>)>,
-            G: Fn((Name, Type), Vec<SysDCSpawnDetail>) -> PResult<((Name, Type), Vec<super::SysDCSpawnDetail>)>
+            G: Fn((Name, Type), Vec<(Name, Type)>) -> PResult<((Name, Type), Vec<(Name, Type)>)>,
+            H: Fn((Name, Type), Vec<SysDCSpawnDetail>) -> PResult<((Name, Type), Vec<super::SysDCSpawnDetail>)>
         {
             match self {
+                SysDCAnnotation::Affect { func, args } => {
+                    let (func, args) = a_converter(func, args)?;
+                    Ok(super::SysDCAnnotation::Affect{ func, args })
+                },
                 SysDCAnnotation::Modify { target, uses } => {
                     let (target, uses) = m_converter(target, uses)?;
                     Ok(super::SysDCAnnotation::Modify { target, uses })

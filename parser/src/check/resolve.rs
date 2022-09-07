@@ -47,6 +47,14 @@ impl<'a> TypeResolver<'a> {
     }
 
     fn resolve_annotation(&self, annotation: unchecked::SysDCAnnotation) -> PResult<SysDCAnnotation> {
+        let a_converter = | func, args | {
+            let func = self.def_manager.resolve_from_type(func, &self.imports)?;
+            let mut rargs = vec!();
+            for (name, _) in args {
+                rargs.push(self.def_manager.resolve_from_name(name, &self.imports)?);
+            }
+            Ok((func, rargs))
+        };
         let m_converter = |(name, _), uses| {
             let target = self.def_manager.resolve_from_name(name, &self.imports)?;
             let mut ruses = vec!();
@@ -55,12 +63,12 @@ impl<'a> TypeResolver<'a> {
             }
             Ok((target, vec!()))
         };
-        let s_converter = |(name, _): (Name, Type), details| {
+        let s_converter = |(name, _), details| {
             let result = self.def_manager.resolve_from_name(name, &self.imports)?;
             let details = self.resolve_annotation_spawn_details(details)?;
             Ok((result, details))
         };
-        annotation.convert(m_converter, s_converter)
+        annotation.convert(a_converter, m_converter, s_converter)
     }
 
     fn resolve_annotation_spawn_details(&self, details: Vec<unchecked::SysDCSpawnDetail>) -> PResult<Vec<SysDCSpawnDetail>> {
