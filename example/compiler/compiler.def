@@ -7,7 +7,7 @@ from compiler.tokenizer import TokenList, Tokenizer;
 from compiler.parser import Parser;
 
 module Compiler {
-    compiile(program: String) -> SysDCSystem {
+    func compiile(program: String) -> SysDCSystem {
         @return system
 
         @spawn system: SysDCSystem {

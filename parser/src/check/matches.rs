@@ -23,10 +23,12 @@ impl<'a> TypeMatchChecker<'a> {
     }
 
     fn check_function(&self, func: &SysDCFunction) -> PResult<()> {
-        let req_ret_type = &func.returns.as_ref().unwrap().1;
-        let act_ret_type = self.def_manager.resolve_from_name(func.returns.clone().unwrap().0, &self.imports)?.1;
-        if req_ret_type != &act_ret_type {
-            return PErrorKind::TypeUnmatch2(req_ret_type.clone(), act_ret_type).to_err();
+        if let Some(returns) = &func.returns {
+            let req_ret_type = &returns.1;
+            let act_ret_type = self.def_manager.resolve_from_name(returns.0.clone(), &self.imports)?.1;
+            if req_ret_type != &act_ret_type {
+                return PErrorKind::TypeUnmatch2(req_ret_type.clone(), act_ret_type).to_err();
+            }
         }
 
         for annotation in &func.annotations {
