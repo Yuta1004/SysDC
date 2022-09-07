@@ -231,7 +231,9 @@ impl<'a> UnitParser<'a> {
         if let Some(annotation) = self.parse_annotation_modify(namespace)? {
             return Ok(Some(annotation));
         }
-        Ok(None)
+
+        let annotation_name = self.tokenizer.request(TokenKind::Identifier)?.orig;
+        PErrorKind::UnknownAnnotationFound(annotation_name).to_err_with_loc(self.tokenizer.get_now_ref_loc())
     }
 
     /**
