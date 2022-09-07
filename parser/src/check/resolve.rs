@@ -1,7 +1,7 @@
 use crate::name::Name;
 use crate::types::{ Type, TypeKind };
 use crate::error::PResult;
-use crate::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
+use crate::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawnChild };
 use crate::structure::unchecked;
 use super::utils::define::DefinesManager;
 
@@ -43,14 +43,19 @@ impl<'a> TypeResolver<'a> {
             let returns = self.def_manager.resolve_from_type(returns.unwrap(), &self.imports)?;
             Ok(Some(returns))
         };
-        func.convert(a_converter, r_converter, |spawn| self.resolve_spawn(spawn))
+        func.convert(a_converter, r_converter, |annotation| self.resolve_annotation(annotation))
     }
 
-    fn resolve_spawn(&self, spawn: unchecked::SysDCSpawn) -> PResult<SysDCSpawn> {
-        spawn.convert(
-            |(name, _)| self.def_manager.resolve_from_name(name.clone(), &self.imports),
-            |spawn_child| self.resolve_spawn_child(spawn_child)
-        )
+    fn resolve_annotation(&self, annotation: unchecked::SysDCAnnotation) -> PResult<SysDCAnnotation> {
+        let s_converter = |(name, _): (Name, Type), details| {
+            let result = self.def_manager.resolve_from_name(name.clone(), &self.imports)?;
+            let mut rdetails = vec!();
+            for detail in details {
+                rdetails.push(self.resolve_spawn_child(detail)?);
+            }
+            Ok((result, rdetails))
+        };
+        annotation.convert(s_converter)
     }
 
     fn resolve_spawn_child(&self, spawn_child: unchecked::SysDCSpawnChild) -> PResult<SysDCSpawnChild> {

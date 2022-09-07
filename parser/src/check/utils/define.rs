@@ -11,7 +11,6 @@ enum DefineKind {
     Module,
     Function(Type),
     Argument(Type),
-
     Variable(Type),
     Use(Name)
 }
@@ -245,15 +244,20 @@ impl DefinesManager {
             self.define(Define::new(DefineKind::Variable(types.clone()), name.clone()))?;
             self.define(Define::new(DefineKind::Argument(types.clone()), name.clone()))?;
         }
-        for spawn@unchecked::SysDCSpawn { result: (name, types), .. } in &func.spawns {
-            self.define(Define::new(DefineKind::Variable(types.clone()), name.clone()))?;
-            self.listup_defines_function_spawn_details(spawn)?;
+        for annotation in &func.annotations {
+            match annotation {
+                unchecked::SysDCAnnotation::Spawn { result: (name, types), details } => {
+                    self.define(Define::new(DefineKind::Variable(types.clone()), name.clone()))?;
+                    self.listup_defines_function_spawn_details(details)?;
+                },
+                _ => {}
+            }
         }
         Ok(())
     }
 
-    fn listup_defines_function_spawn_details(&mut self, spawn: &unchecked::SysDCSpawn) -> PResult<()> {
-        for detail in &spawn.details {
+    fn listup_defines_function_spawn_details(&mut self, details: &Vec<unchecked::SysDCSpawnChild>) -> PResult<()> {
+        for detail in details {
             match detail {
                 unchecked::SysDCSpawnChild::Use(name, _) => {
                     let outer_spawn_namespace = name.clone().get_par_name(true);

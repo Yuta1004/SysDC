@@ -29,11 +29,6 @@ macro_rules! parse_list {
     }};
 }
 
-enum Annotation {
-    Return(Name),
-    Spawn(unchecked::SysDCSpawn)
-}
-
 pub struct UnitParser<'a> {
     tokenizer: Tokenizer<'a>
 }
@@ -161,39 +156,39 @@ impl<'a> UnitParser<'a> {
 
         // \{ <function_body> \}
         self.tokenizer.request(TokenKind::BracketBegin)?;
-        let (return_name, spawns) = self.parse_function_body(&name)?;
+        let (return_name, annotations) = self.parse_function_body(&name)?;
         self.tokenizer.request(TokenKind::BracketEnd)?;
 
-        Ok(Some(unchecked::SysDCFunction::new(name, args, (return_name, return_type), spawns)))
+        Ok(Some(unchecked::SysDCFunction::new(name, args, (return_name, return_type), annotations)))
     }
 
     /**
      * <function_body> = <annotation_list, delimiter=''>
      */
-    fn parse_function_body(&mut self, namespace: &Name) -> PResult<(Name, Vec<unchecked::SysDCSpawn>)> {
+    fn parse_function_body(&mut self, namespace: &Name) -> PResult<(Name, Vec<unchecked::SysDCAnnotation>)> {
         let mut returns: Option<Name> = None;
-        let mut spawns = vec!();
+        let mut annotations = vec!();
         while let Some(annotation) = self.parse_annotation(namespace)? {
             match annotation {
-                Annotation::Return(ret) => {
+                unchecked::SysDCAnnotation::Return(ret) => {
                     if returns.is_some() {
                         return PErrorKind::ReturnExistsMultiple.to_err_with_loc(self.tokenizer.get_now_ref_loc());
                     }
                     returns = Some(ret)
-                }
-                Annotation::Spawn(spawn) => spawns.push(spawn),
+                },
+                _ => annotations.push(annotation)
             }
         }
         if returns.is_none() {
             return PErrorKind::ReturnNotExists.to_err_with_loc(self.tokenizer.get_now_ref_loc());
         }
-        Ok((returns.unwrap(), spawns))
+        Ok((returns.unwrap(), annotations))
     }
 
     /**
-     * <annotation> = @ ( <annotation_spawn> | <annotation_return> )
+     * <annotation> = @ ( <annotation_return> | <annotation_spawn> )
      */
-    fn parse_annotation(&mut self, namespace: &Name) -> PResult<Option<Annotation>> {
+    fn parse_annotation(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCAnnotation>> {
         // @
         if self.tokenizer.expect(TokenKind::AtMark)?.is_none() {
             return Ok(None);
@@ -212,18 +207,18 @@ impl<'a> UnitParser<'a> {
     /**
      * <annotation_return> ::= return <id>
      */
-    fn parse_annotation_return(&mut self, namespace: &Name) -> PResult<Option<Annotation>> {
+    fn parse_annotation_return(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCAnnotation>> {
         if self.tokenizer.expect(TokenKind::Return)?.is_none() {
             return Ok(None);
         }
         let returns = self.tokenizer.request(TokenKind::Identifier)?.orig;
-        Ok(Some(Annotation::Return(Name::new(namespace, returns))))
+        Ok(Some(unchecked::SysDCAnnotation::new_return(Name::new(namespace, returns))))
     }
 
     /**
      * <annotation_spawn> ::= spawn <id_type_mapping> ( \{ { <annotation_spawn_detail> } \} )
      */
-    fn parse_annotation_spawn(&mut self, namespace: &Name) -> PResult<Option<Annotation>> {
+    fn parse_annotation_spawn(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCAnnotation>> {
         // spawn
         if self.tokenizer.expect(TokenKind::Spawn)?.is_none() {
             return Ok(None);
@@ -250,7 +245,7 @@ impl<'a> UnitParser<'a> {
             self.tokenizer.request(TokenKind::BracketEnd)?;
         }
 
-        Ok(Some(Annotation::Spawn(unchecked::SysDCSpawn::new(spawn_result.unwrap(), details))))
+        Ok(Some(unchecked::SysDCAnnotation::new_spawn(spawn_result.unwrap(), details)))
     }
 
     /**
@@ -351,7 +346,7 @@ mod test {
     use super::super::name::Name;
     use super::super::types::Type;
     use super::super::token::Tokenizer;
-    use super::super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCSpawn, SysDCSpawnChild };
+    use super::super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawnChild };
 
     #[test]
     fn empty() {
@@ -573,11 +568,11 @@ mod test {
         let name_func_spawn_box = Name::new(&name_func, "box".to_string());
         let name_func_ret = Name::new(&name_func, "box".to_string());
 
-        let func_spawns = vec!(
-            SysDCSpawn::new((name_func_spawn_box, Type::from("Box".to_string())), vec!())
+        let func_annotations = vec!(
+            SysDCAnnotation::new_spawn((name_func_spawn_box, Type::from("Box".to_string())), vec!())
         );
         let func_returns = (name_func_ret, Type::from("Box".to_string()));
-        let func = SysDCFunction::new(name_func, vec!(), func_returns, func_spawns);
+        let func = SysDCFunction::new(name_func, vec!(), func_returns, func_annotations);
         let module = SysDCModule::new(name_module, vec!(func));
 
         let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
@@ -626,8 +621,8 @@ mod test {
             (name_func_arg_dx, Type::from("i32".to_string())),
             (name_func_arg_dy, Type::from("i32".to_string()))
         );
-        let func_spawns = vec!(
-            SysDCSpawn::new((name_func_spawn_box, Type::from("Box".to_string())), vec!(
+        let func_annotations = vec!(
+            SysDCAnnotation::new_spawn((name_func_spawn_box, Type::from("Box".to_string())), vec!(
                 SysDCSpawnChild::new_use(name_func_spawn_use_box, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
@@ -640,7 +635,7 @@ mod test {
             ))
         );
         let func_returns = (name_func_ret, Type::from("Box".to_string()));
-        let func = SysDCFunction::new(name_func, func_args, func_returns, func_spawns);
+        let func = SysDCFunction::new(name_func, func_args, func_returns, func_annotations);
         let module = SysDCModule::new(name_module, vec!(func));
 
         let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
@@ -751,8 +746,8 @@ mod test {
             (name_func_arg_dx, Type::from("i32".to_string())),
             (name_func_arg_dy, Type::from("i32".to_string()))
         );
-        let func_spawns = vec!(
-            SysDCSpawn::new((name_func_spawn_box, Type::from("Box".to_string())), vec!(
+        let func_annotations = vec!(
+            SysDCAnnotation::new_spawn((name_func_spawn_box, Type::from("Box".to_string())), vec!(
                 SysDCSpawnChild::new_use(name_func_spawn_use_box, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
                 SysDCSpawnChild::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
@@ -765,7 +760,7 @@ mod test {
             ))
         );
         let func_returns = (name_func_ret, Type::from("Box".to_string()));
-        let func = SysDCFunction::new(name_func, func_args, func_returns, func_spawns);
+        let func = SysDCFunction::new(name_func, func_args, func_returns, func_annotations);
         let module = SysDCModule::new(name_module, vec!(func));
 
         let data_members = vec!(

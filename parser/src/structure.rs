@@ -32,13 +32,12 @@ pub struct SysDCFunction {
     pub name: Name,
     pub args: Vec<(Name, Type)>,
     pub returns: Option<(Name, Type)>,
-    pub spawns: Vec<SysDCSpawn>
+    pub annotations: Vec<SysDCAnnotation>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SysDCSpawn {
-    pub result: (Name, Type),
-    pub details: Vec<SysDCSpawnChild>
+pub enum SysDCAnnotation {
+    Spawn { result: (Name, Type), details: Vec<SysDCSpawnChild> }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -155,52 +154,57 @@ pub mod unchecked {
         pub name: Name,
         pub args: Vec<(Name, Type)>,
         pub returns: Option<(Name, Type)>,
-        pub spawns: Vec<SysDCSpawn>
+        pub annotations: Vec<SysDCAnnotation>
     }
 
     impl SysDCFunction {
-        pub fn new(name: Name, args: Vec<(Name, Type)>, returns: (Name, Type), spawns: Vec<SysDCSpawn>) -> SysDCFunction {
-            SysDCFunction { name, args, returns: Some(returns), spawns }
+        pub fn new(name: Name, args: Vec<(Name, Type)>, returns: (Name, Type), annotations: Vec<SysDCAnnotation>) -> SysDCFunction {
+            SysDCFunction { name, args, returns: Some(returns), annotations }
         }
 
         pub fn convert<F, G, H>(self, a_convert: F, r_convert: G, s_convert: H) -> PResult<super::SysDCFunction>
         where
             F: Fn((Name, Type)) -> PResult<(Name, Type)>,
             G: Fn(Option<(Name, Type)>) -> PResult<Option<(Name, Type)>>,
-            H: Fn(SysDCSpawn) -> PResult<super::SysDCSpawn>
+            H: Fn(SysDCAnnotation) -> PResult<super::SysDCAnnotation>
         {
-            let (returns, mut args, mut spawns) = (r_convert(self.returns)?, vec!(), vec!());
+            let (returns, mut args, mut annotations) = (r_convert(self.returns)?, vec!(), vec!());
             for arg in self.args {
                 args.push(a_convert(arg)?);
             }
-            for spawn in self.spawns {
-                spawns.push(s_convert(spawn)?);
+            for annotation in self.annotations {
+                annotations.push(s_convert(annotation)?);
             }
-            Ok(super::SysDCFunction { name: self.name, args, returns, spawns })
+            Ok(super::SysDCFunction { name: self.name, args, returns, annotations })
         }
     }
 
     #[derive(Debug, Clone)]
-    pub struct SysDCSpawn {
-        pub result: (Name, Type),
-        pub details: Vec<SysDCSpawnChild>
+    pub enum SysDCAnnotation {
+        Return(Name),
+        Spawn { result: (Name, Type), details: Vec<SysDCSpawnChild> }
     }
 
-    impl SysDCSpawn {
-        pub fn new(result: (Name, Type), details: Vec<SysDCSpawnChild>) -> SysDCSpawn {
-            SysDCSpawn { result, details }
+    impl SysDCAnnotation {
+        pub fn new_return(name: Name) -> SysDCAnnotation {
+            SysDCAnnotation::Return(name)
         }
 
-        pub fn convert<F, G>(self, r_converter: F, d_converter: G) -> PResult<super::SysDCSpawn>
+        pub fn new_spawn(result: (Name, Type), details: Vec<SysDCSpawnChild>) -> SysDCAnnotation {
+            SysDCAnnotation::Spawn { result, details }
+        }
+
+        pub fn convert<F>(self, s_converter: F) -> PResult<super::SysDCAnnotation>
         where
-            F: Fn((Name, Type)) -> PResult<(Name, Type)>,
-            G: Fn(SysDCSpawnChild) -> PResult<super::SysDCSpawnChild>
+            F: Fn((Name, Type), Vec<SysDCSpawnChild>) -> PResult<((Name, Type), Vec<super::SysDCSpawnChild>)>
         {
-            let (result, mut details) = (r_converter(self.result)?, vec!());
-            for detail in self.details {
-                details.push(d_converter(detail)?);
+            match self {
+                SysDCAnnotation::Spawn { result, details } => {
+                    let (result, details) = s_converter(result, details)?;
+                    Ok(super::SysDCAnnotation::Spawn { result, details })
+                }
+                _ => panic!("Internal error")
             }
-            Ok(super::SysDCSpawn{ result, details })
         }
     }
 
