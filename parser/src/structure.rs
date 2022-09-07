@@ -31,7 +31,7 @@ pub struct SysDCModule {
 pub struct SysDCFunction {
     pub name: Name,
     pub args: Vec<(Name, Type)>,
-    pub returns: Option<(Name, Type)>,
+    pub returns: (Name, Type),
     pub annotations: Vec<SysDCAnnotation>
 }
 
@@ -154,19 +154,19 @@ pub mod unchecked {
     pub struct SysDCFunction {
         pub name: Name,
         pub args: Vec<(Name, Type)>,
-        pub returns: Option<(Name, Type)>,
+        pub returns: (Name, Type),
         pub annotations: Vec<SysDCAnnotation>
     }
 
     impl SysDCFunction {
-        pub fn new(name: Name, args: Vec<(Name, Type)>, returns: Option<(Name, Type)>, annotations: Vec<SysDCAnnotation>) -> SysDCFunction {
+        pub fn new(name: Name, args: Vec<(Name, Type)>, returns: (Name, Type), annotations: Vec<SysDCAnnotation>) -> SysDCFunction {
             SysDCFunction { name, args, returns, annotations }
         }
 
         pub fn convert<F, G, H>(self, a_convert: F, r_convert: G, s_convert: H) -> PResult<super::SysDCFunction>
         where
             F: Fn((Name, Type)) -> PResult<(Name, Type)>,
-            G: Fn(Option<(Name, Type)>) -> PResult<Option<(Name, Type)>>,
+            G: Fn((Name, Type)) -> PResult<(Name, Type)>,
             H: Fn(SysDCAnnotation) -> PResult<super::SysDCAnnotation>
         {
             let (returns, mut args, mut annotations) = (r_convert(self.returns)?, vec!(), vec!());

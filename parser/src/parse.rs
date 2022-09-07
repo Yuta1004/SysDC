@@ -1,5 +1,5 @@
 use super::name::Name;
-use super::types::Type;
+use super::types::{ Type, TypeKind };
 use super::token::{ TokenKind, Tokenizer };
 use super::error::{ PResult, PErrorKind };
 use super::structure::unchecked;
@@ -164,9 +164,9 @@ impl<'a> UnitParser<'a> {
         self.tokenizer.request(TokenKind::BracketBegin)?;
         let (returns, annotations) = if is_func {
             let (return_name, annotations) = self.parse_function_body(&name)?;
-            (Some((return_name, returns_type.unwrap())), annotations)
+            ((return_name, returns_type.unwrap()), annotations)
         } else {
-            (None, self.parse_procedure_body(&name)?)
+            ((Name::new_root(), Type::new(TypeKind::Void, None)), self.parse_procedure_body(&name)?)
         };
         self.tokenizer.request(TokenKind::BracketEnd)?;
 
@@ -430,7 +430,7 @@ impl<'a> UnitParser<'a> {
 mod test {
     use super::UnitParser;
     use super::super::name::Name;
-    use super::super::types::Type;
+    use super::super::types::{ Type, TypeKind };
     use super::super::token::Tokenizer;
     use super::super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawnDetail };
 
@@ -625,7 +625,7 @@ mod test {
         let name_func = Name::new(&name_module, "new".to_string());
         let name_func_ret = Name::new(&name_func, "box".to_string());
 
-        let func_returns = Some((name_func_ret, Type::from("Box".to_string())));
+        let func_returns = (name_func_ret, Type::from("Box".to_string()));
         let func = SysDCFunction::new(name_func, vec!(), func_returns, vec!());
         let module = SysDCModule::new(name_module, vec!(func));
 
@@ -657,7 +657,7 @@ mod test {
         let func_annotations = vec!(
             SysDCAnnotation::new_spawn((name_func_spawn_box, Type::from("Box".to_string())), vec!())
         );
-        let func_returns = Some((name_func_ret, Type::from("Box".to_string())));
+        let func_returns = (name_func_ret, Type::from("Box".to_string()));
         let func = SysDCFunction::new(name_func, vec!(), func_returns, func_annotations);
         let module = SysDCModule::new(name_module, vec!(func));
 
@@ -733,7 +733,7 @@ mod test {
                 SysDCSpawnDetail::new_return(name_func_spawn_ret, Type::new_unsovled_nohint())
             ))
         );
-        let func_returns = Some((name_func_ret, Type::from("Box".to_string())));
+        let func_returns = (name_func_ret, Type::from("Box".to_string()));
         let func = SysDCFunction::new(name_func, func_args, func_returns, func_annotations);
         let module = SysDCModule::new(name_module, vec!(func));
 
@@ -817,7 +817,8 @@ mod test {
         let name_module = Name::new(&name, "BoxModule".to_string());
         let name_proc = Name::new(&name_module, "new".to_string());
 
-        let proc = SysDCFunction::new(name_proc, vec!(), None, vec!());
+        let proc_returns = (Name::new_root(), Type::new(TypeKind::Void, None));
+        let proc = SysDCFunction::new(name_proc, vec!(), proc_returns, vec!());
         let module = SysDCModule::new(name_module, vec!(proc));
 
         let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
@@ -845,7 +846,8 @@ mod test {
         let proc_annotations = vec!(
             SysDCAnnotation::new_spawn((name_proc_spawn_box, Type::from("Box".to_string())), vec!())
         );
-        let proc = SysDCFunction::new(name_proc, vec!(), None, proc_annotations);
+        let proc_returns = (Name::new_root(), Type::new(TypeKind::Void, None));
+        let proc = SysDCFunction::new(name_proc, vec!(), proc_returns, proc_annotations);
         let module = SysDCModule::new(name_module, vec!(proc));
 
         let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
@@ -982,7 +984,7 @@ mod test {
                 SysDCSpawnDetail::new_return(name_func_spawn_ret, Type::new_unsovled_nohint())
             ))
         );
-        let func_returns = Some((name_func_ret, Type::from("Box".to_string())));
+        let func_returns = (name_func_ret, Type::from("Box".to_string()));
         let func = SysDCFunction::new(name_func, func_args, func_returns, func_annotations);
         let module = SysDCModule::new(name_module, vec!(func));
 

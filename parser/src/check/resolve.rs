@@ -39,14 +39,9 @@ impl<'a> TypeResolver<'a> {
 
     fn resolve_function(&self, func: unchecked::SysDCFunction) -> PResult<SysDCFunction> {
         let a_converter = |arg| self.def_manager.resolve_from_type(arg, &self.imports);
-        let r_converter = |returns: Option<(Name, Type)>| {
-            match returns {
-                Some(returns) => {
-                    let returns = self.def_manager.resolve_from_type(returns, &self.imports)?;
-                    Ok(Some(returns))
-                },
-                None => Ok(None)
-            }
+        let r_converter = |returns: (Name, Type)| {
+            let returns = self.def_manager.resolve_from_type(returns, &self.imports)?;
+            Ok(returns)
         };
         func.convert(a_converter, r_converter, |annotation| self.resolve_annotation(annotation))
     }

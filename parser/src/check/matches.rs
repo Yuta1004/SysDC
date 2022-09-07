@@ -1,5 +1,5 @@
 use crate::name::Name;
-use crate::types::Type;
+use crate::types::{ Type, TypeKind };
 use crate::error::{ PResult, PErrorKind };
 use crate::structure::{ SysDCSystem, SysDCFunction, SysDCAnnotation, SysDCSpawnDetail };
 use super::utils::define::DefinesManager;
@@ -23,9 +23,9 @@ impl<'a> TypeMatchChecker<'a> {
     }
 
     fn check_function(&self, func: &SysDCFunction) -> PResult<()> {
-        if let Some(returns) = &func.returns {
-            let req_ret_type = &returns.1;
-            let act_ret_type = self.def_manager.resolve_from_name(returns.0.clone(), &self.imports)?.1;
+        if func.returns.1.kind != TypeKind::Void {
+            let req_ret_type = &func.returns.1;
+            let act_ret_type = self.def_manager.resolve_from_name(func.returns.0.clone(), &self.imports)?.1;
             if req_ret_type != &act_ret_type {
                 return PErrorKind::TypeUnmatch2(req_ret_type.clone(), act_ret_type).to_err();
             }
