@@ -24,6 +24,10 @@ SysDCのパーサ
 - `mod name` (name.rs)
 - `mod types` (types.rs)
 
+### location.rs
+
+ソースコード上の位置を表すための構造体を定義
+
 ### name.rs
 
 内部表現内で使用する名前を扱うための構造体を定義
