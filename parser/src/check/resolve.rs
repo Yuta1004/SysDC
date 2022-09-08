@@ -38,7 +38,7 @@ impl<'a> TypeResolver<'a> {
                 Ok((name, types))
             } else {
                 self.def_manager
-                    .resolve_from_type((name, types), &self.imports)
+                    .resolve_from_type((name, types), self.imports)
             }
         })
     }
@@ -48,9 +48,9 @@ impl<'a> TypeResolver<'a> {
     }
 
     fn resolve_function(&self, func: unchecked::SysDCFunction) -> anyhow::Result<SysDCFunction> {
-        let a_converter = |arg| self.def_manager.resolve_from_type(arg, &self.imports);
+        let a_converter = |arg| self.def_manager.resolve_from_type(arg, self.imports);
         let r_converter = |returns: (Name, Type)| {
-            let returns = self.def_manager.resolve_from_type(returns, &self.imports)?;
+            let returns = self.def_manager.resolve_from_type(returns, self.imports)?;
             Ok(returns)
         };
         let ann_converter = |annotation| self.resolve_annotation(annotation);
@@ -62,23 +62,23 @@ impl<'a> TypeResolver<'a> {
         annotation: unchecked::SysDCAnnotation,
     ) -> anyhow::Result<SysDCAnnotation> {
         let a_converter = |func, args| {
-            let func = self.def_manager.resolve_from_type(func, &self.imports)?;
+            let func = self.def_manager.resolve_from_type(func, self.imports)?;
             let mut rargs = vec![];
             for (name, _) in args {
-                rargs.push(self.def_manager.resolve_from_name(name, &self.imports)?);
+                rargs.push(self.def_manager.resolve_from_name(name, self.imports)?);
             }
             Ok((func, rargs))
         };
         let m_converter = |(name, _), uses| {
-            let target = self.def_manager.resolve_from_name(name, &self.imports)?;
+            let target = self.def_manager.resolve_from_name(name, self.imports)?;
             let mut ruses = vec![];
             for (name, _) in uses {
-                ruses.push(self.def_manager.resolve_from_name(name, &self.imports)?);
+                ruses.push(self.def_manager.resolve_from_name(name, self.imports)?);
             }
             Ok((target, ruses))
         };
         let s_converter = |(name, _), details| {
-            let result = self.def_manager.resolve_from_name(name, &self.imports)?;
+            let result = self.def_manager.resolve_from_name(name, self.imports)?;
             let details = self.resolve_annotation_spawn_details(details)?;
             Ok((result, details))
         };
@@ -91,7 +91,7 @@ impl<'a> TypeResolver<'a> {
     ) -> anyhow::Result<Vec<SysDCSpawnDetail>> {
         let ur_converter = |(name, _): (Name, Type)| {
             self.def_manager
-                .resolve_from_name(name.clone(), &self.imports)
+                .resolve_from_name(name.clone(), self.imports)
         };
         let l_converter = |name: Name, func: (Name, Type), args: Vec<(Name, Type)>| {
             if let Type {
@@ -103,10 +103,10 @@ impl<'a> TypeResolver<'a> {
                 for (arg_name, _) in args {
                     let (arg_name, arg_type) = self
                         .def_manager
-                        .resolve_from_name(arg_name.clone(), &self.imports)?;
+                        .resolve_from_name(arg_name.clone(), self.imports)?;
                     rargs.push((arg_name, arg_type));
                 }
-                let func = self.def_manager.resolve_from_type(func, &self.imports)?;
+                let func = self.def_manager.resolve_from_type(func, self.imports)?;
                 return Ok((name, func, rargs));
             }
             panic!("Internal Error")

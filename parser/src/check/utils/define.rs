@@ -57,8 +57,8 @@ impl DefinesManager {
         }
 
         if let TypeKind::Unsolved(hint) = &types.kind {
-            let (head, tails) = split_name(&hint);
-            let found_def = self.find(name.clone(), &head, &imports)?;
+            let (head, tails) = split_name(hint);
+            let found_def = self.find(name.clone(), &head, imports)?;
             return match found_def.kind {
                 DefineKind::Data => match tails {
                     Some(_) => Err(PError::from(PErrorKind::IllegalAccess).into()),
@@ -69,7 +69,7 @@ impl DefinesManager {
                     None => Err(PError::from(PErrorKind::MissingFunctionName).into()),
                 },
                 DefineKind::Function(_) => {
-                    self.get_func_in_module(&name.get_namespace(true), &hint, imports)
+                    self.get_func_in_module(&name.get_namespace(true), hint, imports)
                 }
                 _ => Err(PError::from(PErrorKind::TypeUnmatch1(types)).into()),
             };
@@ -128,7 +128,7 @@ impl DefinesManager {
         let mut args = vec![];
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Argument(types) = kind {
-                if &refs.namespace == &func_name {
+                if refs.namespace == func_name {
                     args.push(
                         self.resolve_from_type((refs.clone(), types.clone()), imports)?
                             .1,
@@ -146,7 +146,7 @@ impl DefinesManager {
         member: &String,
         imports: &Vec<Name>,
     ) -> anyhow::Result<(Name, Type)> {
-        let (head, tails) = split_name(&member);
+        let (head, tails) = split_name(member);
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
                 if data.get_full_name() == refs.namespace && head == refs.name {

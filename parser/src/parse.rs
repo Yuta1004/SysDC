@@ -416,7 +416,7 @@ impl<'a> UnitParser<'a> {
         // ( \{ { <annotation_spawn_detail > } \} )
         let mut details = vec![];
         if self.tokenizer.expect(TokenKind::BracketBegin)?.is_some() {
-            let mut namespace = Name::new(&namespace, "_".to_string());
+            let mut namespace = Name::new(namespace, "_".to_string());
             while let Some(new_details) = self.parse_annotation_spawn_detail(&namespace)? {
                 let for_cmp = new_details[0].clone();
                 details.extend(new_details);
