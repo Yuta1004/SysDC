@@ -1,11 +1,11 @@
 use std::fmt;
-use std::fmt::{ Display, Formatter };
+use std::fmt::{Display, Formatter};
 
 use thiserror::Error;
 
-use super::types::Type;
-use super::token::TokenKind;
 use super::location::Location;
+use super::token::TokenKind;
+use super::types::Type;
 
 #[derive(Debug, Error)]
 pub enum PErrorKind {
@@ -61,12 +61,15 @@ pub enum PErrorKind {
 #[derive(Debug, Error)]
 pub struct PError {
     kind: PErrorKind,
-    happen_at: Location
+    happen_at: Location,
 }
 
 impl From<PErrorKind> for PError {
     fn from(kind: PErrorKind) -> PError {
-        PError { kind, happen_at: Location::new() }
+        PError {
+            kind,
+            happen_at: Location::new(),
+        }
     }
 }
 

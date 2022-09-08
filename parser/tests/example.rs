@@ -4,9 +4,7 @@ use sysdc_parser::Parser;
 
 #[test]
 fn parse_example_box() {
-    parse_files(&[
-        "../example/box/box.def"
-    ]);
+    parse_files(&["../example/box/box.def"]);
 }
 
 #[test]
@@ -16,16 +14,13 @@ fn parse_example_compiler() {
         "../example/compiler/parser.def",
         "../example/compiler/std.def",
         "../example/compiler/structure.def",
-        "../example/compiler/tokenizer.def"
+        "../example/compiler/tokenizer.def",
     ]);
 }
 
 #[test]
 fn parse_example_logger() {
-    parse_files(&[
-        "../example/logger/logger.def",
-        "../example/logger/std.def"
-    ])
+    parse_files(&["../example/logger/logger.def", "../example/logger/std.def"])
 }
 
 fn parse_files(pathes: &[&str]) {

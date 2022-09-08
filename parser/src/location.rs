@@ -1,16 +1,19 @@
 use std::fmt;
-use std::fmt::{ Display, Formatter };
+use std::fmt::{Display, Formatter};
 
 // ソースコード上での位置を表す構造体
 #[derive(Debug, Clone)]
 pub struct Location {
     filename: Option<String>,
-    coord: Option<(i32, i32)>
+    coord: Option<(i32, i32)>,
 }
 
 impl Location {
     pub fn new() -> Location {
-        Location { filename: None, coord: None }
+        Location {
+            filename: None,
+            coord: None,
+        }
     }
 
     pub fn with_filename(mut self, filename: String) -> Location {
@@ -29,14 +32,14 @@ impl Display for Location {
         match (&self.filename, self.coord) {
             (Some(filename), Some((row, col))) => {
                 write!(f, "{}:{}:{}", filename, row, col)
-            },
+            }
             (None, Some((row, col))) => {
                 write!(f, "{}:{}", row, col)
-            },
+            }
             (Some(filename), None) => {
                 write!(f, "{}", filename)
-            },
-            _ => write!(f, "?")
+            }
+            _ => write!(f, "?"),
         }
     }
 }

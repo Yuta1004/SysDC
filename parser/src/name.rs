@@ -1,25 +1,25 @@
-use std::fmt::{ Debug, Formatter };
+use std::fmt::{Debug, Formatter};
 
-use serde::{ Serialize, Deserialize };
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Name {
     pub name: String,
-    pub namespace: String
+    pub namespace: String,
 }
 
 impl Name {
     pub fn new(base: &Name, name: String) -> Name {
         Name {
             name: name.clone(),
-            namespace: base.get_full_name()
+            namespace: base.get_full_name(),
         }
     }
 
     pub fn new_root() -> Name {
         Name {
             name: "0".to_string(),
-            namespace: "".to_string()
+            namespace: "".to_string(),
         }
     }
 
@@ -28,18 +28,31 @@ impl Name {
     }
 
     pub fn get_namespace(&self, ignore_underscore: bool) -> Name {
-        let splitted_name = self.namespace.split(".").filter(|x| !ignore_underscore || x != &"_").collect::<Vec<&str>>();
-        let new_name = splitted_name[splitted_name.len()-2].to_string();
-        let new_namespace = splitted_name[0..splitted_name.len()-2].join(".");
-        Name { name: new_name, namespace: new_namespace }
+        let splitted_name = self
+            .namespace
+            .split(".")
+            .filter(|x| !ignore_underscore || x != &"_")
+            .collect::<Vec<&str>>();
+        let new_name = splitted_name[splitted_name.len() - 2].to_string();
+        let new_namespace = splitted_name[0..splitted_name.len() - 2].join(".");
+        Name {
+            name: new_name,
+            namespace: new_namespace,
+        }
     }
 
     pub fn get_par_name(&self, ignore_underscore: bool) -> Name {
         let name = self.get_full_name();
-        let splitted_name = name.split(".").filter(|x| !ignore_underscore || x != &"_").collect::<Vec<&str>>();
-        let par_name = splitted_name[splitted_name.len()-2];
-        let par_namespace = splitted_name[0..splitted_name.len()-2].join(".");
-        Name { name: par_name.to_string(), namespace: par_namespace }
+        let splitted_name = name
+            .split(".")
+            .filter(|x| !ignore_underscore || x != &"_")
+            .collect::<Vec<&str>>();
+        let par_name = splitted_name[splitted_name.len() - 2];
+        let par_namespace = splitted_name[0..splitted_name.len() - 2].join(".");
+        Name {
+            name: par_name.to_string(),
+            namespace: par_namespace,
+        }
     }
 
     pub fn has_underscore(&self) -> bool {
