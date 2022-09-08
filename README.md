@@ -18,18 +18,13 @@ CLI
 
 内部表現を利用するツール群
 
-```
-    out.sysdc
-       ↑ ↓
-+---------------+
-|      cli      |
-+---------------+
-        ↑
-        +------------------+
-  parse |             exec |
-+---------------+   +---------------+
-|     parser    |   |   tools/...   |
-+---------------+   +---------------+
+```mermaid
+flowchart TB
+    cli--*.def-->parser
+    parser--SysDCSystem-->cli
+    cli--SysDCSystem-->tools
+    tools-->debug
+    tools-->json
 ```
 
 ## サンプルコードの実行
