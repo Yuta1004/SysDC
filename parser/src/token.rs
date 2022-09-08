@@ -228,16 +228,13 @@ impl<'a> Tokenizer<'a> {
         let mut comment = false;
         while self.exists_next() {
             match CharType::from(self.hold_char.unwrap()) {
-                CharType::Space => {
-                    self.now_ref_col += 1;
-                }
+                CharType::Space => {}
                 CharType::NewLine => {
                     self.now_ref_row += 1;
                     self.now_ref_col = 1;
                 }
                 CharType::Comment => {
                     comment = !comment;
-                    self.now_ref_col += 1;
                 }
                 _ => {
                     if !comment {
