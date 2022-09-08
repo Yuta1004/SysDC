@@ -2,8 +2,6 @@ mod utils;
 mod resolve;
 mod matches;
 
-use anyhow;
-
 use super::structure::unchecked;
 use super::structure::SysDCSystem;
 use matches::TypeMatchChecker;

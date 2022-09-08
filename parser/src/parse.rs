@@ -1,5 +1,3 @@
-use anyhow;
-
 use super::error::{PError, PErrorKind};
 use super::name::Name;
 use super::structure::unchecked;

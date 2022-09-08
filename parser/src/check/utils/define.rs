@@ -1,5 +1,3 @@
-use anyhow;
-
 use crate::error::{PError, PErrorKind};
 use crate::name::Name;
 use crate::structure::unchecked;

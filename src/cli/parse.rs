@@ -2,7 +2,6 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 
-use anyhow;
 use clap::Parser;
 use rmp_serde::Serializer;
 use serde::Serialize;

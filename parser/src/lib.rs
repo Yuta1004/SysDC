@@ -7,8 +7,6 @@ pub mod name;
 pub mod types;
 pub mod structure;
 
-use anyhow;
-
 use parse::UnitParser;
 use structure::unchecked;
 use structure::SysDCSystem;

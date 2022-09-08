@@ -1,7 +1,5 @@
 use std::str::Chars;
 
-use anyhow;
-
 use super::error::{PError, PErrorKind};
 use super::location::Location;
 

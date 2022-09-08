@@ -1,13 +1,9 @@
 use std::fs;
 
-use anyhow;
 use clap::Parser;
-use rmp_serde;
 use thiserror::Error;
 
 use sysdc_parser::structure::SysDCSystem;
-use sysdc_tool_debug;
-use sysdc_tool_json;
 
 #[derive(Debug, Error)]
 enum ExecError {

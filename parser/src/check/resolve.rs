@@ -1,5 +1,3 @@
-use anyhow;
-
 use super::utils::define::DefinesManager;
 use crate::name::Name;
 use crate::structure::unchecked;

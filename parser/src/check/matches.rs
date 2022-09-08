@@ -1,5 +1,3 @@
-use anyhow;
-
 use super::utils::define::DefinesManager;
 use crate::error::{PError, PErrorKind};
 use crate::name::Name;
