@@ -3,7 +3,7 @@ use std::str::Chars;
 use super::error::{PError, PErrorKind};
 use super::location::Location;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     /* Reserved */
     Unit,   // unit
