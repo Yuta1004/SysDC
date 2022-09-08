@@ -101,17 +101,17 @@ impl<'a> TypeResolver<'a> {
                 ..
             } = func.1
             {
-                let mut let_to_args = vec![];
+                let mut rargs = vec![];
                 for (arg_name, _) in args {
                     let (arg_name, arg_type) = self
                         .def_manager
                         .resolve_from_name(arg_name.clone(), &self.imports)?;
-                    let_to_args.push((arg_name, arg_type));
+                    rargs.push((arg_name, arg_type));
                 }
-                let resolved_func = self
+                let func = self
                     .def_manager
-                    .resolve_from_type((name.clone(), func.1), &self.imports)?;
-                return Ok((name, resolved_func, let_to_args));
+                    .resolve_from_type(func, &self.imports)?;
+                return Ok((name, func, rargs));
             }
             panic!("Internal Error")
         };
