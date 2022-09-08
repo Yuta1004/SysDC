@@ -3,7 +3,7 @@ use crate::name::Name;
 use crate::structure::unchecked;
 use crate::types::{Type, TypeKind};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum DefineKind {
     Data,
     DataMember(Type),

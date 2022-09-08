@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use super::name::Name;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Type {
     pub kind: TypeKind,
     pub refs: Option<Name>,
@@ -34,7 +34,7 @@ impl From<String> for Type {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum TypeKind {
     /* 無 */
     Void,
