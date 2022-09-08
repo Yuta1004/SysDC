@@ -89,10 +89,8 @@ impl<'a> TypeResolver<'a> {
         &self,
         details: Vec<unchecked::SysDCSpawnDetail>,
     ) -> anyhow::Result<Vec<SysDCSpawnDetail>> {
-        let ur_converter = |(name, _): (Name, Type)| {
-            self.def_manager
-                .resolve_from_name(name, self.imports)
-        };
+        let ur_converter =
+            |(name, _): (Name, Type)| self.def_manager.resolve_from_name(name, self.imports);
         let l_converter = |name: Name, func: (Name, Type), args: Vec<(Name, Type)>| {
             if let Type {
                 kind: TypeKind::Unsolved(_),

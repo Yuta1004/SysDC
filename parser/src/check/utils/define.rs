@@ -143,7 +143,7 @@ impl DefinesManager {
     fn get_member_in_data(
         &self,
         data: &Name,
-        member: &String,
+        member: &str,
         imports: &Vec<Name>,
     ) -> anyhow::Result<(Name, Type)> {
         let (head, tails) = split_name(member);
@@ -173,7 +173,7 @@ impl DefinesManager {
             }
         }
         Err(PError::from(PErrorKind::MemberNotDefinedInData(
-            member.clone(),
+            member.to_string(),
             data.name.clone(),
         ))
         .into())
@@ -352,7 +352,7 @@ impl DefinesManager {
     }
 }
 
-fn split_name(s: &String) -> (String, Option<String>) {
+fn split_name(s: &str) -> (String, Option<String>) {
     let splitted = s.split('.').collect::<Vec<&str>>();
     match splitted.len() {
         1 => (splitted[0].to_string(), None),

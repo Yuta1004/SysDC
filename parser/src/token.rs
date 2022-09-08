@@ -100,7 +100,7 @@ pub struct Tokenizer<'a> {
 }
 
 impl<'a> Tokenizer<'a> {
-    pub fn new(filename: String, text: &'a String) -> Tokenizer<'a> {
+    pub fn new(filename: String, text: &'a str) -> Tokenizer<'a> {
         let mut tokenizer = Tokenizer {
             chars: text.chars(),
             hold_char: None,
