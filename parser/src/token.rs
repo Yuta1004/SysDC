@@ -158,7 +158,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn tokenize(&mut self) -> anyhow::Result<Option<Token>> {
-        if !self.hold_token.is_none() {
+        if self.hold_token.is_some() {
             return Ok(self.hold_token.clone());
         }
         if !self.exists_next() {

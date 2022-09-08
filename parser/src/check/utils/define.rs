@@ -214,7 +214,7 @@ impl DefinesManager {
         imports: &Vec<Name>,
     ) -> anyhow::Result<Define> {
         let had_underscore = namespace.has_underscore();
-        while namespace.name.len() > 0 {
+        while !namespace.name.is_empty() {
             for Define { kind, refs } in &self.defines {
                 if refs.namespace == namespace.namespace && &refs.name == name {
                     if let DefineKind::Variable(_) = kind {
