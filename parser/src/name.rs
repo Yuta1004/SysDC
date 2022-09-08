@@ -11,7 +11,7 @@ pub struct Name {
 impl Name {
     pub fn new(base: &Name, name: String) -> Name {
         Name {
-            name: name.clone(),
+            name,
             namespace: base.get_full_name(),
         }
     }

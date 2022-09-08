@@ -108,7 +108,7 @@ impl DefinesManager {
                 Some(_) => {
                     let (dname, _) = self.resolve_from_name(use_ref, imports)?;
                     self.resolve_from_name(
-                        Name::new(&dname.get_par_name(false), name.name.clone()),
+                        Name::new(&dname.get_par_name(false), name.name),
                         imports,
                     )
                 }
