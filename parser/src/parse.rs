@@ -460,7 +460,7 @@ impl<'a> UnitParser<'a> {
 
             // <id_chain>
             let func = match self.parse_id_chain(namespace)? {
-                Some((func, _)) => func.name,
+                Some((func, _)) => func,
                 None => {
                     return Err(PError::from(PErrorKind::FunctionNameNotFound)
                         .with_loc(self.tokenizer.get_now_ref_loc())
@@ -478,7 +478,7 @@ impl<'a> UnitParser<'a> {
 
             return Ok(Some(vec![unchecked::SysDCSpawnDetail::new_let_to(
                 let_to,
-                (Name::new_root(), Type::from(func)),
+                (func.clone(), Type::from(func.name)),
                 args,
             )]));
         }
@@ -878,6 +878,7 @@ mod test {
         let name_func_spawn_use_box = Name::new(&name_func, "_.box".to_string());
         let name_func_spawn_use_dx = Name::new(&name_func, "_._.dx".to_string());
         let name_func_spawn_use_dy = Name::new(&name_func, "_._.dy".to_string());
+        let name_func_spawn_func = Name::new(&name_func, "_._._.UnknownModule.function".to_string());
         let name_func_spawn_let_name = Name::new(&name_func, "_._._.movedBox".to_string());
         let name_func_spawn_let_arg_dx = Name::new(&name_func, "_._._.dx".to_string());
         let name_func_spawn_ret = Name::new(&name_func, "_._._._.movedBox".to_string());
@@ -909,7 +910,7 @@ mod test {
                     SysDCSpawnDetail::new_let_to(
                         name_func_spawn_let_name,
                         (
-                            Name::new_root(),
+                            name_func_spawn_func,
                             Type::from("UnknownModule.function".to_string()),
                         ),
                         vec![(name_func_spawn_let_arg_dx, Type::new_unsovled_nohint())],
@@ -1149,6 +1150,7 @@ mod test {
         let name_func_spawn_use_box = Name::new(&name_func, "_.box".to_string());
         let name_func_spawn_use_dx = Name::new(&name_func, "_.dx".to_string());
         let name_func_spawn_use_dy = Name::new(&name_func, "_.dy".to_string());
+        let name_func_spawn_func = Name::new(&name_func, "_._.UnknownModule.function".to_string());
         let name_func_spawn_let_name = Name::new(&name_func, "_._.movedBox".to_string());
         let name_func_spawn_let_arg_dx = Name::new(&name_func, "_._.dx".to_string());
         let name_func_spawn_ret = Name::new(&name_func, "_._._.movedBox".to_string());
@@ -1180,7 +1182,7 @@ mod test {
                     SysDCSpawnDetail::new_let_to(
                         name_func_spawn_let_name,
                         (
-                            Name::new_root(),
+                            name_func_spawn_func,
                             Type::from("UnknownModule.function".to_string()),
                         ),
                         vec![(name_func_spawn_let_arg_dx, Type::new_unsovled_nohint())],
