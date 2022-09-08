@@ -32,26 +32,15 @@ flowchart TB
 ### Box
 
 ```
-$ cargo run parse example/box/box.def
+$ cargo run parse example/box/*.def
 Load: box.def
 1 units loaded!
 
 $ cargo run exec debug
+
+$ cargo run exec json
 ```
 
-### Compiler
-
-```
-$ cargo run parse example/compiler/*.def
-Load: compiler.def
-Load: parser.def
-Load: std.def
-Load: structure.def
-Load: tokenizer.def
-5 units loaded!
-
-$ cargo run exec debug
-```
 
 ## コマンド
 
