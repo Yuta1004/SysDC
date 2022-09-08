@@ -67,10 +67,12 @@ impl<'a> TypeMatchChecker<'a> {
         (func, _): &(Name, Type),
         args: &Vec<(Name, Type)>,
     ) -> anyhow::Result<()> {
-        for ((_, act_arg_type), req_arg_type) in args
-            .iter()
-            .zip(self.def_manager.get_args_type(&func, &self.imports)?.iter())
-        {
+        let act_arg_types = args;
+        let req_arg_types = self.def_manager.get_args_type(func, self.imports)?;
+        if act_arg_types.len() != req_arg_types.len() {
+            return Err(PError::from(PErrorKind::ArgumentsLengthNotMatch).into());
+        }
+        for ((_, act_arg_type), req_arg_type) in act_arg_types.iter().zip(req_arg_types.iter()) {
             if act_arg_type != req_arg_type {
                 return Err(PError::from(PErrorKind::TypeUnmatch2(
                     req_arg_type.clone(),
@@ -103,9 +105,13 @@ impl<'a> TypeMatchChecker<'a> {
                     args,
                     ..
                 } => {
-                    for ((_, act_arg_type), req_arg_type) in args
-                        .iter()
-                        .zip(self.def_manager.get_args_type(&func, &self.imports)?.iter())
+                    let act_arg_types = args;
+                    let req_arg_types = self.def_manager.get_args_type(func, self.imports)?;
+                    if act_arg_types.len() != req_arg_types.len() {
+                        return Err(PError::from(PErrorKind::ArgumentsLengthNotMatch).into());
+                    }
+                    for ((_, act_arg_type), req_arg_type) in
+                        act_arg_types.iter().zip(req_arg_types.iter())
                     {
                         if act_arg_type != req_arg_type {
                             return Err(PError::from(PErrorKind::TypeUnmatch2(

@@ -607,7 +607,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn function_argument_check_ng() {
+    fn function_argument_check_ng_1() {
         let program = "
             unit test;
 
@@ -646,6 +646,32 @@ mod test {
                     @spawn c: C {
                         use a, b;
                     }
+                }
+            }
+        ";
+        check(vec![program]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn function_argument_check_ng_2() {
+        let program = "
+            unit test;
+
+            module TestModule {
+                func test(a: i32) -> i32 {
+                    @return result
+
+                    @spawn result: i32 {
+                        use a;
+                        let val = test2(a);
+                        return val;
+                    }
+                }
+
+                func test2(a: i32, b: i32) -> i32 {
+                    @return result
+                    @spawn result: i32
                 }
             }
         ";

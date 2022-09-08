@@ -108,9 +108,7 @@ impl<'a> TypeResolver<'a> {
                         .resolve_from_name(arg_name.clone(), &self.imports)?;
                     rargs.push((arg_name, arg_type));
                 }
-                let func = self
-                    .def_manager
-                    .resolve_from_type(func, &self.imports)?;
+                let func = self.def_manager.resolve_from_type(func, &self.imports)?;
                 return Ok((name, func, rargs));
             }
             panic!("Internal Error")
