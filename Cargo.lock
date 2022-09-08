@@ -381,6 +381,7 @@ dependencies = [
 name = "sysdc_tool_debug"
 version = "0.0.1"
 dependencies = [
+ "anyhow",
  "sysdc_parser",
 ]
 
@@ -388,6 +389,7 @@ dependencies = [
 name = "sysdc_tool_json"
 version = "0.0.1"
 dependencies = [
+ "anyhow",
  "serde_json",
  "sysdc_parser",
 ]
