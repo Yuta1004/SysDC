@@ -1,5 +1,3 @@
-use anyhow;
-
 use crate::error::{PError, PErrorKind};
 use crate::name::Name;
 use crate::structure::unchecked;
@@ -59,8 +57,8 @@ impl DefinesManager {
         }
 
         if let TypeKind::Unsolved(hint) = &types.kind {
-            let (head, tails) = split_name(&hint);
-            let found_def = self.find(name.clone(), &head, &imports)?;
+            let (head, tails) = split_name(hint);
+            let found_def = self.find(name.clone(), &head, imports)?;
             return match found_def.kind {
                 DefineKind::Data => match tails {
                     Some(_) => Err(PError::from(PErrorKind::IllegalAccess).into()),
@@ -71,7 +69,7 @@ impl DefinesManager {
                     None => Err(PError::from(PErrorKind::MissingFunctionName).into()),
                 },
                 DefineKind::Function(_) => {
-                    self.get_func_in_module(&name.get_namespace(true), &hint, imports)
+                    self.get_func_in_module(&name.get_namespace(true), hint, imports)
                 }
                 _ => Err(PError::from(PErrorKind::TypeUnmatch1(types)).into()),
             };
@@ -110,7 +108,7 @@ impl DefinesManager {
                 Some(_) => {
                     let (dname, _) = self.resolve_from_name(use_ref, imports)?;
                     self.resolve_from_name(
-                        Name::new(&dname.get_par_name(false), name.name.clone()),
+                        Name::new(&dname.get_par_name(false), name.name),
                         imports,
                     )
                 }
@@ -130,7 +128,7 @@ impl DefinesManager {
         let mut args = vec![];
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Argument(types) = kind {
-                if &refs.namespace == &func_name {
+                if refs.namespace == func_name {
                     args.push(
                         self.resolve_from_type((refs.clone(), types.clone()), imports)?
                             .1,
@@ -145,10 +143,10 @@ impl DefinesManager {
     fn get_member_in_data(
         &self,
         data: &Name,
-        member: &String,
+        member: &str,
         imports: &Vec<Name>,
     ) -> anyhow::Result<(Name, Type)> {
-        let (head, tails) = split_name(&member);
+        let (head, tails) = split_name(member);
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
                 if data.get_full_name() == refs.namespace && head == refs.name {
@@ -175,7 +173,7 @@ impl DefinesManager {
             }
         }
         Err(PError::from(PErrorKind::MemberNotDefinedInData(
-            member.clone(),
+            member.to_string(),
             data.name.clone(),
         ))
         .into())
@@ -216,7 +214,7 @@ impl DefinesManager {
         imports: &Vec<Name>,
     ) -> anyhow::Result<Define> {
         let had_underscore = namespace.has_underscore();
-        while namespace.name.len() > 0 {
+        while !namespace.name.is_empty() {
             for Define { kind, refs } in &self.defines {
                 if refs.namespace == namespace.namespace && &refs.name == name {
                     if let DefineKind::Variable(_) = kind {
@@ -306,18 +304,16 @@ impl DefinesManager {
             ))?;
         }
         for annotation in &func.annotations {
-            match annotation {
-                unchecked::SysDCAnnotation::Spawn {
-                    result: (name, types),
-                    details,
-                } => {
-                    self.define(Define::new(
-                        DefineKind::Variable(types.clone()),
-                        name.clone(),
-                    ))?;
-                    self.listup_defines_annotation_spawn_details(details)?;
-                }
-                _ => {}
+            if let unchecked::SysDCAnnotation::Spawn {
+                result: (name, types),
+                details,
+            } = annotation
+            {
+                self.define(Define::new(
+                    DefineKind::Variable(types.clone()),
+                    name.clone(),
+                ))?;
+                self.listup_defines_annotation_spawn_details(details)?;
             }
         }
         Ok(())
@@ -354,8 +350,8 @@ impl DefinesManager {
     }
 }
 
-fn split_name(s: &String) -> (String, Option<String>) {
-    let splitted = s.split(".").collect::<Vec<&str>>();
+fn split_name(s: &str) -> (String, Option<String>) {
+    let splitted = s.split('.').collect::<Vec<&str>>();
     match splitted.len() {
         1 => (splitted[0].to_string(), None),
         _ => (splitted[0].to_string(), Some(splitted[1..].join("."))),

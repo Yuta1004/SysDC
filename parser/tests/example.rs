@@ -24,7 +24,7 @@ fn parse_example_logger() {
 }
 
 fn parse_files(pathes: &[&str]) {
-    let mut parser = Parser::new();
+    let mut parser = Parser::default();
     for path in pathes {
         let s8 = fs::read(path).unwrap();
         let s = String::from_utf8(s8).unwrap();

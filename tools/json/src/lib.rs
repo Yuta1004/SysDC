@@ -1,8 +1,6 @@
 use std::fs::File;
 use std::io::Write;
 
-use anyhow;
-use serde_json;
 use sysdc_parser::structure::SysDCSystem;
 
 pub fn exec(system: &SysDCSystem, args: &Vec<String>) -> anyhow::Result<()> {

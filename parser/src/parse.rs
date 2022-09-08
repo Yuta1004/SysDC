@@ -1,5 +1,3 @@
-use anyhow;
-
 use super::error::{PError, PErrorKind};
 use super::name::Name;
 use super::structure::unchecked;
@@ -74,14 +72,14 @@ impl<'a> UnitParser<'a> {
                         .into())
                 }
                 (i, d, m) => {
-                    if i.is_some() {
-                        imports.extend(i.unwrap());
+                    if let Some(i) = i {
+                        imports.extend(i);
                     }
-                    if d.is_some() {
-                        data.push(d.unwrap());
+                    if let Some(d) = d {
+                        data.push(d);
                     }
-                    if m.is_some() {
-                        modules.push(m.unwrap());
+                    if let Some(m) = m {
+                        modules.push(m);
                     }
                 }
             }
@@ -418,7 +416,7 @@ impl<'a> UnitParser<'a> {
         // ( \{ { <annotation_spawn_detail > } \} )
         let mut details = vec![];
         if self.tokenizer.expect(TokenKind::BracketBegin)?.is_some() {
-            let mut namespace = Name::new(&namespace, "_".to_string());
+            let mut namespace = Name::new(namespace, "_".to_string());
             while let Some(new_details) = self.parse_annotation_spawn_detail(&namespace)? {
                 let for_cmp = new_details[0].clone();
                 details.extend(new_details);

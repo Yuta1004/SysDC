@@ -7,23 +7,18 @@ pub mod name;
 pub mod types;
 pub mod structure;
 
-use anyhow;
-
 use parse::UnitParser;
 use structure::unchecked;
 use structure::SysDCSystem;
 use token::Tokenizer;
 
+#[derive(Default)]
 pub struct Parser {
     units: Vec<unchecked::SysDCUnit>,
 }
 
 impl Parser {
-    pub fn new() -> Parser {
-        Parser { units: vec![] }
-    }
-
-    pub fn parse(&mut self, filename: String, program: &String) -> anyhow::Result<()> {
+    pub fn parse(&mut self, filename: String, program: &str) -> anyhow::Result<()> {
         let tokenizer = Tokenizer::new(filename, program);
         match UnitParser::parse(tokenizer) {
             Ok(unit) => {

@@ -1,5 +1,3 @@
-use anyhow;
-
 use super::utils::define::DefinesManager;
 use crate::error::{PError, PErrorKind};
 use crate::name::Name;
@@ -24,7 +22,7 @@ impl<'a> TypeMatchChecker<'a> {
         for unit in &system.units {
             for module in &unit.modules {
                 for func in &module.functions {
-                    checker.check_function(&func)?;
+                    checker.check_function(func)?;
                 }
             }
         }
@@ -36,7 +34,7 @@ impl<'a> TypeMatchChecker<'a> {
             let req_ret_type = &func.returns.1;
             let act_ret_type = self
                 .def_manager
-                .resolve_from_name(func.returns.0.clone(), &self.imports)?
+                .resolve_from_name(func.returns.0.clone(), self.imports)?
                 .1;
             if req_ret_type != &act_ret_type {
                 return Err(PError::from(PErrorKind::TypeUnmatch2(

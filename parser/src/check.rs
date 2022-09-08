@@ -2,8 +2,6 @@ mod utils;
 mod resolve;
 mod matches;
 
-use anyhow;
-
 use super::structure::unchecked;
 use super::structure::SysDCSystem;
 use matches::TypeMatchChecker;
@@ -1051,7 +1049,7 @@ mod test {
     }
 
     fn check(programs: Vec<&str>) {
-        let mut parser = Parser::new();
+        let mut parser = Parser::default();
         for program in programs {
             parser
                 .parse("check.def".to_string(), &program.to_string())

@@ -1,7 +1,5 @@
 use std::str::Chars;
 
-use anyhow;
-
 use super::error::{PError, PErrorKind};
 use super::location::Location;
 
@@ -102,7 +100,7 @@ pub struct Tokenizer<'a> {
 }
 
 impl<'a> Tokenizer<'a> {
-    pub fn new(filename: String, text: &'a String) -> Tokenizer<'a> {
+    pub fn new(filename: String, text: &'a str) -> Tokenizer<'a> {
         let mut tokenizer = Tokenizer {
             chars: text.chars(),
             hold_char: None,
@@ -160,7 +158,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn tokenize(&mut self) -> anyhow::Result<Option<Token>> {
-        if !self.hold_token.is_none() {
+        if self.hold_token.is_some() {
             return Ok(self.hold_token.clone());
         }
         if !self.exists_next() {

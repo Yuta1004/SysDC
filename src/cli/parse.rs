@@ -2,7 +2,6 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 
-use anyhow;
 use clap::Parser;
 use rmp_serde::Serializer;
 use serde::Serialize;
@@ -27,18 +26,15 @@ impl ParseCmd {
 
     fn read_files(&self) -> anyhow::Result<SysDCSystem> {
         let mut load_unit_cnt = 0;
-        let mut parser = SParser::new();
+        let mut parser = SParser::default();
         for filename in &self.input {
-            for entries in glob::glob(&filename) {
-                for entry in entries {
-                    let entry = entry.unwrap();
-                    if entry.is_file() {
-                        let filename = entry.file_name().unwrap().to_str().unwrap().to_string();
-                        let program = fs::read_to_string(&entry)?;
-                        println!("Loading: {}", filename);
-                        parser.parse(filename, &program)?;
-                        load_unit_cnt += 1;
-                    }
+            for entry in glob::glob(filename)?.flatten() {
+                if entry.is_file() {
+                    let filename = entry.file_name().unwrap().to_str().unwrap().to_string();
+                    let program = fs::read_to_string(&entry)?;
+                    println!("Loading: {}", filename);
+                    parser.parse(filename, &program)?;
+                    load_unit_cnt += 1;
                 }
             }
         }
