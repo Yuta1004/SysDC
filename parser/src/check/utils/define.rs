@@ -304,18 +304,16 @@ impl DefinesManager {
             ))?;
         }
         for annotation in &func.annotations {
-            match annotation {
-                unchecked::SysDCAnnotation::Spawn {
-                    result: (name, types),
-                    details,
-                } => {
-                    self.define(Define::new(
-                        DefineKind::Variable(types.clone()),
-                        name.clone(),
-                    ))?;
-                    self.listup_defines_annotation_spawn_details(details)?;
-                }
-                _ => {}
+            if let unchecked::SysDCAnnotation::Spawn {
+                result: (name, types),
+                details,
+            } = annotation
+            {
+                self.define(Define::new(
+                    DefineKind::Variable(types.clone()),
+                    name.clone(),
+                ))?;
+                self.listup_defines_annotation_spawn_details(details)?;
             }
         }
         Ok(())
