@@ -45,21 +45,27 @@ SysDCのパーサ
 
 型を扱う構造体・列挙体を定義
 
+```mermaid
+flowchart TD
+    Parser--*.def-->UnitParser
+    UnitParser--unchecked::SysDCUnit-->Parser
+    UnitParser--*.def-->Tokenizer
+    Tokenizer--Token-->UnitParser
+    Parser--unchecked::SysDCSystem-->check
+    check--unchecked::SysDCSystem-->TypeResolver
+    TypeResolver--SysDCSystem-->check
+    check--SysDCSystem-->TypeMatchChecker
+    check--SysDCSystem-->Parser
 ```
-                               ↓ ↑
-                        +-----------------+
-                        |  Parser(lib.rs) |
-                        +-----------------+
-                             ↑    ↓ ↑
-                      +------+     +----------------+
- unchecked::SysDCUnit |                 SysDCSystem |
-            +------------------------+   +---------------------+
-        (2) |  UnitParser(parse.rs)  |   |  Checker(check.rs)  | (3)
-            +------------------------+   +---------------------+
-                      ↑
-                Token |
-                      |
-            +------------------------+
-        (1) |  Tokenizer (token.rs)  |
-            +------------------------+
+
+## 内部表現
+
+
+```mermaid
+erDiagram
+    SysDCSystem ||--|{ SysDCUnit : has
+    SysDCUnit ||--o{ SysDCData : has
+    SysDCUnit ||--o{ SysDCModule : has
+    SysDCModule ||--o{ SysDCFunction : has
+    SysDCFunction ||--o{ SysDCAnnotation : has
 ```
