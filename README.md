@@ -1,5 +1,7 @@
 # SysDC
 
+[![check](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml/badge.svg?branch=develop)](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml)
+
 ## 概要
 
 システム設計支援言語
