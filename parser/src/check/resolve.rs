@@ -77,7 +77,7 @@ impl<'a> TypeResolver<'a> {
             for (name, _) in uses {
                 ruses.push(self.def_manager.resolve_from_name(name, &self.imports)?);
             }
-            Ok((target, vec![]))
+            Ok((target, ruses))
         };
         let s_converter = |(name, _), details| {
             let result = self.def_manager.resolve_from_name(name, &self.imports)?;
