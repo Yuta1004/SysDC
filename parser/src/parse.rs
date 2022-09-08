@@ -72,14 +72,14 @@ impl<'a> UnitParser<'a> {
                         .into())
                 }
                 (i, d, m) => {
-                    if i.is_some() {
-                        imports.extend(i.unwrap());
+                    if let Some(i) = i {
+                        imports.extend(i);
                     }
-                    if d.is_some() {
-                        data.push(d.unwrap());
+                    if let Some(d) = d {
+                        data.push(d);
                     }
-                    if m.is_some() {
-                        modules.push(m.unwrap());
+                    if let Some(m) = m {
+                        modules.push(m);
                     }
                 }
             }
