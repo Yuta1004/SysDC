@@ -379,7 +379,7 @@ dependencies = [
 
 [[package]]
 name = "sysdc_tool_debug"
-version = "0.0.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "sysdc_parser",
@@ -387,7 +387,7 @@ dependencies = [
 
 [[package]]
 name = "sysdc_tool_json"
-version = "0.0.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "serde_json",
