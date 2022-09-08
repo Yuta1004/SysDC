@@ -1,10 +1,10 @@
 use anyhow;
 
+use super::error::{PError, PErrorKind};
 use super::name::Name;
-use super::types::{ Type, TypeKind };
-use super::token::{ TokenKind, Tokenizer };
-use super::error::{ PErrorKind, PError };
 use super::structure::unchecked;
+use super::token::{TokenKind, Tokenizer};
+use super::types::{Type, TypeKind};
 
 // 複数要素を一気にパースするためのマクロ
 // - 返り値: Vec<T>
@@ -32,7 +32,7 @@ macro_rules! parse_list {
 }
 
 pub struct UnitParser<'a> {
-    tokenizer: Tokenizer<'a>
+    tokenizer: Tokenizer<'a>,
 }
 
 impl<'a> UnitParser<'a> {
@@ -50,27 +50,39 @@ impl<'a> UnitParser<'a> {
         self.tokenizer.request(TokenKind::Unit)?;
         let namespace = match self.parse_id_chain(&namespace)? {
             Some((found_name, _)) => Name::new(&namespace, found_name.name),
-            None => return Err(
-                PError::from(PErrorKind::UnitNameNotSpecified)
+            None => {
+                return Err(PError::from(PErrorKind::UnitNameNotSpecified)
                     .with_loc(self.tokenizer.get_now_ref_loc())
-                    .into()
-            )
+                    .into())
+            }
         };
         self.tokenizer.request(TokenKind::Semicolon)?;
 
         // { <import> | <data> | <module> }
-        let (mut imports, mut data, mut modules) = (vec!(), vec!(), vec!());
+        let mut imports = vec![];
+        let mut data = vec![];
+        let mut modules = vec![];
         while self.tokenizer.exists_next() {
-            match (self.parse_import()?, self.parse_data(&namespace)?, self.parse_module(&namespace)?) {
-                (None, None, None) => return Err(
-                    PError::from(PErrorKind::DataOrModuleNotFound)
+            match (
+                self.parse_import()?,
+                self.parse_data(&namespace)?,
+                self.parse_module(&namespace)?,
+            ) {
+                (None, None, None) => {
+                    return Err(PError::from(PErrorKind::DataOrModuleNotFound)
                         .with_loc(self.tokenizer.get_now_ref_loc())
-                        .into()
-                ),
+                        .into())
+                }
                 (i, d, m) => {
-                    if i.is_some() { imports.extend(i.unwrap()); }
-                    if d.is_some() { data.push(d.unwrap()); }
-                    if m.is_some() { modules.push(m.unwrap()); }
+                    if i.is_some() {
+                        imports.extend(i.unwrap());
+                    }
+                    if d.is_some() {
+                        data.push(d.unwrap());
+                    }
+                    if m.is_some() {
+                        modules.push(m.unwrap());
+                    }
                 }
             }
         }
@@ -84,23 +96,26 @@ impl<'a> UnitParser<'a> {
     fn parse_import(&mut self) -> anyhow::Result<Option<Vec<Name>>> {
         // from
         if self.tokenizer.expect(TokenKind::From)?.is_none() {
-            return Ok(None)
+            return Ok(None);
         }
 
         // <id_chain>
         let from_namespace = match self.parse_id_chain(&Name::new_root())? {
             Some((found_name, _)) => Name::new(&Name::new_root(), found_name.name),
-            None => return Err(
-                PError::from(PErrorKind::FromNamespaceNotSpecified)
+            None => {
+                return Err(PError::from(PErrorKind::FromNamespaceNotSpecified)
                     .with_loc(self.tokenizer.get_now_ref_loc())
-                    .into()
-            )
+                    .into())
+            }
         };
 
         // import <id_list, delimiter=','> ;
         self.tokenizer.request(TokenKind::Import)?;
-        let mut importes = vec!();
-        for import in parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Separater) {
+        let mut importes = vec![];
+        for import in parse_list!(
+            self.tokenizer.expect(TokenKind::Identifier),
+            TokenKind::Separater
+        ) {
             importes.push(Name::new(&from_namespace, import.orig));
         }
         self.tokenizer.request(TokenKind::Semicolon)?;
@@ -114,11 +129,14 @@ impl<'a> UnitParser<'a> {
     fn parse_data(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCData>> {
         // data
         if self.tokenizer.expect(TokenKind::Data)?.is_none() {
-            return Ok(None)
+            return Ok(None);
         }
 
         // <id>
-        let name = Name::new(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
+        let name = Name::new(
+            namespace,
+            self.tokenizer.request(TokenKind::Identifier)?.orig,
+        );
 
         // \{ <id_type_mapping_list, delimiter=,> \}
         self.tokenizer.request(TokenKind::BracketBegin)?;
@@ -138,7 +156,10 @@ impl<'a> UnitParser<'a> {
         }
 
         // <id>
-        let name = Name::new(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
+        let name = Name::new(
+            namespace,
+            self.tokenizer.request(TokenKind::Identifier)?.orig,
+        );
 
         // \{ <function_list, delimiter=None> \}
         self.tokenizer.request(TokenKind::BracketBegin)?;
@@ -152,7 +173,10 @@ impl<'a> UnitParser<'a> {
      * <function> ::= func <id> <id_type_mapping_list, delimiter=,> -> <id> \{ <function_body> \}
      * <procedure> ::= proc <id> <id_type_mapping_list, delimiter=,> \{ <procedure_body > \}
      */
-    fn parse_function(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCFunction>> {
+    fn parse_function(
+        &mut self,
+        namespace: &Name,
+    ) -> anyhow::Result<Option<unchecked::SysDCFunction>> {
         // func | proc
         let is_func = self.tokenizer.expect(TokenKind::Func)?.is_some();
         if !is_func && self.tokenizer.expect(TokenKind::Proc)?.is_none() {
@@ -160,7 +184,10 @@ impl<'a> UnitParser<'a> {
         }
 
         // <id>
-        let name = Name::new(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
+        let name = Name::new(
+            namespace,
+            self.tokenizer.request(TokenKind::Identifier)?.orig,
+        );
 
         // <id_type_mapping_list, delimiter=,>
         self.tokenizer.request(TokenKind::ParenthesisBegin)?;
@@ -171,7 +198,9 @@ impl<'a> UnitParser<'a> {
         let mut returns_type = None;
         if is_func {
             self.tokenizer.request(TokenKind::Allow)?;
-            returns_type = Some(Type::from(self.tokenizer.request(TokenKind::Identifier)?.orig));
+            returns_type = Some(Type::from(
+                self.tokenizer.request(TokenKind::Identifier)?.orig,
+            ));
         }
 
         // \{ <function_body> | <procedure_body> \}
@@ -180,40 +209,47 @@ impl<'a> UnitParser<'a> {
             let (return_name, annotations) = self.parse_function_body(&name)?;
             ((return_name, returns_type.unwrap()), annotations)
         } else {
-            ((Name::new_root(), Type::new(TypeKind::Void, None)), self.parse_procedure_body(&name)?)
+            (
+                (Name::new_root(), Type::new(TypeKind::Void, None)),
+                self.parse_procedure_body(&name)?,
+            )
         };
         self.tokenizer.request(TokenKind::BracketEnd)?;
 
-        Ok(Some(unchecked::SysDCFunction::new(name, args, returns, annotations)))
+        Ok(Some(unchecked::SysDCFunction::new(
+            name,
+            args,
+            returns,
+            annotations,
+        )))
     }
 
     /**
      * <function_body> = <annotation_list, delimiter=''>
      */
-    fn parse_function_body(&mut self, namespace: &Name) -> anyhow::Result<(Name, Vec<unchecked::SysDCAnnotation>)> {
+    fn parse_function_body(
+        &mut self,
+        namespace: &Name,
+    ) -> anyhow::Result<(Name, Vec<unchecked::SysDCAnnotation>)> {
         let mut returns: Option<Name> = None;
-        let mut annotations = vec!();
+        let mut annotations = vec![];
         while let Some(annotation) = self.parse_annotation(namespace)? {
             match annotation {
                 unchecked::SysDCAnnotation::Return(ret) => {
                     if returns.is_some() {
-                        return Err(
-                            PError::from(PErrorKind::ReturnExistsMultiple)
-                                .with_loc(self.tokenizer.get_now_ref_loc())
-                                .into()
-                        );
+                        return Err(PError::from(PErrorKind::ReturnExistsMultiple)
+                            .with_loc(self.tokenizer.get_now_ref_loc())
+                            .into());
                     }
                     returns = Some(ret)
-                },
-                _ => annotations.push(annotation)
+                }
+                _ => annotations.push(annotation),
             }
         }
         if returns.is_none() {
-            return Err(
-                PError::from(PErrorKind::ReturnNotExists)
-                    .with_loc(self.tokenizer.get_now_ref_loc())
-                    .into()
-            );
+            return Err(PError::from(PErrorKind::ReturnNotExists)
+                .with_loc(self.tokenizer.get_now_ref_loc())
+                .into());
         }
         Ok((returns.unwrap(), annotations))
     }
@@ -221,18 +257,19 @@ impl<'a> UnitParser<'a> {
     /**
      * <procedure_body> = <annotation_list, delimiter=''>
      */
-    fn parse_procedure_body(&mut self, namespace: &Name) -> anyhow::Result<Vec<unchecked::SysDCAnnotation>> {
-        let mut annotations = vec!();
+    fn parse_procedure_body(
+        &mut self,
+        namespace: &Name,
+    ) -> anyhow::Result<Vec<unchecked::SysDCAnnotation>> {
+        let mut annotations = vec![];
         while let Some(annotation) = self.parse_annotation(namespace)? {
             match annotation {
                 unchecked::SysDCAnnotation::Return(_) => {
-                    return Err(
-                        PError::from(PErrorKind::ReturnExistsOnProcedure)
-                            .with_loc(self.tokenizer.get_now_ref_loc())
-                            .into()
-                    );
-                },
-                _ => annotations.push(annotation)
+                    return Err(PError::from(PErrorKind::ReturnExistsOnProcedure)
+                        .with_loc(self.tokenizer.get_now_ref_loc())
+                        .into());
+                }
+                _ => annotations.push(annotation),
             }
         }
         Ok(annotations)
@@ -241,7 +278,10 @@ impl<'a> UnitParser<'a> {
     /**
      * <annotation> = @ ( <annotation_return> | <annotation_affect> | <annotation_modify> | <annotation_spawn>)
      */
-    fn parse_annotation(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
+    fn parse_annotation(
+        &mut self,
+        namespace: &Name,
+    ) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
         // @
         if self.tokenizer.expect(TokenKind::AtMark)?.is_none() {
             return Ok(None);
@@ -262,26 +302,36 @@ impl<'a> UnitParser<'a> {
         }
 
         let annotation_name = self.tokenizer.request(TokenKind::Identifier)?.orig;
-        Err(PError::from(PErrorKind::UnknownAnnotationFound(annotation_name))
+        Err(
+            PError::from(PErrorKind::UnknownAnnotationFound(annotation_name))
                 .with_loc(self.tokenizer.get_now_ref_loc())
-                .into())
+                .into(),
+        )
     }
 
     /**
      * <annotation_return> ::= return <id>
      */
-    fn parse_annotation_return(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
+    fn parse_annotation_return(
+        &mut self,
+        namespace: &Name,
+    ) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
         if self.tokenizer.expect(TokenKind::Return)?.is_none() {
             return Ok(None);
         }
         let returns = self.tokenizer.request(TokenKind::Identifier)?.orig;
-        Ok(Some(unchecked::SysDCAnnotation::new_return(Name::new(namespace, returns))))
+        Ok(Some(unchecked::SysDCAnnotation::new_return(Name::new(
+            namespace, returns,
+        ))))
     }
 
     /**
      * <annotation_affect> ::= affect <id_chain> \( <id_chain_list, delimiter=,> \)
      */
-    fn parse_annotation_affect(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
+    fn parse_annotation_affect(
+        &mut self,
+        namespace: &Name,
+    ) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
         // affect
         if self.tokenizer.expect(TokenKind::Affect)?.is_none() {
             return Ok(None);
@@ -290,11 +340,11 @@ impl<'a> UnitParser<'a> {
         // <id_chain>
         let func = match self.parse_id_chain(namespace)? {
             Some((name, _)) => (name.clone(), Type::from(name.name)),
-            None => return Err(
-                PError::from(PErrorKind::FunctionNameNotFound)
+            None => {
+                return Err(PError::from(PErrorKind::FunctionNameNotFound)
                     .with_loc(self.tokenizer.get_now_ref_loc())
-                    .into()
-            )
+                    .into())
+            }
         };
 
         // \( <id_list, delimiter=,> \)
@@ -308,21 +358,30 @@ impl<'a> UnitParser<'a> {
     /**
      * <annotation_modify> ::= modify <id> ( \{ { use <id_list, delimiter=,> ; } \} )
      */
-    fn parse_annotation_modify(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
+    fn parse_annotation_modify(
+        &mut self,
+        namespace: &Name,
+    ) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
         // modify
         if self.tokenizer.expect(TokenKind::Modify)?.is_none() {
-            return Ok(None)
+            return Ok(None);
         }
 
         // <id>
         let name_token = self.tokenizer.request(TokenKind::Identifier)?;
-        let modify_target = (Name::new(namespace, name_token.orig), Type::new_unsovled_nohint());
+        let modify_target = (
+            Name::new(namespace, name_token.orig),
+            Type::new_unsovled_nohint(),
+        );
 
         // ( \{ { use <id_list, delimiter=,> ; } \} )
-        let mut uses = vec!();
+        let mut uses = vec![];
         if self.tokenizer.expect(TokenKind::BracketBegin)?.is_some() {
             while self.tokenizer.expect(TokenKind::Use)?.is_some() {
-                for name in parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Separater) {
+                for name in parse_list!(
+                    self.tokenizer.expect(TokenKind::Identifier),
+                    TokenKind::Separater
+                ) {
                     uses.push((Name::new(namespace, name.orig), Type::new_unsovled_nohint()));
                 }
                 self.tokenizer.request(TokenKind::Semicolon)?;
@@ -330,13 +389,19 @@ impl<'a> UnitParser<'a> {
             self.tokenizer.request(TokenKind::BracketEnd)?;
         }
 
-        Ok(Some(unchecked::SysDCAnnotation::new_modify(modify_target, uses)))
+        Ok(Some(unchecked::SysDCAnnotation::new_modify(
+            modify_target,
+            uses,
+        )))
     }
 
     /**
      * <annotation_spawn> ::= spawn <id_type_mapping> ( \{ { <annotation_spawn_detail> } \} )
      */
-    fn parse_annotation_spawn(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
+    fn parse_annotation_spawn(
+        &mut self,
+        namespace: &Name,
+    ) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
         // spawn
         if self.tokenizer.expect(TokenKind::Spawn)?.is_none() {
             return Ok(None);
@@ -345,21 +410,19 @@ impl<'a> UnitParser<'a> {
         // <id_type_mapping>
         let spawn_result = self.parse_id_type_mapping(namespace)?;
         if spawn_result.is_none() {
-            return Err(
-                PError::from(PErrorKind::ResultOfSpawnNotSpecified)
-                    .with_loc(self.tokenizer.get_now_ref_loc())
-                    .into()
-            )
+            return Err(PError::from(PErrorKind::ResultOfSpawnNotSpecified)
+                .with_loc(self.tokenizer.get_now_ref_loc())
+                .into());
         }
 
         // ( \{ { <annotation_spawn_detail > } \} )
-        let mut details = vec!();
+        let mut details = vec![];
         if self.tokenizer.expect(TokenKind::BracketBegin)?.is_some() {
             let mut namespace = Name::new(&namespace, "_".to_string());
             while let Some(new_details) = self.parse_annotation_spawn_detail(&namespace)? {
                 let for_cmp = new_details[0].clone();
                 details.extend(new_details);
-                if let unchecked::SysDCSpawnDetail::Return{..} = for_cmp {
+                if let unchecked::SysDCSpawnDetail::Return { .. } = for_cmp {
                     break;
                 }
                 namespace = Name::new(&namespace, "_".to_string());
@@ -367,7 +430,10 @@ impl<'a> UnitParser<'a> {
             self.tokenizer.request(TokenKind::BracketEnd)?;
         }
 
-        Ok(Some(unchecked::SysDCAnnotation::new_spawn(spawn_result.unwrap(), details)))
+        Ok(Some(unchecked::SysDCAnnotation::new_spawn(
+            spawn_result.unwrap(),
+            details,
+        )))
     }
 
     /**
@@ -377,11 +443,17 @@ impl<'a> UnitParser<'a> {
      *      return <id> ;
      * )
      */
-    fn parse_annotation_spawn_detail(&mut self, namespace: &Name) -> anyhow::Result<Option<Vec<unchecked::SysDCSpawnDetail>>> {
+    fn parse_annotation_spawn_detail(
+        &mut self,
+        namespace: &Name,
+    ) -> anyhow::Result<Option<Vec<unchecked::SysDCSpawnDetail>>> {
         // let
         if self.tokenizer.expect(TokenKind::Let)?.is_some() {
             // <id>
-            let let_to = Name::new(namespace, self.tokenizer.request(TokenKind::Identifier)?.orig);
+            let let_to = Name::new(
+                namespace,
+                self.tokenizer.request(TokenKind::Identifier)?.orig,
+            );
 
             // =
             self.tokenizer.request(TokenKind::Equal)?;
@@ -389,11 +461,11 @@ impl<'a> UnitParser<'a> {
             // <id_chain>
             let func = match self.parse_id_chain(namespace)? {
                 Some((func, _)) => func.name,
-                None => return Err(
-                    PError::from(PErrorKind::FunctionNameNotFound)
+                None => {
+                    return Err(PError::from(PErrorKind::FunctionNameNotFound)
                         .with_loc(self.tokenizer.get_now_ref_loc())
-                        .into()
-                )
+                        .into())
+                }
             };
 
             // \( <id_chain_list, delimiter=',') \)
@@ -404,14 +476,24 @@ impl<'a> UnitParser<'a> {
             // ;
             self.tokenizer.request(TokenKind::Semicolon)?;
 
-            return Ok(Some(vec!(unchecked::SysDCSpawnDetail::new_let_to(let_to, (Name::new_root(), Type::from(func)), args))));
+            return Ok(Some(vec![unchecked::SysDCSpawnDetail::new_let_to(
+                let_to,
+                (Name::new_root(), Type::from(func)),
+                args,
+            )]));
         }
 
         // use
         if self.tokenizer.expect(TokenKind::Use)?.is_some() {
-            let mut var_list = vec!();
-            for token in parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Separater) {
-                var_list.push(unchecked::SysDCSpawnDetail::new_use(Name::new(namespace, token.orig), Type::new_unsovled_nohint()))
+            let mut var_list = vec![];
+            for token in parse_list!(
+                self.tokenizer.expect(TokenKind::Identifier),
+                TokenKind::Separater
+            ) {
+                var_list.push(unchecked::SysDCSpawnDetail::new_use(
+                    Name::new(namespace, token.orig),
+                    Type::new_unsovled_nohint(),
+                ))
             }
             self.tokenizer.request(TokenKind::Semicolon)?;
             return Ok(Some(var_list));
@@ -422,13 +504,16 @@ impl<'a> UnitParser<'a> {
             match self.parse_id_chain(namespace)? {
                 Some((name, _)) => {
                     self.tokenizer.request(TokenKind::Semicolon)?;
-                    return Ok(Some(vec!(unchecked::SysDCSpawnDetail::new_return(name, Type::new_unsovled_nohint()))));
-                },
-                None => return Err(
-                    PError::from(PErrorKind::ResultOfSpawnNotSpecified)
+                    return Ok(Some(vec![unchecked::SysDCSpawnDetail::new_return(
+                        name,
+                        Type::new_unsovled_nohint(),
+                    )]));
+                }
+                None => {
+                    return Err(PError::from(PErrorKind::ResultOfSpawnNotSpecified)
                         .with_loc(self.tokenizer.get_now_ref_loc())
-                        .into()
-                )
+                        .into())
+                }
             }
         }
 
@@ -439,11 +524,21 @@ impl<'a> UnitParser<'a> {
      * <id_chain> ::= <id_list, delimiter=.>
      */
     fn parse_id_chain(&mut self, namespace: &Name) -> anyhow::Result<Option<(Name, Type)>> {
-        let name_elems = parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Accessor);
-        let var = name_elems.into_iter().map(|x| x.orig).collect::<Vec<String>>().join(".");
+        let name_elems = parse_list!(
+            self.tokenizer.expect(TokenKind::Identifier),
+            TokenKind::Accessor
+        );
+        let var = name_elems
+            .into_iter()
+            .map(|x| x.orig)
+            .collect::<Vec<String>>()
+            .join(".");
         match var.len() {
             0 => Ok(None),
-            _ => Ok(Some((Name::new(namespace, var), Type::new_unsovled_nohint())))
+            _ => Ok(Some((
+                Name::new(namespace, var),
+                Type::new_unsovled_nohint(),
+            ))),
         }
     }
 
@@ -472,16 +567,21 @@ impl<'a> UnitParser<'a> {
 
 #[cfg(test)]
 mod test {
-    use super::UnitParser;
     use super::super::name::Name;
-    use super::super::types::{ Type, TypeKind };
+    use super::super::structure::unchecked::{
+        SysDCAnnotation, SysDCData, SysDCFunction, SysDCModule, SysDCSpawnDetail, SysDCUnit,
+    };
     use super::super::token::Tokenizer;
-    use super::super::structure::unchecked::{ SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawnDetail };
+    use super::super::types::{Type, TypeKind};
+    use super::UnitParser;
 
     #[test]
     fn empty() {
         let program = "unit test;";
-        compare_unit(program, SysDCUnit::new(generate_name_for_test(), vec!(), vec!(), vec!()));
+        compare_unit(
+            program,
+            SysDCUnit::new(generate_name_for_test(), vec![], vec![], vec![]),
+        );
     }
 
     #[test]
@@ -495,10 +595,16 @@ mod test {
 
         let name = Name::new_root();
         let name_import_1 = Name::new(&Name::new(&name, "outer".to_string()), "A".to_string());
-        let name_import_2 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "B".to_string());
-        let name_imports = vec!(name_import_1, name_import_2);
+        let name_import_2 = Name::new(
+            &Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()),
+            "B".to_string(),
+        );
+        let name_imports = vec![name_import_1, name_import_2];
 
-        compare_unit(program, SysDCUnit::new(generate_name_for_test(), vec!(), vec!(), name_imports));
+        compare_unit(
+            program,
+            SysDCUnit::new(generate_name_for_test(), vec![], vec![], name_imports),
+        );
     }
 
     #[test]
@@ -513,12 +619,30 @@ mod test {
         let name = Name::new_root();
         let name_import_1 = Name::new(&Name::new(&name, "outer".to_string()), "A".to_string());
         let name_import_2 = Name::new(&Name::new(&name, "outer".to_string()), "B".to_string());
-        let name_import_3 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "C".to_string());
-        let name_import_4 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "D".to_string());
-        let name_import_5 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "E".to_string());
-        let name_imports = vec!(name_import_1, name_import_2, name_import_3, name_import_4, name_import_5);
+        let name_import_3 = Name::new(
+            &Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()),
+            "C".to_string(),
+        );
+        let name_import_4 = Name::new(
+            &Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()),
+            "D".to_string(),
+        );
+        let name_import_5 = Name::new(
+            &Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()),
+            "E".to_string(),
+        );
+        let name_imports = vec![
+            name_import_1,
+            name_import_2,
+            name_import_3,
+            name_import_4,
+            name_import_5,
+        ];
 
-        compare_unit(program, SysDCUnit::new(generate_name_for_test(), vec!(), vec!(), name_imports));
+        compare_unit(
+            program,
+            SysDCUnit::new(generate_name_for_test(), vec![], vec![], name_imports),
+        );
     }
 
     #[test]
@@ -542,14 +666,14 @@ mod test {
 
         let name = generate_name_for_test();
 
-        let data = vec!(
-            SysDCData::new(Name::new(&name, "A".to_string()), vec!()),
-            SysDCData::new(Name::new(&name, "B".to_string()), vec!()),
-            SysDCData::new(Name::new(&name, "C".to_string()), vec!()),
-            SysDCData::new(Name::new(&name, "D".to_string()), vec!()),
-            SysDCData::new(Name::new(&name, "E".to_string()), vec!())
-        );
-        let unit = SysDCUnit::new(name, data, vec!(), vec!());
+        let data = vec![
+            SysDCData::new(Name::new(&name, "A".to_string()), vec![]),
+            SysDCData::new(Name::new(&name, "B".to_string()), vec![]),
+            SysDCData::new(Name::new(&name, "C".to_string()), vec![]),
+            SysDCData::new(Name::new(&name, "D".to_string()), vec![]),
+            SysDCData::new(Name::new(&name, "E".to_string()), vec![]),
+        ];
+        let unit = SysDCUnit::new(name, data, vec![], vec![]);
 
         compare_unit(program, unit);
     }
@@ -568,12 +692,18 @@ mod test {
         let name = generate_name_for_test();
         let name_box = Name::new(&name, "Box".to_string());
 
-        let member = vec!(
-            (Name::new(&name_box, "x".to_string()), Type::from("i32".to_string())),
-            (Name::new(&name_box, "y".to_string()), Type::from("UserDefinedData".to_string()))
-        );
+        let member = vec![
+            (
+                Name::new(&name_box, "x".to_string()),
+                Type::from("i32".to_string()),
+            ),
+            (
+                Name::new(&name_box, "y".to_string()),
+                Type::from("UserDefinedData".to_string()),
+            ),
+        ];
         let data = SysDCData::new(name_box, member);
-        let unit = SysDCUnit::new(name, vec!(data), vec!(), vec!());
+        let unit = SysDCUnit::new(name, vec![data], vec![], vec![]);
 
         compare_unit(program, unit);
     }
@@ -640,14 +770,14 @@ mod test {
 
         let name = generate_name_for_test();
 
-        let module = vec!(
-            SysDCModule::new(Name::new(&name, "A".to_string()), vec!()),
-            SysDCModule::new(Name::new(&name, "B".to_string()), vec!()),
-            SysDCModule::new(Name::new(&name, "C".to_string()), vec!()),
-            SysDCModule::new(Name::new(&name, "D".to_string()), vec!()),
-            SysDCModule::new(Name::new(&name, "E".to_string()), vec!())
-        );
-        let unit = SysDCUnit::new(name, vec!(), module, vec!());
+        let module = vec![
+            SysDCModule::new(Name::new(&name, "A".to_string()), vec![]),
+            SysDCModule::new(Name::new(&name, "B".to_string()), vec![]),
+            SysDCModule::new(Name::new(&name, "C".to_string()), vec![]),
+            SysDCModule::new(Name::new(&name, "D".to_string()), vec![]),
+            SysDCModule::new(Name::new(&name, "E".to_string()), vec![]),
+        ];
+        let unit = SysDCUnit::new(name, vec![], module, vec![]);
 
         compare_unit(program, unit);
     }
@@ -670,10 +800,10 @@ mod test {
         let name_func_ret = Name::new(&name_func, "box".to_string());
 
         let func_returns = (name_func_ret, Type::from("Box".to_string()));
-        let func = SysDCFunction::new(name_func, vec!(), func_returns, vec!());
-        let module = SysDCModule::new(name_module, vec!(func));
+        let func = SysDCFunction::new(name_func, vec![], func_returns, vec![]);
+        let module = SysDCModule::new(name_module, vec![func]);
 
-        let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
+        let unit = SysDCUnit::new(name, vec![], vec![module], vec![]);
 
         compare_unit(program, unit);
     }
@@ -698,14 +828,15 @@ mod test {
         let name_func_spawn_box = Name::new(&name_func, "box".to_string());
         let name_func_ret = Name::new(&name_func, "box".to_string());
 
-        let func_annotations = vec!(
-            SysDCAnnotation::new_spawn((name_func_spawn_box, Type::from("Box".to_string())), vec!())
-        );
+        let func_annotations = vec![SysDCAnnotation::new_spawn(
+            (name_func_spawn_box, Type::from("Box".to_string())),
+            vec![],
+        )];
         let func_returns = (name_func_ret, Type::from("Box".to_string()));
-        let func = SysDCFunction::new(name_func, vec!(), func_returns, func_annotations);
-        let module = SysDCModule::new(name_module, vec!(func));
+        let func = SysDCFunction::new(name_func, vec![], func_returns, func_annotations);
+        let module = SysDCModule::new(name_module, vec![func]);
 
-        let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
+        let unit = SysDCUnit::new(name, vec![], vec![module], vec![]);
 
         compare_unit(program, unit);
     }
@@ -752,37 +883,46 @@ mod test {
         let name_func_spawn_ret = Name::new(&name_func, "_._._._.movedBox".to_string());
         let name_func_ret = Name::new(&name_func, "movedBox".to_string());
 
-        let func_args = vec!(
+        let func_args = vec![
             (name_func_arg_box, Type::from("Box".to_string())),
             (name_func_arg_dx, Type::from("i32".to_string())),
-            (name_func_arg_dy, Type::from("i32".to_string()))
-        );
-        let func_annotations = vec!(
+            (name_func_arg_dy, Type::from("i32".to_string())),
+        ];
+        let func_annotations = vec![
             SysDCAnnotation::new_affect(
-                (name_func_affect, Type::from("UnknownModule.function2".to_string())),
-                vec!(
+                (
+                    name_func_affect,
+                    Type::from("UnknownModule.function2".to_string()),
+                ),
+                vec![
                     (name_func_affect_box, Type::new_unsovled_nohint()),
                     (name_func_affect_dx, Type::new_unsovled_nohint()),
-                    (name_func_affect_dy, Type::new_unsovled_nohint())
-                )
+                    (name_func_affect_dy, Type::new_unsovled_nohint()),
+                ],
             ),
-            SysDCAnnotation::new_spawn((name_func_spawn_box, Type::from("Box".to_string())), vec!(
-                SysDCSpawnDetail::new_use(name_func_spawn_use_box, Type::new_unsovled_nohint()),
-                SysDCSpawnDetail::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
-                SysDCSpawnDetail::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
-                SysDCSpawnDetail::new_let_to(
-                    name_func_spawn_let_name,
-                    (Name::new_root(), Type::from("UnknownModule.function".to_string())),
-                    vec!((name_func_spawn_let_arg_dx, Type::new_unsovled_nohint()))
-                ),
-                SysDCSpawnDetail::new_return(name_func_spawn_ret, Type::new_unsovled_nohint())
-            ))
-        );
+            SysDCAnnotation::new_spawn(
+                (name_func_spawn_box, Type::from("Box".to_string())),
+                vec![
+                    SysDCSpawnDetail::new_use(name_func_spawn_use_box, Type::new_unsovled_nohint()),
+                    SysDCSpawnDetail::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
+                    SysDCSpawnDetail::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
+                    SysDCSpawnDetail::new_let_to(
+                        name_func_spawn_let_name,
+                        (
+                            Name::new_root(),
+                            Type::from("UnknownModule.function".to_string()),
+                        ),
+                        vec![(name_func_spawn_let_arg_dx, Type::new_unsovled_nohint())],
+                    ),
+                    SysDCSpawnDetail::new_return(name_func_spawn_ret, Type::new_unsovled_nohint()),
+                ],
+            ),
+        ];
         let func_returns = (name_func_ret, Type::from("Box".to_string()));
         let func = SysDCFunction::new(name_func, func_args, func_returns, func_annotations);
-        let module = SysDCModule::new(name_module, vec!(func));
+        let module = SysDCModule::new(name_module, vec![func]);
 
-        let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
+        let unit = SysDCUnit::new(name, vec![], vec![module], vec![]);
 
         compare_unit(program, unit);
     }
@@ -863,10 +1003,10 @@ mod test {
         let name_proc = Name::new(&name_module, "new".to_string());
 
         let proc_returns = (Name::new_root(), Type::new(TypeKind::Void, None));
-        let proc = SysDCFunction::new(name_proc, vec!(), proc_returns, vec!());
-        let module = SysDCModule::new(name_module, vec!(proc));
+        let proc = SysDCFunction::new(name_proc, vec![], proc_returns, vec![]);
+        let module = SysDCModule::new(name_module, vec![proc]);
 
-        let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
+        let unit = SysDCUnit::new(name, vec![], vec![module], vec![]);
 
         compare_unit(program, unit);
     }
@@ -888,14 +1028,15 @@ mod test {
         let name_proc = Name::new(&name_module, "new".to_string());
         let name_proc_spawn_box = Name::new(&name_proc, "box".to_string());
 
-        let proc_annotations = vec!(
-            SysDCAnnotation::new_spawn((name_proc_spawn_box, Type::from("Box".to_string())), vec!())
-        );
+        let proc_annotations = vec![SysDCAnnotation::new_spawn(
+            (name_proc_spawn_box, Type::from("Box".to_string())),
+            vec![],
+        )];
         let proc_returns = (Name::new_root(), Type::new(TypeKind::Void, None));
-        let proc = SysDCFunction::new(name_proc, vec!(), proc_returns, proc_annotations);
-        let module = SysDCModule::new(name_module, vec!(proc));
+        let proc = SysDCFunction::new(name_proc, vec![], proc_returns, proc_annotations);
+        let module = SysDCModule::new(name_module, vec![proc]);
 
-        let unit = SysDCUnit::new(name, vec!(), vec!(module), vec!());
+        let unit = SysDCUnit::new(name, vec![], vec![module], vec![]);
 
         compare_unit(program, unit);
     }
@@ -977,10 +1118,19 @@ mod test {
 
         let name = Name::new_root();
         let name_import_1 = Name::new(&Name::new(&name, "outer".to_string()), "A".to_string());
-        let name_import_2 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "C".to_string());
-        let name_import_3 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "D".to_string());
-        let name_import_4 = Name::new(&Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()), "E".to_string());
-        let name_imports = vec!(name_import_1, name_import_2, name_import_3, name_import_4);
+        let name_import_2 = Name::new(
+            &Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()),
+            "C".to_string(),
+        );
+        let name_import_3 = Name::new(
+            &Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()),
+            "D".to_string(),
+        );
+        let name_import_4 = Name::new(
+            &Name::new(&Name::new(&name, "outer2".to_string()), "in".to_string()),
+            "E".to_string(),
+        );
+        let name_imports = vec![name_import_1, name_import_2, name_import_3, name_import_4];
 
         let name = generate_name_for_test();
         let name_data = Name::new(&name, "Box".to_string());
@@ -1004,47 +1154,55 @@ mod test {
         let name_func_spawn_ret = Name::new(&name_func, "_._._.movedBox".to_string());
         let name_func_ret = Name::new(&name_func, "movedBox".to_string());
 
-        let func_args = vec!(
+        let func_args = vec![
             (name_func_arg_box, Type::from("Box".to_string())),
             (name_func_arg_dx, Type::from("i32".to_string())),
-            (name_func_arg_dy, Type::from("i32".to_string()))
-        );
-        let func_annotations = vec!(
+            (name_func_arg_dy, Type::from("i32".to_string())),
+        ];
+        let func_annotations = vec![
             SysDCAnnotation::new_affect(
-                (name_func_affect, Type::from("UnknownModule.function2".to_string())),
-                vec!(
+                (
+                    name_func_affect,
+                    Type::from("UnknownModule.function2".to_string()),
+                ),
+                vec![
                     (name_func_affect_box, Type::new_unsovled_nohint()),
                     (name_func_affect_dx, Type::new_unsovled_nohint()),
-                    (name_func_affect_dy, Type::new_unsovled_nohint())
-                )
+                    (name_func_affect_dy, Type::new_unsovled_nohint()),
+                ],
             ),
-            SysDCAnnotation::new_spawn((name_func_spawn_box, Type::from("Box".to_string())), vec!(
-                SysDCSpawnDetail::new_use(name_func_spawn_use_box, Type::new_unsovled_nohint()),
-                SysDCSpawnDetail::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
-                SysDCSpawnDetail::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
-                SysDCSpawnDetail::new_let_to(
-                    name_func_spawn_let_name,
-                    (Name::new_root(), Type::from("UnknownModule.function".to_string())),
-                    vec!((name_func_spawn_let_arg_dx, Type::new_unsovled_nohint()))
-                ),
-                SysDCSpawnDetail::new_return(name_func_spawn_ret, Type::new_unsovled_nohint())
-            ))
-        );
+            SysDCAnnotation::new_spawn(
+                (name_func_spawn_box, Type::from("Box".to_string())),
+                vec![
+                    SysDCSpawnDetail::new_use(name_func_spawn_use_box, Type::new_unsovled_nohint()),
+                    SysDCSpawnDetail::new_use(name_func_spawn_use_dx, Type::new_unsovled_nohint()),
+                    SysDCSpawnDetail::new_use(name_func_spawn_use_dy, Type::new_unsovled_nohint()),
+                    SysDCSpawnDetail::new_let_to(
+                        name_func_spawn_let_name,
+                        (
+                            Name::new_root(),
+                            Type::from("UnknownModule.function".to_string()),
+                        ),
+                        vec![(name_func_spawn_let_arg_dx, Type::new_unsovled_nohint())],
+                    ),
+                    SysDCSpawnDetail::new_return(name_func_spawn_ret, Type::new_unsovled_nohint()),
+                ],
+            ),
+        ];
         let func_returns = (name_func_ret, Type::from("Box".to_string()));
         let func = SysDCFunction::new(name_func, func_args, func_returns, func_annotations);
-        let module = SysDCModule::new(name_module, vec!(func));
+        let module = SysDCModule::new(name_module, vec![func]);
 
-        let data_members = vec!(
+        let data_members = vec![
             (name_data_x, Type::from("i32".to_string())),
-            (name_data_y, Type::from("i32".to_string()))
-        );
+            (name_data_y, Type::from("i32".to_string())),
+        ];
         let data = SysDCData::new(name_data, data_members);
 
-        let unit = SysDCUnit::new(name, vec!(data), vec!(module), name_imports);
+        let unit = SysDCUnit::new(name, vec![data], vec![module], name_imports);
 
         compare_unit(program, unit);
     }
-
 
     fn generate_name_for_test() -> Name {
         Name::new(&Name::new_root(), "test".to_string())

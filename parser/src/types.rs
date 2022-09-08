@@ -1,36 +1,36 @@
-use std::fmt::{ Debug, Formatter };
+use std::fmt::{Debug, Formatter};
 
-use serde::{ Serialize, Deserialize };
-use serde::ser::Serializer;
 use serde::de::Deserializer;
+use serde::ser::Serializer;
+use serde::{Deserialize, Serialize};
 
 use super::name::Name;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Type {
     pub kind: TypeKind,
-    pub refs: Option<Name>
+    pub refs: Option<Name>,
 }
 
 impl Type {
     pub fn new(kind: TypeKind, name: Option<Name>) -> Type {
-        Type {
-            kind,
-            refs: name
-        }
+        Type { kind, refs: name }
     }
 
     pub fn new_unsovled_nohint() -> Type {
         Type {
             kind: TypeKind::UnsolvedNoHint,
-            refs: None
+            refs: None,
         }
     }
 }
 
 impl From<String> for Type {
     fn from(name: String) -> Type {
-        Type { kind: TypeKind::from(name), refs: None }
+        Type {
+            kind: TypeKind::from(name),
+            refs: None,
+        }
     }
 }
 
@@ -51,19 +51,19 @@ pub enum TypeKind {
 
     /* パーサ用 (解決後のSysDCSystemには含まれない) */
     Unsolved(String),
-    UnsolvedNoHint
+    UnsolvedNoHint,
 }
 
 impl TypeKind {
     pub fn is_primitive(&self) -> bool {
         match self {
-            TypeKind::Void |
-            TypeKind::Int32 |
-            TypeKind::UInt32 |
-            TypeKind::Float32 |
-            TypeKind::Boolean |
-            TypeKind::Char => true,
-            _ => false
+            TypeKind::Void
+            | TypeKind::Int32
+            | TypeKind::UInt32
+            | TypeKind::Float32
+            | TypeKind::Boolean
+            | TypeKind::Char => true,
+            _ => false,
         }
     }
 }
@@ -77,7 +77,7 @@ impl From<String> for TypeKind {
             "f32" => TypeKind::Float32,
             "bool" => TypeKind::Boolean,
             "char" => TypeKind::Char,
-            _ => TypeKind::Unsolved(name)
+            _ => TypeKind::Unsolved(name),
         }
     }
 }
@@ -101,12 +101,13 @@ impl Debug for TypeKind {
 impl Serialize for TypeKind {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer
+        S: Serializer,
     {
         match self {
-            TypeKind::Unsolved(_) |
-            TypeKind::UnsolvedNoHint => panic!("[ERROR] Cannot serialize object containing unsolved types."),
-            _ => serializer.serialize_str(&format!("{:?}", self))
+            TypeKind::Unsolved(_) | TypeKind::UnsolvedNoHint => {
+                panic!("[ERROR] Cannot serialize object containing unsolved types.")
+            }
+            _ => serializer.serialize_str(&format!("{:?}", self)),
         }
     }
 }
@@ -114,28 +115,29 @@ impl Serialize for TypeKind {
 impl<'de> Deserialize<'de> for TypeKind {
     fn deserialize<D>(deserializer: D) -> Result<TypeKind, D::Error>
     where
-        D: Deserializer<'de>
+        D: Deserializer<'de>,
     {
         let skind = String::deserialize(deserializer)?;
         match TypeKind::from(skind) {
             TypeKind::Unsolved(_) => Ok(TypeKind::Data),
-            kind => Ok(kind)
+            kind => Ok(kind),
         }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use serde::Serialize;
     use rmp_serde;
     use rmp_serde::Serializer;
+    use serde::Serialize;
 
     use super::TypeKind;
 
     macro_rules! check_serialize {
         ($target:ty, $obj:expr) => {
-            let mut serialized = vec!();
-            $obj.serialize(&mut Serializer::new(&mut serialized)).unwrap();
+            let mut serialized = vec![];
+            $obj.serialize(&mut Serializer::new(&mut serialized))
+                .unwrap();
             let deserialized = rmp_serde::from_slice::<$target>(&serialized[..]).unwrap();
             assert_eq!(deserialized, $obj);
         };

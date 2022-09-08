@@ -4,19 +4,19 @@ mod matches;
 
 use anyhow;
 
-use super::structure::SysDCSystem;
 use super::structure::unchecked;
-use utils::define::DefinesManager;
-use resolve::TypeResolver;
+use super::structure::SysDCSystem;
 use matches::TypeMatchChecker;
+use resolve::TypeResolver;
+use utils::define::DefinesManager;
 
 pub fn check(system: unchecked::SysDCSystem) -> anyhow::Result<SysDCSystem> {
     // 0. 準備
     let def_manager = DefinesManager::new(&system)?;
-    let mut imports = vec!();
+    let mut imports = vec![];
     for unit in &system.units {
         for import in &unit.imports {
-            def_manager.check_can_import(import, &vec!())?;
+            def_manager.check_can_import(import, &vec![])?;
             imports.push((*import).clone());
         }
     }
@@ -45,7 +45,7 @@ mod test {
                 c: i32
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -63,7 +63,7 @@ mod test {
                 c: A
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -75,7 +75,7 @@ mod test {
                 a: A
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -89,7 +89,7 @@ mod test {
                 b: Unknown
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -108,7 +108,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -130,7 +130,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -150,7 +150,7 @@ mod test {
                 proc test2(a: A, b: B) {}
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -171,7 +171,7 @@ mod test {
                 proc test2(a: A, b: B) {}
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -193,7 +193,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -215,7 +215,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -238,7 +238,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -261,7 +261,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -329,7 +329,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program))
+        check(vec![program])
     }
 
     #[test]
@@ -353,7 +353,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -383,7 +383,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -417,7 +417,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -446,7 +446,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -473,7 +473,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -500,7 +500,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -528,7 +528,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -556,7 +556,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -602,7 +602,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -649,7 +649,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -665,7 +665,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -684,7 +684,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -709,7 +709,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -737,7 +737,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -749,7 +749,7 @@ mod test {
                 proc test() { }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -768,7 +768,7 @@ mod test {
                 a: A
             }
         ";
-        check(vec!(program1, program2));
+        check(vec![program1, program2]);
     }
 
     #[test]
@@ -809,7 +809,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program1, program2));
+        check(vec![program1, program2]);
     }
 
     #[test]
@@ -841,7 +841,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program1, program2));
+        check(vec![program1, program2]);
     }
 
     #[test]
@@ -876,7 +876,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program1, program2));
+        check(vec![program1, program2]);
     }
 
     #[test]
@@ -888,7 +888,7 @@ mod test {
             data A {}
             data A{}
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -903,7 +903,7 @@ mod test {
                 y: i32
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -915,7 +915,7 @@ mod test {
             module TestModule {}
             module TestModule {}
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -938,7 +938,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -955,7 +955,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -974,7 +974,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -994,7 +994,7 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     #[test]
@@ -1021,13 +1021,15 @@ mod test {
                 }
             }
         ";
-        check(vec!(program));
+        check(vec![program]);
     }
 
     fn check(programs: Vec<&str>) {
         let mut parser = Parser::new();
         for program in programs {
-            parser.parse("check.def".to_string(), &program.to_string()).unwrap();
+            parser
+                .parse("check.def".to_string(), &program.to_string())
+                .unwrap();
         }
         parser.check().unwrap();
     }

@@ -3,18 +3,18 @@ mod exec;
 
 use std::process::exit;
 
-use clap::{ AppSettings, Parser, Subcommand };
+use clap::{AppSettings, Parser, Subcommand};
 
-use parse::ParseCmd;
 use exec::ExecCmd;
+use parse::ParseCmd;
 
 /// SysDC: System Definition Language and Tools
 #[derive(Parser)]
-#[clap(author, version, name="subcommand")]
+#[clap(author, version, name = "subcommand")]
 #[clap(global_settings(&[AppSettings::DisableHelpSubcommand]))]
 pub struct App {
     #[clap(subcommand)]
-    sub: AppSub
+    sub: AppSub,
 }
 
 #[derive(Subcommand)]
@@ -24,14 +24,14 @@ enum AppSub {
     parse(ParseCmd),
 
     /// Execute tool
-    exec(ExecCmd)
+    exec(ExecCmd),
 }
 
 impl App {
     pub fn run() {
         let result = match App::parse().sub {
             AppSub::parse(cmd) => cmd.run(),
-            AppSub::exec(cmd) => cmd.run()
+            AppSub::exec(cmd) => cmd.run(),
         };
         match result {
             Ok(_) => exit(0),

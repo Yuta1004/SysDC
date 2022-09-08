@@ -1,23 +1,23 @@
-use std::io::Write;
 use std::fs;
 use std::fs::File;
+use std::io::Write;
 
 use anyhow;
 use clap::Parser;
-use serde::Serialize;
 use rmp_serde::Serializer;
+use serde::Serialize;
 
-use sysdc_parser::Parser as SParser;
 use sysdc_parser::structure::SysDCSystem;
+use sysdc_parser::Parser as SParser;
 
 #[derive(Parser)]
-#[clap(name="subcommand")]
+#[clap(name = "subcommand")]
 pub struct ParseCmd {
-    #[clap(required=true)]
+    #[clap(required = true)]
     input: Vec<String>,
 
-    #[clap(short, long, default_value="out.sysdc")]
-    output: String
+    #[clap(short, long, default_value = "out.sysdc")]
+    output: String,
 }
 
 impl ParseCmd {
@@ -33,9 +33,7 @@ impl ParseCmd {
                 for entry in entries {
                     let entry = entry.unwrap();
                     if entry.is_file() {
-                        let filename = entry.file_name().unwrap()
-                                            .to_str().unwrap()
-                                            .to_string();
+                        let filename = entry.file_name().unwrap().to_str().unwrap().to_string();
                         let program = fs::read_to_string(&entry)?;
                         println!("Loading: {}", filename);
                         parser.parse(filename, &program)?;
@@ -50,7 +48,7 @@ impl ParseCmd {
     }
 
     fn save_system(&self, system: SysDCSystem) -> anyhow::Result<()> {
-        let mut serialized_system = vec!();
+        let mut serialized_system = vec![];
         system.serialize(&mut Serializer::new(&mut serialized_system))?;
 
         let mut f = File::create(&self.output)?;
