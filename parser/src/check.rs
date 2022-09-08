@@ -35,7 +35,7 @@ mod test {
     use crate::Parser;
 
     #[test]
-    fn primitive_member_only_data() {
+    fn data_only_has_primitive_member() {
         let program = "
             unit test;
 
@@ -49,7 +49,7 @@ mod test {
     }
 
     #[test]
-    fn user_defined_type_mix_data() {
+    fn data_has_user_defined_type_member() {
         let program = "
             unit test;
 
@@ -67,7 +67,7 @@ mod test {
     }
 
     #[test]
-    fn recursive_type_mix_data() {
+    fn data_has_recursive_member() {
         let program = "
             unit test;
 
@@ -80,7 +80,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn undefined_type_mix_data() {
+    fn data_has_undefined_typed_member() {
         let program = "
             unit test;
 
@@ -93,7 +93,7 @@ mod test {
     }
 
     #[test]
-    fn user_defind_type_mix_module() {
+    fn module_simple() {
         let program = "
             unit test;
 
@@ -112,7 +112,7 @@ mod test {
     }
 
     #[test]
-    fn user_defined_type_mix_module_with_affect_1() {
+    fn module_with_affect_1() {
         let program = "
             unit test;
 
@@ -134,7 +134,7 @@ mod test {
     }
 
     #[test]
-    fn user_defined_type_mix_module_with_affect_2() {
+    fn module_with_affect_2() {
         let program = "
             unit test;
 
@@ -155,7 +155,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn user_defined_type_mix_module_with_affect_failure_1() {
+    fn module_with_affect_failure_1() {
         let program = "
             unit test;
 
@@ -175,7 +175,7 @@ mod test {
     }
 
     #[test]
-    fn user_defind_type_mix_module_with_modify_1() {
+    fn module_with_modify_1() {
         let program = "
             unit test;
 
@@ -197,7 +197,7 @@ mod test {
     }
 
     #[test]
-    fn user_defind_type_mix_module_with_modify_2() {
+    fn module_with_modify_2() {
         let program = "
             unit test;
 
@@ -220,7 +220,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn user_defind_type_mix_module_with_modify_failure_1() {
+    fn module_with_modify_failure_1() {
         let program = "
             unit test;
 
@@ -243,7 +243,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn user_defind_type_mix_module_with_modify_failure_2() {
+    fn module_with_modify_failure_2() {
         let program = "
             unit test;
 
@@ -265,7 +265,7 @@ mod test {
     }
 
     #[test]
-    fn user_defined_type_mix_module_with_spawn() {
+    fn module_with_spawn() {
         let program = "
             unit test;
 
@@ -334,7 +334,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn user_defind_type_mix_module_with_spawn_failure_1() {
+    fn module_with_spawn_failure_1() {
         let program = "
             unit test;
 
@@ -358,7 +358,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn user_defind_type_mix_module_with_spawn_failure_2() {
+    fn module_with_spawn_failure_2() {
         let program = "
             unit test;
 
@@ -388,7 +388,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn user_defind_type_mix_module_with_spawn_failure_3() {
+    fn module_with_spawn_failure_3() {
         let program = "
             unit test;
 
@@ -421,7 +421,7 @@ mod test {
     }
 
     #[test]
-    fn let_by_user_defined_function_using_completed_name_1() {
+    fn ref_function_using_completed_name_1() {
         let program = "
             unit test;
 
@@ -450,7 +450,7 @@ mod test {
     }
 
     #[test]
-    fn let_by_user_defined_function_using_completed_name_2() {
+    fn ref_function_using_completed_name_2() {
         let program = "
             unit test;
 
@@ -477,7 +477,7 @@ mod test {
     }
 
     #[test]
-    fn let_by_user_defined_function_using_uncompleted_name() {
+    fn ref_function_using_uncompleted_name() {
         let program = "
             unit test;
 
@@ -505,7 +505,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn let_by_user_defined_function_using_completed_name_failure() {
+    fn ref_function_using_completed_name_failure() {
         let program = "
             unit test;
 
@@ -533,7 +533,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn let_by_user_defined_function_using_uncompleted_name_failure() {
+    fn ref_function_using_uncompleted_name_failure() {
         let program = "
             unit test;
 
@@ -560,7 +560,7 @@ mod test {
     }
 
     #[test]
-    fn argument_check_ok() {
+    fn function_argument_check_ok() {
         let program = "
             unit test;
 
@@ -607,7 +607,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn argument_check_ng() {
+    fn function_argument_check_ng() {
         let program = "
             unit test;
 
@@ -653,7 +653,7 @@ mod test {
     }
 
     #[test]
-    fn return_check_ok() {
+    fn function_return_check_ok() {
         let program = "
             unit test;
 
@@ -670,7 +670,7 @@ mod test {
 
     #[test]
     #[should_panic]
-    fn return_check_ng() {
+    fn function_return_check_ng() {
         let program = "
             unit test;
 
