@@ -56,15 +56,15 @@ pub enum TypeKind {
 
 impl TypeKind {
     pub fn is_primitive(&self) -> bool {
-        match self {
+        matches!(
+            self,
             TypeKind::Void
-            | TypeKind::Int32
-            | TypeKind::UInt32
-            | TypeKind::Float32
-            | TypeKind::Boolean
-            | TypeKind::Char => true,
-            _ => false,
-        }
+                | TypeKind::Int32
+                | TypeKind::UInt32
+                | TypeKind::Float32
+                | TypeKind::Boolean
+                | TypeKind::Char
+        )
     }
 }
 
