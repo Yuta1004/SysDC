@@ -30,7 +30,7 @@ impl Name {
     pub fn get_namespace(&self, ignore_underscore: bool) -> Name {
         let splitted_name = self
             .namespace
-            .split(".")
+            .split('.')
             .filter(|x| !ignore_underscore || x != &"_")
             .collect::<Vec<&str>>();
         let new_name = splitted_name[splitted_name.len() - 2].to_string();
@@ -44,7 +44,7 @@ impl Name {
     pub fn get_par_name(&self, ignore_underscore: bool) -> Name {
         let name = self.get_full_name();
         let splitted_name = name
-            .split(".")
+            .split('.')
             .filter(|x| !ignore_underscore || x != &"_")
             .collect::<Vec<&str>>();
         let par_name = splitted_name[splitted_name.len() - 2];
@@ -56,7 +56,7 @@ impl Name {
     }
 
     pub fn has_underscore(&self) -> bool {
-        self.namespace.contains("_") || self.name.contains("_")
+        self.namespace.contains('_') || self.name.contains('_')
     }
 }
 

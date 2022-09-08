@@ -353,7 +353,7 @@ impl DefinesManager {
 }
 
 fn split_name(s: &String) -> (String, Option<String>) {
-    let splitted = s.split(".").collect::<Vec<&str>>();
+    let splitted = s.split('.').collect::<Vec<&str>>();
     match splitted.len() {
         1 => (splitted[0].to_string(), None),
         _ => (splitted[0].to_string(), Some(splitted[1..].join("."))),
