@@ -1,6 +1,8 @@
+use anyhow;
+
 use crate::name::Name;
 use crate::types::{ Type, TypeKind };
-use crate::error::{ PResult, PErrorKind };
+use crate::error::{ PErrorKind, PError };
 use crate::structure::{ SysDCSystem, SysDCFunction, SysDCAnnotation, SysDCSpawnDetail };
 use super::utils::define::DefinesManager;
 
@@ -10,7 +12,7 @@ pub struct TypeMatchChecker<'a> {
 }
 
 impl<'a> TypeMatchChecker<'a> {
-    pub fn check(system: &SysDCSystem, def_manager: &'a DefinesManager, imports: &'a Vec<Name>) -> PResult<()> {
+    pub fn check(system: &SysDCSystem, def_manager: &'a DefinesManager, imports: &'a Vec<Name>) -> anyhow::Result<()> {
         let checker = TypeMatchChecker{ def_manager, imports };
         for unit in &system.units {
             for module in &unit.modules {
@@ -22,12 +24,15 @@ impl<'a> TypeMatchChecker<'a> {
         Ok(())
     }
 
-    fn check_function(&self, func: &SysDCFunction) -> PResult<()> {
+    fn check_function(&self, func: &SysDCFunction) -> anyhow::Result<()> {
         if func.returns.1.kind != TypeKind::Void {
             let req_ret_type = &func.returns.1;
             let act_ret_type = self.def_manager.resolve_from_name(func.returns.0.clone(), &self.imports)?.1;
             if req_ret_type != &act_ret_type {
-                return PErrorKind::TypeUnmatch2(req_ret_type.clone(), act_ret_type).to_err();
+                return Err(
+                    PError::from(PErrorKind::TypeUnmatch2(req_ret_type.clone(), act_ret_type))
+                        .into()
+                )
             }
         }
 
@@ -42,26 +47,35 @@ impl<'a> TypeMatchChecker<'a> {
         Ok(())
     }
 
-    fn check_annotation_affect(&self, (func, _): &(Name, Type), args: &Vec<(Name, Type)>) -> PResult<()> {
+    fn check_annotation_affect(&self, (func, _): &(Name, Type), args: &Vec<(Name, Type)>) -> anyhow::Result<()> {
         for ((_, act_arg_type), req_arg_type) in args.iter().zip(self.def_manager.get_args_type(&func, &self.imports)?.iter()) {
             if act_arg_type != req_arg_type {
-                return PErrorKind::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone()).to_err();
+                return Err(
+                    PError::from(PErrorKind::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone()))
+                        .into()
+                )
             }
         }
         Ok(())
     }
 
-    fn check_annotation_spawn(&self, result: &(Name, Type), details: &Vec<SysDCSpawnDetail>) -> PResult<()> {
+    fn check_annotation_spawn(&self, result: &(Name, Type), details: &Vec<SysDCSpawnDetail>) -> anyhow::Result<()> {
         for detail in details {
             match detail {
                 SysDCSpawnDetail::Return(_, act_ret_type) =>
                     if &result.1 != act_ret_type {
-                        return PErrorKind::TypeUnmatch2(result.1.clone(), act_ret_type.clone()).to_err();
+                        return Err(
+                            PError::from(PErrorKind::TypeUnmatch2(result.1.clone(), act_ret_type.clone()))
+                                .into()
+                        );
                     },
                 SysDCSpawnDetail::LetTo { func: (func, _), args, .. } =>
                     for ((_, act_arg_type), req_arg_type) in args.iter().zip(self.def_manager.get_args_type(&func, &self.imports)?.iter()) {
                         if act_arg_type != req_arg_type {
-                            return PErrorKind::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone()).to_err();
+                            return Err(
+                                PError::from(PErrorKind::TypeUnmatch2(req_arg_type.clone(), act_arg_type.clone()))
+                                    .into()
+                            );
                         }
                     },
                 _ => {}

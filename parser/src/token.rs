@@ -1,7 +1,9 @@
 use std::str::Chars;
 
+use anyhow;
+
 use super::location::Location;
-use super::error::{ PResult, PErrorKind };
+use super::error::{ PErrorKind, PError };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
@@ -122,7 +124,7 @@ impl<'a> Tokenizer<'a> {
         self.hold_char.is_some()
     }
 
-    pub fn expect(&mut self, kind: TokenKind) -> PResult<Option<Token>> {
+    pub fn expect(&mut self, kind: TokenKind) -> anyhow::Result<Option<Token>> {
         if let Some(token) = self.tokenize()? {
             if token.kind == kind {
                 self.hold_token = None;
@@ -136,14 +138,18 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    pub fn request(&mut self, kind: TokenKind) -> PResult<Token> {
+    pub fn request(&mut self, kind: TokenKind) -> anyhow::Result<Token> {
         match self.expect(kind.clone())? {
             Some(token) => Ok(token),
-            None => PErrorKind::RequestedTokenNotFound(kind).to_err_with_loc(self.get_now_ref_loc())
+            None => Err(
+                PError::from(PErrorKind::RequestedTokenNotFound(kind))
+                    .with_loc(self.get_now_ref_loc())
+                    .into()
+            )
         }
     }
 
-    fn tokenize(&mut self) -> PResult<Option<Token>> {
+    fn tokenize(&mut self) -> anyhow::Result<Option<Token>> {
         if !self.hold_token.is_none() {
             return Ok(self.hold_token.clone());
         }
@@ -165,7 +171,11 @@ impl<'a> Tokenizer<'a> {
 
                 // Ng(panic)
                 (CharType::SymbolAllow1 | CharType::SymbolAllow2, _) =>
-                    return PErrorKind::FoundUnregisteredSymbol.to_err_with_loc(self.get_now_ref_loc()),
+                    return Err(
+                        PError::from(PErrorKind::FoundUnregisteredSymbol)
+                            .with_loc(self.get_now_ref_loc())
+                            .into()
+                    ),
 
                 // Ok(force stop)
                 _ => break
@@ -176,10 +186,14 @@ impl<'a> Tokenizer<'a> {
         Ok(Some(Token::new(self.collect(), self.now_ref_row, self.now_ref_col)))
     }
 
-    fn adopt(&mut self) -> PResult<()> {
+    fn adopt(&mut self) -> anyhow::Result<()> {
         match self.hold_char {
             Some(c) => self.hold_chars.push(c),
-            None => return PErrorKind::UnexpectedEOF.to_err_with_loc(self.get_now_ref_loc())
+            None => return Err(
+                PError::from(PErrorKind::UnexpectedEOF)
+                    .with_loc(self.get_now_ref_loc())
+                    .into()
+            )
         }
         self.hold_char = self.chars.next();
         self.now_ref_col += 1;

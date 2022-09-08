@@ -1,6 +1,8 @@
+use anyhow;
+
 use crate::name::Name;
 use crate::types::{ Type, TypeKind };
-use crate::error::{ PResult, PErrorKind };
+use crate::error::{ PErrorKind, PError };
 use crate::structure::unchecked;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -32,23 +34,26 @@ pub struct DefinesManager {
 }
 
 impl DefinesManager {
-    pub fn new(system: &unchecked::SysDCSystem) -> PResult<DefinesManager> {
+    pub fn new(system: &unchecked::SysDCSystem) -> anyhow::Result<DefinesManager> {
         let mut def_manager = DefinesManager { defines: vec!() };
         def_manager.listup_defines(system)?;
         Ok(def_manager)
     }
 
     // 与えられたnameと同じ名前を持つ定義が存在するかどうかを確認する
-    pub fn check_can_import(&self, name: &Name, imports: &Vec<Name>) -> PResult<()> {
+    pub fn check_can_import(&self, name: &Name, imports: &Vec<Name>) -> anyhow::Result<()> {
         match self.find(name.clone(), &name.name, imports)?.kind {
             DefineKind::Data | DefineKind::Module => Ok(()),
-            _ => PErrorKind::NotDefined(name.name.clone()).to_err()
+            _ => Err(
+                PError::from(PErrorKind::NotDefined(name.name.clone()))
+                    .into()
+            )
         }
     }
 
     // 与えられたnameから参照可能なすべての範囲またはimports内を対象に，typesと一致する定義を探す (Data, Module, Function)
     // ※name, typesはともに関連している状態を想定
-    pub fn resolve_from_type(&self, (name, types): (Name, Type), imports: &Vec<Name>) -> PResult<(Name, Type)> {
+    pub fn resolve_from_type(&self, (name, types): (Name, Type), imports: &Vec<Name>) -> anyhow::Result<(Name, Type)> {
         if types.kind.is_primitive() || types.kind == TypeKind::Data {
             return Ok((name, types))
         }
@@ -59,18 +64,25 @@ impl DefinesManager {
             return match found_def.kind {
                 DefineKind::Data =>
                     match tails {
-                        Some(_) => PErrorKind::IllegalAccess.to_err(),
+                        Some(_) => Err(
+                            PError::from(PErrorKind::IllegalAccess).into()
+                        ),
                         None => Ok((name, Type::new(TypeKind::Data, Some(found_def.refs))))
                     }
                 DefineKind::Module =>
                     match tails {
                         Some(tails) => self.get_func_in_module(&found_def.refs, &tails, imports),
-                        None => PErrorKind::MissingFunctionName.to_err()
+                        None => Err(
+                            PError::from(PErrorKind::MissingFunctionName)
+                                .into()
+                        )
                     }
                 DefineKind::Function(_) => {
                     self.get_func_in_module(&name.get_namespace(true), &hint, imports)
                 }
-                _ => PErrorKind::TypeUnmatch1(types).to_err()
+                _ => Err(
+                    PError::from(PErrorKind::TypeUnmatch1(types)).into()
+                )
             }
         }
 
@@ -78,7 +90,7 @@ impl DefinesManager {
     }
 
     // nameから参照可能なすべての範囲またはimports内を対象に，nameと一致する名前をもつ定義を探す (Variable)
-    pub fn resolve_from_name(&self, name: Name, imports: &Vec<Name>) -> PResult<(Name, Type)> {
+    pub fn resolve_from_name(&self, name: Name, imports: &Vec<Name>) -> anyhow::Result<(Name, Type)> {
         let (head, tails) = split_name(&name.name);
         let found_def = self.find(name.clone(), &head, &vec!())?;
         match found_def.kind {
@@ -105,12 +117,12 @@ impl DefinesManager {
                     None => self.resolve_from_name(use_ref, imports)
                 }
             }
-            _ => PErrorKind::NotDefined(name.name).to_err()
+            _ => Err(PError::from(PErrorKind::NotDefined(name.name)).into())
         }
     }
 
     // 与えられた関数名に対応する関数を探し，関数に登録されている引数の型の一覧を返す
-    pub fn get_args_type(&self, func_name: &Name, imports: &Vec<Name>) -> PResult<Vec<Type>> {
+    pub fn get_args_type(&self, func_name: &Name, imports: &Vec<Name>) -> anyhow::Result<Vec<Type>> {
         let func_name = func_name.get_full_name();
         let mut args = vec!();
         for Define { kind, refs } in &self.defines {
@@ -124,7 +136,7 @@ impl DefinesManager {
     }
 
     // data(Data)内のmember(Member)の定義を探す
-    fn get_member_in_data(&self, data: &Name, member: &String, imports: &Vec<Name>) -> PResult<(Name, Type)> {
+    fn get_member_in_data(&self, data: &Name, member: &String, imports: &Vec<Name>) -> anyhow::Result<(Name, Type)> {
         let (head, tails) = split_name(&member);
         for Define { kind, refs } in &self.defines {
             if let DefineKind::DataMember(types) = kind {
@@ -132,7 +144,7 @@ impl DefinesManager {
                     let (_, types) = self.resolve_from_type((refs.clone(), types.clone()), imports)?;
                     if types.kind.is_primitive() {
                         return match tails {
-                            Some(_) => PErrorKind::IllegalAccess.to_err(),
+                            Some(_) => Err(PError::from(PErrorKind::IllegalAccess).into()),
                             None => Ok((refs.clone(), types))
                         };
                     }
@@ -146,11 +158,12 @@ impl DefinesManager {
                 }
             }
         }
-        PErrorKind::MemberNotDefinedInData(member.clone(), data.name.clone()).to_err()
+        Err(PError::from(PErrorKind::MemberNotDefinedInData(member.clone(), data.name.clone()))
+            .into())
     }
 
     // module(Module)内のfunc(Function)の定義を探す
-    fn get_func_in_module(&self, module: &Name, func: &String, imports: &Vec<Name>) -> PResult<(Name, Type)> {
+    fn get_func_in_module(&self, module: &Name, func: &String, imports: &Vec<Name>) -> anyhow::Result<(Name, Type)> {
         for Define { kind, refs } in &self.defines {
             if let DefineKind::Function(types) = kind {
                 if module == &refs.get_par_name(true) && func == &refs.name {
@@ -158,13 +171,14 @@ impl DefinesManager {
                 }
             }
         }
-        PErrorKind::FuncNotDefinedInModule(func.clone(), module.name.clone()).to_err()
+        Err(PError::from(PErrorKind::FuncNotDefinedInModule(func.clone(), module.name.clone()))
+            .into())
     }
 
     // namespace内に存在する定義を対象に，nameと同じ名前を持つ定義を探して返す
     // namespace内に存在しない場合はimports内の名前を探して返す
     // ※namespaceはルートにたどり着くまで再帰的に更新されながら検索が続く (.a.b.c -> .a.b -> .a -> .)
-    fn find(&self, mut namespace: Name, name: &String, imports: &Vec<Name>) -> PResult<Define> {
+    fn find(&self, mut namespace: Name, name: &String, imports: &Vec<Name>) -> anyhow::Result<Define> {
         let had_underscore = namespace.has_underscore();
         while namespace.name.len() > 0 {
             for Define{ kind, refs } in &self.defines {
@@ -186,18 +200,21 @@ impl DefinesManager {
             }
         }
 
-        PErrorKind::NotFound(name.clone()).to_err()
+        Err(PError::from(PErrorKind::NotFound(name.clone())).into())
     }
 
     /* ----- ↓前処理用↓ ----- */
 
-    fn define(&mut self, def: Define) -> PResult<()> {
+    fn define(&mut self, def: Define) -> anyhow::Result<()> {
         match &self.find(def.refs.clone(), &def.refs.name, &vec!()) {
             Ok(Define{ kind, .. }) =>
                 match (kind, &def.kind) {
                     (DefineKind::Argument(_), _) => {},
                     (_, DefineKind::Argument(_)) => {},
-                    _ => return PErrorKind::AlreadyDefined(def.refs.name).to_err()
+                    _ => return Err(
+                        PError::from(PErrorKind::AlreadyDefined(def.refs.name))
+                            .into()
+                    )
                 }
             Err(_) => {}
         }
@@ -205,7 +222,7 @@ impl DefinesManager {
         Ok(())
     }
 
-    fn listup_defines(&mut self, system: &unchecked::SysDCSystem) -> PResult<()> {
+    fn listup_defines(&mut self, system: &unchecked::SysDCSystem) -> anyhow::Result<()> {
 
         for unit in &system.units {
             self.listup_defines_unit(unit)?;
@@ -213,7 +230,7 @@ impl DefinesManager {
         Ok(())
     }
 
-    fn listup_defines_unit(&mut self, unit: &unchecked::SysDCUnit) -> PResult<()> {
+    fn listup_defines_unit(&mut self, unit: &unchecked::SysDCUnit) -> anyhow::Result<()> {
         for data in &unit.data {
             self.define(Define::new(DefineKind::Data, data.name.clone()))?;
             self.listup_defines_data(data)?;
@@ -225,14 +242,14 @@ impl DefinesManager {
         Ok(())
     }
 
-    fn listup_defines_data(&mut self, data: &unchecked::SysDCData) -> PResult<()> {
+    fn listup_defines_data(&mut self, data: &unchecked::SysDCData) -> anyhow::Result<()> {
         for (name, types) in &data.members {
             self.define(Define::new(DefineKind::DataMember(types.clone()), name.clone()))?;
         }
         Ok(())
     }
 
-    fn listup_defines_module(&mut self, module: &unchecked::SysDCModule) -> PResult<()> {
+    fn listup_defines_module(&mut self, module: &unchecked::SysDCModule) -> anyhow::Result<()> {
         for func in &module.functions {
             self.define(Define::new(DefineKind::Function(func.returns.1.clone()), func.name.clone()))?;
             self.listup_defines_function(func)?;
@@ -240,7 +257,7 @@ impl DefinesManager {
         Ok(())
     }
 
-    fn listup_defines_function(&mut self, func: &unchecked::SysDCFunction) -> PResult<()> {
+    fn listup_defines_function(&mut self, func: &unchecked::SysDCFunction) -> anyhow::Result<()> {
         for (name, types) in &func.args {
             self.define(Define::new(DefineKind::Variable(types.clone()), name.clone()))?;
             self.define(Define::new(DefineKind::Argument(types.clone()), name.clone()))?;
@@ -257,7 +274,7 @@ impl DefinesManager {
         Ok(())
     }
 
-    fn listup_defines_annotation_spawn_details(&mut self, details: &Vec<unchecked::SysDCSpawnDetail>) -> PResult<()> {
+    fn listup_defines_annotation_spawn_details(&mut self, details: &Vec<unchecked::SysDCSpawnDetail>) -> anyhow::Result<()> {
         for detail in details {
             match detail {
                 unchecked::SysDCSpawnDetail::Use(name, _) => {

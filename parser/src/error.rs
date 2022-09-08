@@ -1,101 +1,84 @@
 use std::fmt;
 use std::fmt::{ Display, Formatter };
-use std::error::Error;
+
+use thiserror::Error;
 
 use super::types::Type;
 use super::token::TokenKind;
 use super::location::Location;
 
-pub type PResult<T> = Result<T, PError>;
-
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum PErrorKind {
     /* トークン分割時に発生したエラー */
+    #[error("Token \"{0:?}\" is requested, but not found")]
     RequestedTokenNotFound(TokenKind),
+    #[error("Found unregistered symbol")]
     FoundUnregisteredSymbol,
 
     /* パース時に発生したエラー */
+    #[error("Unit name is not specified")]
     UnitNameNotSpecified,
+    #[error("From namespace is not specified")]
     FromNamespaceNotSpecified,
+    #[error("Expected Data or Module definition, but not found")]
     DataOrModuleNotFound,
+    #[error("Unexpected EOF found")]
     UnexpectedEOF,
+    #[error("Annotation \"return\" exists multiple")]
     ReturnExistsMultiple,
+    #[error("Annotation \"return\" exists on procedure")]
     ReturnExistsOnProcedure,
+    #[error("Annotation \"return\" not exists")]
     ReturnNotExists,
+    #[error("Missing to specify the result os spawn")]
     ResultOfSpawnNotSpecified,
+    #[error("Function name is requested, but not found")]
     FunctionNameNotFound,
+    #[error("Unknown annotation \"{0}\" found")]
     UnknownAnnotationFound(String),
 
     /* 検査時に発生したエラー */
+    #[error("\"{0}\" is already defiend")]
     AlreadyDefined(String),
+    #[error("\"{0:?}\" is defined, but type is mismatch")]
     TypeUnmatch1(Type),
+    #[error("\"{0:?}\" is required, but \"{1:?}\" found")]
     TypeUnmatch2(Type, Type),
+    #[error("Cannot find \"{0}\"")]
     NotFound(String),
+    #[error("\"{0}\" is not defined")]
     NotDefined(String),
+    #[error("Member \"{0}\" is not defined in Data \"{1}\"")]
     MemberNotDefinedInData(String, String),
+    #[error("Function \"{0}\" is not defiend in Module \"{1}\"")]
     FuncNotDefinedInModule(String, String),
+    #[error("Missing to specify the function")]
     MissingFunctionName,
+    #[error("Found illegal access")]
     IllegalAccess,
 }
 
-impl PErrorKind {
-    pub fn to_err<T>(self) -> PResult<T> {
-        Err(PError {
-            kind: self,
-            happen_at: Location::new()
-        })
-    }
-
-    pub fn to_err_with_loc<T>(self, happen_at: Location) -> PResult<T> {
-        Err(PError { kind: self, happen_at })
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub struct PError {
     kind: PErrorKind,
     happen_at: Location
 }
 
-impl Error for PError {}
+impl From<PErrorKind> for PError {
+    fn from(kind: PErrorKind) -> PError {
+        PError { kind, happen_at: Location::new() }
+    }
+}
 
 impl Display for PError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match &self.kind {
-            PErrorKind::RequestedTokenNotFound(kind) => write!(f, "Token \"{:?}\" is requested, but not found", kind),
-            PErrorKind::FoundUnregisteredSymbol => write!(f, "Found unregistered symbol"),
-
-            PErrorKind::UnitNameNotSpecified => write!(f, "Unit name is not specified"),
-            PErrorKind::FromNamespaceNotSpecified => write!(f, "From namespace is not specified"),
-            PErrorKind::DataOrModuleNotFound => write!(f, "Expected Data or Module definition, but not found"),
-            PErrorKind::UnexpectedEOF => write!(f, "Unexpected EOF found"),
-            PErrorKind::ReturnExistsMultiple => write!(f, "Annotation \"return\" exists multiple"),
-            PErrorKind::ReturnExistsOnProcedure => write!(f, "Annotation \"return\" exists on procedure"),
-            PErrorKind::ReturnNotExists => write!(f, "Annotation \"return\" not existed"),
-            PErrorKind::ResultOfSpawnNotSpecified => write!(f, "Missing to specify the result of spawn"),
-            PErrorKind::FunctionNameNotFound => write!(f, "Function name is requested, but not found"),
-            PErrorKind::UnknownAnnotationFound(name) => write!(f, "Unknown annotation \"{}\" found", name),
-
-            PErrorKind::AlreadyDefined(name) => write!(f, "\"{}\" is already defined", name),
-            PErrorKind::TypeUnmatch1(actual) => write!(f, "\"{:?}\" is defined, but type is unmatch", actual),
-            PErrorKind::TypeUnmatch2(required, actual) => write!(f, "\"{:?}\" is required, but \"{:?}\" exists", required, actual),
-            PErrorKind::NotFound(name) => write!(f, "Cannot find \"{}\"", name),
-            PErrorKind::NotDefined(name) => write!(f, "\"{}\" is not defined", name),
-            PErrorKind::MemberNotDefinedInData(member, data) => write!(f, "Member \"{}\" is not defined in Data \"{}\"", member, data),
-            PErrorKind::FuncNotDefinedInModule(func, module) => write!(f, "Function \"{}\" is not defined in Module \"{}\"", func, module),
-            PErrorKind::MissingFunctionName => write!(f, "Missing to specify the function"),
-            PErrorKind::IllegalAccess => write!(f, "Found illegal access"),
-        }?;
-        write!(f, " (at {})", self.happen_at)
+        write!(f, "{} (at {})", self.kind, self.happen_at)
     }
 }
 
 impl PError {
-    pub fn set_filename(&mut self, filename: String) {
-        self.happen_at.set_filename(filename);
-    }
-
-    pub fn upgrade<T>(self) -> Result<T, Box<dyn Error>> {
-        Err(Box::new(self))
+    pub fn with_loc(mut self, location: Location) -> PError {
+        self.happen_at = location;
+        self
     }
 }

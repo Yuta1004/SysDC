@@ -16,10 +16,6 @@ impl Location {
     pub fn new_with_coord(coord: (i32, i32)) -> Location {
         Location { filename: None, coord: Some(coord) }
     }
-
-    pub fn set_filename(&mut self, filename: String) {
-        self.filename = Some(filename);
-    }
 }
 
 impl Display for Location {
