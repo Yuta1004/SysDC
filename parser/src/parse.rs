@@ -878,7 +878,8 @@ mod test {
         let name_func_spawn_use_box = Name::new(&name_func, "_.box".to_string());
         let name_func_spawn_use_dx = Name::new(&name_func, "_._.dx".to_string());
         let name_func_spawn_use_dy = Name::new(&name_func, "_._.dy".to_string());
-        let name_func_spawn_func = Name::new(&name_func, "_._._.UnknownModule.function".to_string());
+        let name_func_spawn_func =
+            Name::new(&name_func, "_._._.UnknownModule.function".to_string());
         let name_func_spawn_let_name = Name::new(&name_func, "_._._.movedBox".to_string());
         let name_func_spawn_let_arg_dx = Name::new(&name_func, "_._._.dx".to_string());
         let name_func_spawn_ret = Name::new(&name_func, "_._._._.movedBox".to_string());

@@ -44,6 +44,8 @@ pub enum PErrorKind {
     TypeUnmatch1(Type),
     #[error("\"{0:?}\" is required, but \"{1:?}\" found")]
     TypeUnmatch2(Type, Type),
+    #[error("Argument length not match")]
+    ArgumentsLengthNotMatch,
     #[error("Cannot find \"{0}\"")]
     NotFound(String),
     #[error("\"{0}\" is not defined")]
