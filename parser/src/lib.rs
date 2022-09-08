@@ -24,7 +24,7 @@ impl Parser {
     }
 
     pub fn parse(&mut self, filename: String, program: &String) -> anyhow::Result<()> {
-        let tokenizer = Tokenizer::new(program);
+        let tokenizer = Tokenizer::new(filename, program);
         match UnitParser::parse(tokenizer) {
             Ok(unit) => {
                 self.units.push(unit);

@@ -48,7 +48,7 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(orig: String, row: i32, col: i32) -> Token {
+    pub fn new(orig: String, filename: String, row: i32, col: i32) -> Token {
         let kind = match orig.as_str() {
             "unit"      => TokenKind::Unit,
             "from"      => TokenKind::From,
@@ -77,7 +77,9 @@ impl Token {
             "+"         => TokenKind::Plus,
             _           => TokenKind::Identifier,
         };
-        let location = Location::new_with_coord((row, col-(orig.len() as i32)));
+        let location = Location::new()
+            .with_filename(filename)
+            .with_coord((row, col-(orig.len() as i32)));
         Token { kind, orig, location }
     }
 }
@@ -85,20 +87,24 @@ impl Token {
 #[derive(Debug)]
 pub struct Tokenizer<'a> {
     chars: Chars<'a>,
+
     hold_char: Option<char>,
     hold_chars: Vec<char>,
     hold_token: Option<Token>,
+
+    filename: String,
     now_ref_row: i32,
     now_ref_col: i32
 }
 
 impl<'a> Tokenizer<'a> {
-    pub fn new(text: &'a String) -> Tokenizer<'a> {
+    pub fn new(filename: String, text: &'a String) -> Tokenizer<'a> {
         let mut tokenizer = Tokenizer {
             chars: text.chars(),
             hold_char: None,
             hold_chars: vec!(),
             hold_token: None,
+            filename,
             now_ref_row: 1,
             now_ref_col: 1
         };
@@ -109,7 +115,9 @@ impl<'a> Tokenizer<'a> {
     pub fn get_now_ref_loc(&mut self) -> Location {
         match &self.hold_token {
             Some(token) => token.location.clone(),
-            None => Location::new_with_coord((self.now_ref_row, self.now_ref_col))
+            None => Location::new()
+                .with_filename(self.filename.clone())
+                .with_coord((self.now_ref_row, self.now_ref_col))
         }
     }
 
@@ -183,7 +191,12 @@ impl<'a> Tokenizer<'a> {
             self.adopt()?;
         }
         self.skip_space();
-        Ok(Some(Token::new(self.collect(), self.now_ref_row, self.now_ref_col)))
+        Ok(Some(Token::new(
+            self.collect(),
+            self.filename.to_string(),
+            self.now_ref_row,
+            self.now_ref_col
+        )))
     }
 
     fn adopt(&mut self) -> anyhow::Result<()> {
@@ -296,15 +309,18 @@ mod test {
                 ("+",       TokenKind::Plus)
             ];
             for (_str, kind) in str_kind_mapping {
-                assert_eq!(Token::new(_str.to_string(), 0, 0).kind, kind);
+                assert_eq!(Token::new(_str.to_string(), "test.def".to_string(), 0, 0).kind, kind);
             }
         }
 
         #[test]
         fn get_identifer_from_identifer_token() {
-            let id = Token::new("test".to_string(), 0, 0).orig;
+            let id = Token::new(
+                "test".to_string(),
+                "test.def".to_string(),
+                0,
+                0).orig;
             assert_eq!(id, "test");
-            Token::new("test".to_string(), 0, 0).orig;
         }
     }
 
@@ -314,7 +330,7 @@ mod test {
         #[test]
         pub fn create_tokenizer() {
             let text = "cocoa 410 cappuccino 1204".to_string();
-            Tokenizer::new(&text);
+            Tokenizer::new("test.def".to_string(),&text);
         }
 
         #[test]
@@ -438,7 +454,7 @@ mod test {
                 TokenKind::BracketEnd
             ];
 
-            let mut tokenizer = Tokenizer::new(&text);
+            let mut tokenizer = Tokenizer::new("test.def".to_string(), &text);
             for token_kind in correct_token_kinds {
                 match tokenizer.expect(token_kind.clone()).unwrap() {
                     Some(_) => {}
@@ -450,7 +466,7 @@ mod test {
         #[test]
         fn expect_all_ng() {
             let text = "data".to_string();
-            let mut tokenizer =Tokenizer::new(&text);
+            let mut tokenizer = Tokenizer::new("test.def".to_string(), &text);
             assert!(tokenizer.expect(TokenKind::Allow).unwrap().is_none());
         }
 
@@ -464,7 +480,7 @@ mod test {
                 TokenKind::AtMark
             ];
 
-            let mut tokenizer = Tokenizer::new(&text);
+            let mut tokenizer = Tokenizer::new("test.def".to_string(), &text);
             for token_kind in correct_token_kinds {
                 let token = tokenizer.request(token_kind.clone()).unwrap();
                 assert_eq!(token.kind, token_kind);
@@ -476,7 +492,7 @@ mod test {
         #[should_panic]
         fn request_ng() {
             let text = "data".to_string();
-            let mut tokenizer = Tokenizer::new(&text);
+            let mut tokenizer = Tokenizer::new("test.def".to_string(),&text);
             tokenizer.request(TokenKind::AtMark).unwrap();
         }
     }

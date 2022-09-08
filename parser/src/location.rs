@@ -13,8 +13,14 @@ impl Location {
         Location { filename: None, coord: None }
     }
 
-    pub fn new_with_coord(coord: (i32, i32)) -> Location {
-        Location { filename: None, coord: Some(coord) }
+    pub fn with_filename(mut self, filename: String) -> Location {
+        self.filename = Some(filename);
+        self
+    }
+
+    pub fn with_coord(mut self, coord: (i32, i32)) -> Location {
+        self.coord = Some(coord);
+        self
     }
 }
 

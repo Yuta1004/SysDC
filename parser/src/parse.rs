@@ -1056,7 +1056,7 @@ mod test {
 
     fn parse(program: &str) -> SysDCUnit {
         let program = program.to_string();
-        let tokenizer = Tokenizer::new(&program);
+        let tokenizer = Tokenizer::new("test.def".to_string(), &program);
         UnitParser::parse(tokenizer).unwrap()
     }
 }
