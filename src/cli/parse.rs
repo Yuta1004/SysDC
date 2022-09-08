@@ -1,8 +1,8 @@
 use std::io::Write;
 use std::fs;
 use std::fs::File;
-use std::error::Error;
 
+use anyhow;
 use clap::Parser;
 use serde::Serialize;
 use rmp_serde::Serializer;
@@ -21,11 +21,11 @@ pub struct ParseCmd {
 }
 
 impl ParseCmd {
-    pub fn run(&self) -> Result<(), Box<dyn Error>> {
+    pub fn run(&self) -> anyhow::Result<()> {
         self.save_system(self.read_files()?)
     }
 
-    fn read_files(&self) -> Result<SysDCSystem, Box<dyn Error>> {
+    fn read_files(&self) -> anyhow::Result<SysDCSystem> {
         let mut load_unit_cnt = 0;
         let mut parser = SParser::new();
         for filename in &self.input {
@@ -49,7 +49,7 @@ impl ParseCmd {
         Ok(system)
     }
 
-    fn save_system(&self, system: SysDCSystem) -> Result<(), Box<dyn Error>> {
+    fn save_system(&self, system: SysDCSystem) -> anyhow::Result<()> {
         let mut serialized_system = vec!();
         system.serialize(&mut Serializer::new(&mut serialized_system))?;
 

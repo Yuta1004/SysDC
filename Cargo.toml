@@ -12,6 +12,8 @@ glob = "^0.3.0"
 sysdc_parser = { path = "parser" }
 sysdc_tool_debug = { path = "tools/debug" }
 sysdc_tool_json = { path = "tools/json" }
+anyhow = { version = "1.0.64", features = ["backtrace"] }
+thiserror = "1.0.34"
 
 [workspace]
 members = [
@@ -19,4 +21,3 @@ members = [
     "tools/debug",
     "tools/json"
 ]
-

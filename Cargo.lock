@@ -355,6 +355,7 @@ dependencies = [
 name = "sysdc"
 version = "0.0.1"
 dependencies = [
+ "anyhow",
  "clap",
  "glob",
  "rmp-serde",
@@ -363,6 +364,7 @@ dependencies = [
  "sysdc_parser",
  "sysdc_tool_debug",
  "sysdc_tool_json",
+ "thiserror",
 ]
 
 [[package]]
