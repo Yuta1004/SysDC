@@ -1,6 +1,7 @@
+use anyhow;
+
 use crate::name::Name;
 use crate::types::{ Type, TypeKind };
-use crate::error::PResult;
 use crate::structure::{ SysDCSystem, SysDCUnit, SysDCData, SysDCModule, SysDCFunction, SysDCAnnotation, SysDCSpawnDetail };
 use crate::structure::unchecked;
 use super::utils::define::DefinesManager;
@@ -11,19 +12,19 @@ pub struct TypeResolver<'a> {
 }
 
 impl<'a> TypeResolver<'a> {
-    pub fn resolve(system: unchecked::SysDCSystem, def_manager: &'a DefinesManager, imports: &'a Vec<Name>) -> PResult<SysDCSystem> {
+    pub fn resolve(system: unchecked::SysDCSystem, def_manager: &'a DefinesManager, imports: &'a Vec<Name>) -> anyhow::Result<SysDCSystem> {
         let mut resolver = TypeResolver { def_manager, imports };
         system.convert(|unit| resolver.resolve_unit(unit))
     }
 
-    fn resolve_unit(&mut self, unit: unchecked::SysDCUnit) -> PResult<SysDCUnit> {
+    fn resolve_unit(&mut self, unit: unchecked::SysDCUnit) -> anyhow::Result<SysDCUnit> {
         unit.convert(
             |data| self.resolve_data(data,),
             |module| self.resolve_module(module),
         )
     }
 
-    fn resolve_data(&self, data: unchecked::SysDCData) -> PResult<SysDCData>{
+    fn resolve_data(&self, data: unchecked::SysDCData) -> anyhow::Result<SysDCData>{
         data.convert(|(name, types): (Name, Type)|
             if types.kind.is_primitive() {
                 Ok((name, types))
@@ -33,11 +34,11 @@ impl<'a> TypeResolver<'a> {
         )
     }
 
-    fn resolve_module(&self, module: unchecked::SysDCModule) -> PResult<SysDCModule> {
+    fn resolve_module(&self, module: unchecked::SysDCModule) -> anyhow::Result<SysDCModule> {
         module.convert(|func| self.resolve_function(func))
     }
 
-    fn resolve_function(&self, func: unchecked::SysDCFunction) -> PResult<SysDCFunction> {
+    fn resolve_function(&self, func: unchecked::SysDCFunction) -> anyhow::Result<SysDCFunction> {
         let a_converter = |arg| self.def_manager.resolve_from_type(arg, &self.imports);
         let r_converter = |returns: (Name, Type)| {
             let returns = self.def_manager.resolve_from_type(returns, &self.imports)?;
@@ -46,7 +47,7 @@ impl<'a> TypeResolver<'a> {
         func.convert(a_converter, r_converter, |annotation| self.resolve_annotation(annotation))
     }
 
-    fn resolve_annotation(&self, annotation: unchecked::SysDCAnnotation) -> PResult<SysDCAnnotation> {
+    fn resolve_annotation(&self, annotation: unchecked::SysDCAnnotation) -> anyhow::Result<SysDCAnnotation> {
         let a_converter = | func, args | {
             let func = self.def_manager.resolve_from_type(func, &self.imports)?;
             let mut rargs = vec!();
@@ -71,7 +72,7 @@ impl<'a> TypeResolver<'a> {
         annotation.convert(a_converter, m_converter, s_converter)
     }
 
-    fn resolve_annotation_spawn_details(&self, details: Vec<unchecked::SysDCSpawnDetail>) -> PResult<Vec<SysDCSpawnDetail>> {
+    fn resolve_annotation_spawn_details(&self, details: Vec<unchecked::SysDCSpawnDetail>) -> anyhow::Result<Vec<SysDCSpawnDetail>> {
         let ur_converter = |(name, _): (Name, Type)| self.def_manager.resolve_from_name(name.clone(), &self.imports);
         let l_converter = |name: Name, func: (Name, Type), args: Vec<(Name, Type)>| {
             if let Type { kind: TypeKind::Unsolved(_), .. } = func.1 {

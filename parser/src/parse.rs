@@ -1,7 +1,9 @@
+use anyhow;
+
 use super::name::Name;
 use super::types::{ Type, TypeKind };
 use super::token::{ TokenKind, Tokenizer };
-use super::error::{ PResult, PErrorKind };
+use super::error::{ PErrorKind, PError };
 use super::structure::unchecked;
 
 // 複数要素を一気にパースするためのマクロ
@@ -34,7 +36,7 @@ pub struct UnitParser<'a> {
 }
 
 impl<'a> UnitParser<'a> {
-    pub fn parse(tokenizer: Tokenizer<'a>) -> PResult<unchecked::SysDCUnit> {
+    pub fn parse(tokenizer: Tokenizer<'a>) -> anyhow::Result<unchecked::SysDCUnit> {
         let mut parser = UnitParser { tokenizer };
         parser.parse_root(Name::new_root())
     }
@@ -43,12 +45,16 @@ impl<'a> UnitParser<'a> {
      * <root> ::= { <sentence> }
      * <sentence> ::= unit <id_chain>; { <import> | <data> | <module> }
      */
-    fn parse_root(&mut self, namespace: Name) -> PResult<unchecked::SysDCUnit> {
+    fn parse_root(&mut self, namespace: Name) -> anyhow::Result<unchecked::SysDCUnit> {
         // unit <id_chain> ;
         self.tokenizer.request(TokenKind::Unit)?;
         let namespace = match self.parse_id_chain(&namespace)? {
             Some((found_name, _)) => Name::new(&namespace, found_name.name),
-            None => return PErrorKind::UnitNameNotSpecified.to_err_with_loc(self.tokenizer.get_now_ref_loc())
+            None => return Err(
+                PError::from(PErrorKind::UnitNameNotSpecified)
+                    .with_loc(self.tokenizer.get_now_ref_loc())
+                    .into()
+            )
         };
         self.tokenizer.request(TokenKind::Semicolon)?;
 
@@ -56,7 +62,11 @@ impl<'a> UnitParser<'a> {
         let (mut imports, mut data, mut modules) = (vec!(), vec!(), vec!());
         while self.tokenizer.exists_next() {
             match (self.parse_import()?, self.parse_data(&namespace)?, self.parse_module(&namespace)?) {
-                (None, None, None) => return PErrorKind::DataOrModuleNotFound.to_err_with_loc(self.tokenizer.get_now_ref_loc()),
+                (None, None, None) => return Err(
+                    PError::from(PErrorKind::DataOrModuleNotFound)
+                        .with_loc(self.tokenizer.get_now_ref_loc())
+                        .into()
+                ),
                 (i, d, m) => {
                     if i.is_some() { imports.extend(i.unwrap()); }
                     if d.is_some() { data.push(d.unwrap()); }
@@ -71,7 +81,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <import> ::= from <id_chain> import <id_list, delimiter=','> ;
      */
-    fn parse_import(&mut self) -> PResult<Option<Vec<Name>>> {
+    fn parse_import(&mut self) -> anyhow::Result<Option<Vec<Name>>> {
         // from
         if self.tokenizer.expect(TokenKind::From)?.is_none() {
             return Ok(None)
@@ -80,7 +90,11 @@ impl<'a> UnitParser<'a> {
         // <id_chain>
         let from_namespace = match self.parse_id_chain(&Name::new_root())? {
             Some((found_name, _)) => Name::new(&Name::new_root(), found_name.name),
-            None => return PErrorKind::FromNamespaceNotSpecified.to_err_with_loc(self.tokenizer.get_now_ref_loc())
+            None => return Err(
+                PError::from(PErrorKind::FromNamespaceNotSpecified)
+                    .with_loc(self.tokenizer.get_now_ref_loc())
+                    .into()
+            )
         };
 
         // import <id_list, delimiter=','> ;
@@ -97,7 +111,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <data> ::= data <id> \{ <id_type_mapping_list, delimiter=,> \}
      */
-    fn parse_data(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCData>> {
+    fn parse_data(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCData>> {
         // data
         if self.tokenizer.expect(TokenKind::Data)?.is_none() {
             return Ok(None)
@@ -117,7 +131,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <module> ::= module <id> \{ <function_list, delimiter=None> \}
      */
-    fn parse_module(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCModule>> {
+    fn parse_module(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCModule>> {
         // module
         if self.tokenizer.expect(TokenKind::Module)?.is_none() {
             return Ok(None);
@@ -138,7 +152,7 @@ impl<'a> UnitParser<'a> {
      * <function> ::= func <id> <id_type_mapping_list, delimiter=,> -> <id> \{ <function_body> \}
      * <procedure> ::= proc <id> <id_type_mapping_list, delimiter=,> \{ <procedure_body > \}
      */
-    fn parse_function(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCFunction>> {
+    fn parse_function(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCFunction>> {
         // func | proc
         let is_func = self.tokenizer.expect(TokenKind::Func)?.is_some();
         if !is_func && self.tokenizer.expect(TokenKind::Proc)?.is_none() {
@@ -176,14 +190,18 @@ impl<'a> UnitParser<'a> {
     /**
      * <function_body> = <annotation_list, delimiter=''>
      */
-    fn parse_function_body(&mut self, namespace: &Name) -> PResult<(Name, Vec<unchecked::SysDCAnnotation>)> {
+    fn parse_function_body(&mut self, namespace: &Name) -> anyhow::Result<(Name, Vec<unchecked::SysDCAnnotation>)> {
         let mut returns: Option<Name> = None;
         let mut annotations = vec!();
         while let Some(annotation) = self.parse_annotation(namespace)? {
             match annotation {
                 unchecked::SysDCAnnotation::Return(ret) => {
                     if returns.is_some() {
-                        return PErrorKind::ReturnExistsMultiple.to_err_with_loc(self.tokenizer.get_now_ref_loc());
+                        return Err(
+                            PError::from(PErrorKind::ReturnExistsMultiple)
+                                .with_loc(self.tokenizer.get_now_ref_loc())
+                                .into()
+                        );
                     }
                     returns = Some(ret)
                 },
@@ -191,7 +209,11 @@ impl<'a> UnitParser<'a> {
             }
         }
         if returns.is_none() {
-            return PErrorKind::ReturnNotExists.to_err_with_loc(self.tokenizer.get_now_ref_loc());
+            return Err(
+                PError::from(PErrorKind::ReturnNotExists)
+                    .with_loc(self.tokenizer.get_now_ref_loc())
+                    .into()
+            );
         }
         Ok((returns.unwrap(), annotations))
     }
@@ -199,12 +221,16 @@ impl<'a> UnitParser<'a> {
     /**
      * <procedure_body> = <annotation_list, delimiter=''>
      */
-    fn parse_procedure_body(&mut self, namespace: &Name) -> PResult<Vec<unchecked::SysDCAnnotation>> {
+    fn parse_procedure_body(&mut self, namespace: &Name) -> anyhow::Result<Vec<unchecked::SysDCAnnotation>> {
         let mut annotations = vec!();
         while let Some(annotation) = self.parse_annotation(namespace)? {
             match annotation {
                 unchecked::SysDCAnnotation::Return(_) => {
-                    return PErrorKind::ReturnExistsOnProcedure.to_err_with_loc(self.tokenizer.get_now_ref_loc());
+                    return Err(
+                        PError::from(PErrorKind::ReturnExistsOnProcedure)
+                            .with_loc(self.tokenizer.get_now_ref_loc())
+                            .into()
+                    );
                 },
                 _ => annotations.push(annotation)
             }
@@ -215,7 +241,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <annotation> = @ ( <annotation_return> | <annotation_affect> | <annotation_modify> | <annotation_spawn>)
      */
-    fn parse_annotation(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCAnnotation>> {
+    fn parse_annotation(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
         // @
         if self.tokenizer.expect(TokenKind::AtMark)?.is_none() {
             return Ok(None);
@@ -236,13 +262,15 @@ impl<'a> UnitParser<'a> {
         }
 
         let annotation_name = self.tokenizer.request(TokenKind::Identifier)?.orig;
-        PErrorKind::UnknownAnnotationFound(annotation_name).to_err_with_loc(self.tokenizer.get_now_ref_loc())
+        Err(PError::from(PErrorKind::UnknownAnnotationFound(annotation_name))
+                .with_loc(self.tokenizer.get_now_ref_loc())
+                .into())
     }
 
     /**
      * <annotation_return> ::= return <id>
      */
-    fn parse_annotation_return(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCAnnotation>> {
+    fn parse_annotation_return(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
         if self.tokenizer.expect(TokenKind::Return)?.is_none() {
             return Ok(None);
         }
@@ -253,7 +281,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <annotation_affect> ::= affect <id_chain> \( <id_chain_list, delimiter=,> \)
      */
-    fn parse_annotation_affect(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCAnnotation>> {
+    fn parse_annotation_affect(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
         // affect
         if self.tokenizer.expect(TokenKind::Affect)?.is_none() {
             return Ok(None);
@@ -262,7 +290,11 @@ impl<'a> UnitParser<'a> {
         // <id_chain>
         let func = match self.parse_id_chain(namespace)? {
             Some((name, _)) => (name.clone(), Type::from(name.name)),
-            None => return PErrorKind::FunctionNameNotFound.to_err_with_loc(self.tokenizer.get_now_ref_loc())
+            None => return Err(
+                PError::from(PErrorKind::FunctionNameNotFound)
+                    .with_loc(self.tokenizer.get_now_ref_loc())
+                    .into()
+            )
         };
 
         // \( <id_list, delimiter=,> \)
@@ -276,7 +308,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <annotation_modify> ::= modify <id> ( \{ { use <id_list, delimiter=,> ; } \} )
      */
-    fn parse_annotation_modify(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCAnnotation>> {
+    fn parse_annotation_modify(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
         // modify
         if self.tokenizer.expect(TokenKind::Modify)?.is_none() {
             return Ok(None)
@@ -304,7 +336,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <annotation_spawn> ::= spawn <id_type_mapping> ( \{ { <annotation_spawn_detail> } \} )
      */
-    fn parse_annotation_spawn(&mut self, namespace: &Name) -> PResult<Option<unchecked::SysDCAnnotation>> {
+    fn parse_annotation_spawn(&mut self, namespace: &Name) -> anyhow::Result<Option<unchecked::SysDCAnnotation>> {
         // spawn
         if self.tokenizer.expect(TokenKind::Spawn)?.is_none() {
             return Ok(None);
@@ -313,7 +345,11 @@ impl<'a> UnitParser<'a> {
         // <id_type_mapping>
         let spawn_result = self.parse_id_type_mapping(namespace)?;
         if spawn_result.is_none() {
-            return PErrorKind::ResultOfSpawnNotSpecified.to_err_with_loc(self.tokenizer.get_now_ref_loc());
+            return Err(
+                PError::from(PErrorKind::ResultOfSpawnNotSpecified)
+                    .with_loc(self.tokenizer.get_now_ref_loc())
+                    .into()
+            )
         }
 
         // ( \{ { <annotation_spawn_detail > } \} )
@@ -341,7 +377,7 @@ impl<'a> UnitParser<'a> {
      *      return <id> ;
      * )
      */
-    fn parse_annotation_spawn_detail(&mut self, namespace: &Name) -> PResult<Option<Vec<unchecked::SysDCSpawnDetail>>> {
+    fn parse_annotation_spawn_detail(&mut self, namespace: &Name) -> anyhow::Result<Option<Vec<unchecked::SysDCSpawnDetail>>> {
         // let
         if self.tokenizer.expect(TokenKind::Let)?.is_some() {
             // <id>
@@ -353,7 +389,11 @@ impl<'a> UnitParser<'a> {
             // <id_chain>
             let func = match self.parse_id_chain(namespace)? {
                 Some((func, _)) => func.name,
-                None => return PErrorKind::FunctionNameNotFound.to_err_with_loc(self.tokenizer.get_now_ref_loc())
+                None => return Err(
+                    PError::from(PErrorKind::FunctionNameNotFound)
+                        .with_loc(self.tokenizer.get_now_ref_loc())
+                        .into()
+                )
             };
 
             // \( <id_chain_list, delimiter=',') \)
@@ -384,7 +424,11 @@ impl<'a> UnitParser<'a> {
                     self.tokenizer.request(TokenKind::Semicolon)?;
                     return Ok(Some(vec!(unchecked::SysDCSpawnDetail::new_return(name, Type::new_unsovled_nohint()))));
                 },
-                None => return PErrorKind::ResultOfSpawnNotSpecified.to_err_with_loc(self.tokenizer.get_now_ref_loc())
+                None => return Err(
+                    PError::from(PErrorKind::ResultOfSpawnNotSpecified)
+                        .with_loc(self.tokenizer.get_now_ref_loc())
+                        .into()
+                )
             }
         }
 
@@ -394,7 +438,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <id_chain> ::= <id_list, delimiter=.>
      */
-    fn parse_id_chain(&mut self, namespace: &Name) -> PResult<Option<(Name, Type)>> {
+    fn parse_id_chain(&mut self, namespace: &Name) -> anyhow::Result<Option<(Name, Type)>> {
         let name_elems = parse_list!(self.tokenizer.expect(TokenKind::Identifier), TokenKind::Accessor);
         let var = name_elems.into_iter().map(|x| x.orig).collect::<Vec<String>>().join(".");
         match var.len() {
@@ -406,7 +450,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <id_type_mapping> ::= <id> : <type>
      */
-    fn parse_id_type_mapping(&mut self, namespace: &Name) -> PResult<Option<(Name, Type)>> {
+    fn parse_id_type_mapping(&mut self, namespace: &Name) -> anyhow::Result<Option<(Name, Type)>> {
         let id1 = if let Some(id1_token) = self.tokenizer.expect(TokenKind::Identifier)? {
             id1_token.orig
         } else {
@@ -419,7 +463,7 @@ impl<'a> UnitParser<'a> {
     /**
      * <type> ::= <id>
      */
-    fn parse_type(&mut self) -> PResult<Type> {
+    fn parse_type(&mut self) -> anyhow::Result<Type> {
         // <id>
         let id = self.tokenizer.request(TokenKind::Identifier)?.orig;
         Ok(Type::from(id))
@@ -1012,7 +1056,7 @@ mod test {
 
     fn parse(program: &str) -> SysDCUnit {
         let program = program.to_string();
-        let tokenizer = Tokenizer::new(&program);
+        let tokenizer = Tokenizer::new("test.def".to_string(), &program);
         UnitParser::parse(tokenizer).unwrap()
     }
 }

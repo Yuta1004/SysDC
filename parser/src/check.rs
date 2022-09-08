@@ -2,14 +2,15 @@ mod utils;
 mod resolve;
 mod matches;
 
-use super::error::PResult;
+use anyhow;
+
 use super::structure::SysDCSystem;
 use super::structure::unchecked;
 use utils::define::DefinesManager;
 use resolve::TypeResolver;
 use matches::TypeMatchChecker;
 
-pub fn check(system: unchecked::SysDCSystem) -> PResult<SysDCSystem> {
+pub fn check(system: unchecked::SysDCSystem) -> anyhow::Result<SysDCSystem> {
     // 0. 準備
     let def_manager = DefinesManager::new(&system)?;
     let mut imports = vec!();

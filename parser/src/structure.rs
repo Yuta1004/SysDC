@@ -50,9 +50,10 @@ pub enum SysDCSpawnDetail {
 }
 
 pub mod unchecked {
+    use anyhow;
+
     use super::Name;
     use super::Type;
-    use super::super::error::PResult;
 
     #[derive(Debug)]
     pub struct SysDCSystem {
@@ -64,9 +65,9 @@ pub mod unchecked {
             SysDCSystem { units }
         }
 
-        pub fn convert<F>(self, mut converter: F) -> PResult<super::SysDCSystem>
+        pub fn convert<F>(self, mut converter: F) -> anyhow::Result<super::SysDCSystem>
         where
-            F: FnMut(SysDCUnit) -> PResult<super::SysDCUnit>
+            F: FnMut(SysDCUnit) -> anyhow::Result<super::SysDCUnit>
         {
             let mut units = vec!();
             for unit in self.units {
@@ -89,10 +90,10 @@ pub mod unchecked {
             SysDCUnit { name, data, modules, imports }
         }
 
-        pub fn convert<F, G>(self, d_converter: F, m_converter: G) -> PResult<super::SysDCUnit>
+        pub fn convert<F, G>(self, d_converter: F, m_converter: G) -> anyhow::Result<super::SysDCUnit>
         where
-            F: Fn(SysDCData) -> PResult<super::SysDCData>,
-            G: Fn(SysDCModule) -> PResult<super::SysDCModule>
+            F: Fn(SysDCData) -> anyhow::Result<super::SysDCData>,
+            G: Fn(SysDCModule) -> anyhow::Result<super::SysDCModule>
         {
             let (mut data, mut modules) = (vec!(), vec!());
             for _data in self.data {
@@ -116,9 +117,9 @@ pub mod unchecked {
             SysDCData { name, members }
         }
 
-        pub fn convert<F>(self, converter: F) -> PResult<super::SysDCData>
+        pub fn convert<F>(self, converter: F) -> anyhow::Result<super::SysDCData>
         where
-            F: Fn((Name, Type)) -> PResult<(Name, Type)>
+            F: Fn((Name, Type)) -> anyhow::Result<(Name, Type)>
         {
             let mut members = vec!();
             for member in self.members {
@@ -139,9 +140,9 @@ pub mod unchecked {
             SysDCModule { name, functions }
         }
 
-        pub fn convert<F>(self, converter: F) -> PResult<super::SysDCModule>
+        pub fn convert<F>(self, converter: F) -> anyhow::Result<super::SysDCModule>
         where
-            F: Fn(SysDCFunction) -> PResult<super::SysDCFunction>
+            F: Fn(SysDCFunction) -> anyhow::Result<super::SysDCFunction>
         {
             let mut functions = vec!();
             for func in self.functions {
@@ -164,11 +165,11 @@ pub mod unchecked {
             SysDCFunction { name, args, returns, annotations }
         }
 
-        pub fn convert<F, G, H>(self, a_convert: F, r_convert: G, s_convert: H) -> PResult<super::SysDCFunction>
+        pub fn convert<F, G, H>(self, a_convert: F, r_convert: G, s_convert: H) -> anyhow::Result<super::SysDCFunction>
         where
-            F: Fn((Name, Type)) -> PResult<(Name, Type)>,
-            G: Fn((Name, Type)) -> PResult<(Name, Type)>,
-            H: Fn(SysDCAnnotation) -> PResult<super::SysDCAnnotation>
+            F: Fn((Name, Type)) -> anyhow::Result<(Name, Type)>,
+            G: Fn((Name, Type)) -> anyhow::Result<(Name, Type)>,
+            H: Fn(SysDCAnnotation) -> anyhow::Result<super::SysDCAnnotation>
         {
             let (returns, mut args, mut annotations) = (r_convert(self.returns)?, vec!(), vec!());
             for arg in self.args {
@@ -206,11 +207,11 @@ pub mod unchecked {
             SysDCAnnotation::Spawn { result, details }
         }
 
-        pub fn convert<F, G, H>(self, a_converter: F, m_converter: G, s_converter: H) -> PResult<super::SysDCAnnotation>
+        pub fn convert<F, G, H>(self, a_converter: F, m_converter: G, s_converter: H) -> anyhow::Result<super::SysDCAnnotation>
         where
-            F: Fn((Name, Type), Vec<(Name, Type)>) -> PResult<((Name, Type), Vec<(Name, Type)>)>,
-            G: Fn((Name, Type), Vec<(Name, Type)>) -> PResult<((Name, Type), Vec<(Name, Type)>)>,
-            H: Fn((Name, Type), Vec<SysDCSpawnDetail>) -> PResult<((Name, Type), Vec<super::SysDCSpawnDetail>)>
+            F: Fn((Name, Type), Vec<(Name, Type)>) -> anyhow::Result<((Name, Type), Vec<(Name, Type)>)>,
+            G: Fn((Name, Type), Vec<(Name, Type)>) -> anyhow::Result<((Name, Type), Vec<(Name, Type)>)>,
+            H: Fn((Name, Type), Vec<SysDCSpawnDetail>) -> anyhow::Result<((Name, Type), Vec<super::SysDCSpawnDetail>)>
         {
             match self {
                 SysDCAnnotation::Affect { func, args } => {
@@ -250,10 +251,10 @@ pub mod unchecked {
             SysDCSpawnDetail::LetTo { name, func, args }
         }
 
-        pub fn convert<F, G>(self, u_converter: F, r_converter: F, l_converter: G) -> PResult<super::SysDCSpawnDetail>
+        pub fn convert<F, G>(self, u_converter: F, r_converter: F, l_converter: G) -> anyhow::Result<super::SysDCSpawnDetail>
         where
-            F: Fn((Name, Type)) -> PResult<(Name, Type)>,
-            G: Fn(Name, (Name, Type), Vec<(Name, Type)>) -> PResult<(Name, (Name, Type), Vec<(Name, Type)>)>,
+            F: Fn((Name, Type)) -> anyhow::Result<(Name, Type)>,
+            G: Fn(Name, (Name, Type), Vec<(Name, Type)>) -> anyhow::Result<(Name, (Name, Type), Vec<(Name, Type)>)>,
         {
             match self {
                 SysDCSpawnDetail::Use(name, types) => {

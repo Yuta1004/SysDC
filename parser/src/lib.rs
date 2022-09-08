@@ -7,7 +7,7 @@ pub mod name;
 pub mod types;
 pub mod structure;
 
-use std::error::Error;
+use anyhow;
 
 use token::Tokenizer;
 use parse::UnitParser;
@@ -23,24 +23,21 @@ impl Parser {
         Parser { units: vec!() }
     }
 
-    pub fn parse(&mut self, filename: String, program: &String) -> Result<(), Box<dyn Error>> {
-        let tokenizer = Tokenizer::new(program);
+    pub fn parse(&mut self, filename: String, program: &String) -> anyhow::Result<()> {
+        let tokenizer = Tokenizer::new(filename, program);
         match UnitParser::parse(tokenizer) {
             Ok(unit) => {
                 self.units.push(unit);
                 Ok(())
             },
-            Err(mut err) => {
-                err.set_filename(filename);
-                err.upgrade()
-            }
+            Err(err) => Err(err)
         }
     }
 
-    pub fn check(self) -> Result<SysDCSystem, Box<dyn Error>> {
+    pub fn check(self) -> anyhow::Result<SysDCSystem> {
         match check::check(unchecked::SysDCSystem::new(self.units)) {
             Ok(system) => Ok(system),
-            Err(err) => err.upgrade()
+            Err(err) => Err(err)
         }
     }
 }
