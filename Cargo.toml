@@ -19,5 +19,6 @@ sysdc_tool_json = { path = "tools/json" }
 members = [
     "parser",
     "tools/debug",
-    "tools/json"
+    "tools/json",
+    "tools/view/src-tauri"
 ]
