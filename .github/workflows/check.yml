@@ -12,6 +12,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/cache_cargo
+    - name: Update repository
+      run: sudo apt update
+    - name: Install libralies
+      run: sudo apt install libdbus-1-dev libgtk-3-dev libsoup2.4-dev libwebkit2gtk-4.0-dev
     - name: Build
       run: cargo build
 
@@ -41,6 +45,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/cache_cargo
+    - name: Update repository
+      run: sudo apt update
+    - name: Install libralies
+      run: sudo apt install libdbus-1-dev libgtk-3-dev libsoup2.4-dev libwebkit2gtk-4.0-dev
     - name: Test
       run: cargo test --all
-

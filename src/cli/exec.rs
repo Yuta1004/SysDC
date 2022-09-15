@@ -30,6 +30,7 @@ impl ExecCmd {
         match self.tool.as_str() {
             "debug" => sysdc_tool_debug::exec(&system)?,
             "json" => sysdc_tool_json::exec(&system, &self.args)?,
+            "view" => sysdc_tool_view::exec()?,
             t => return Err(ExecError::ToolNotFound(t.to_string()).into()),
         }
         Ok(())
