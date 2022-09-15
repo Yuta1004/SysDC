@@ -1,7 +1,12 @@
 name: check
 
 on:
-  push
+  push:
+    branches:
+      - "master"
+      - "develop"
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 env:
   CARGO_TERM_COLOR: always
@@ -12,10 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/cache_cargo
-    - name: Update repository
-      run: sudo apt update
-    - name: Install libralies
-      run: sudo apt install libdbus-1-dev libgtk-3-dev libsoup2.4-dev libwebkit2gtk-4.0-dev
+    - uses: ./.github/actions/setup_libraries
     - name: Build
       run: cargo build
 
@@ -25,7 +27,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/cache_cargo
-    - run: rustup component add rustfmt
+    - name: Setup rustup
+      run: rustup component add rustfmt
     - name: Check format
       run: cargo fmt --all -- --check
 
@@ -35,7 +38,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/cache_cargo
-    - run: rustup component add clippy
+    - name: Setup rustup
+      run: rustup component add clippy
     - name: Check by Clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
 
@@ -45,9 +49,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/cache_cargo
-    - name: Update repository
-      run: sudo apt update
-    - name: Install libralies
-      run: sudo apt install libdbus-1-dev libgtk-3-dev libsoup2.4-dev libwebkit2gtk-4.0-dev
+    - uses: ./.github/actions/setup_libraries
     - name: Test
       run: cargo test --all
