@@ -2682,6 +2682,7 @@ dependencies = [
  "sysdc_parser",
  "sysdc_tool_debug",
  "sysdc_tool_json",
+ "sysdc_tool_view",
  "thiserror",
 ]
 
