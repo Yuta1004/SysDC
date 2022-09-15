@@ -12,6 +12,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/cache_cargo
+    - name: Setup
+      run: sudo apt install libdbus-1-dev
     - name: Build
       run: cargo build
 
