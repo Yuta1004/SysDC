@@ -14,5 +14,5 @@
 ```
 let system: SysDCSystem = ~~;
 let args: Vec<String> = ~~:
-JSONTool::exec(&system, &args);
+sysdc_tool_json::exec(&system, &args).unwrap();
 ```

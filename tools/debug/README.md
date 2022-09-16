@@ -8,5 +8,5 @@
 
 ```
 let system: SysDCSystem = ~~;
-DebugTool::exec(&system);
+sysdc_tool_debug::exec(&system).unwrap();
 ```
