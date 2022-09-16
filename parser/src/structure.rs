@@ -3,31 +3,31 @@ use serde::{Deserialize, Serialize};
 use super::name::Name;
 use super::types::Type;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SysDCSystem {
     pub units: Vec<SysDCUnit>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SysDCUnit {
     pub name: Name,
     pub data: Vec<SysDCData>,
     pub modules: Vec<SysDCModule>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SysDCData {
     pub name: Name,
     pub members: Vec<(Name, Type)>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SysDCModule {
     pub name: Name,
     pub functions: Vec<SysDCFunction>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SysDCFunction {
     pub name: Name,
     pub args: Vec<(Name, Type)>,
@@ -35,7 +35,7 @@ pub struct SysDCFunction {
     pub annotations: Vec<SysDCAnnotation>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum SysDCAnnotation {
     Affect {
         func: (Name, Type),
@@ -51,7 +51,7 @@ pub enum SysDCAnnotation {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum SysDCSpawnDetail {
     Use(Name, Type),
     Return(Name, Type),
