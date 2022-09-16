@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 
+import { convert } from "../sysdc_core/convert";
+
 function App() {
-    const [system, setSystem] = useState({});
+    const [system, setSystem] = useState({ units: [] });
 
     useEffect(() => {
         (async () => {
             await listen("initialize_system", event => {
                 if (typeof event.payload == "object") {
-                    setSystem(event.payload);
+                    setSystem(convert(event.payload));
                 }
             });
         })();
