@@ -3,14 +3,24 @@
     windows_subsystem = "windows"
 )]
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+use std::thread;
+use std::time::Duration;
 
-pub fn exec() -> anyhow::Result<()> {
+use tauri::Manager;
+
+use sysdc_parser::structure::SysDCSystem;
+
+pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet])
+        .setup(move |app| {
+            let app = app.app_handle();
+            thread::spawn(move || {
+                thread::sleep(Duration::from_secs(1));
+                app.emit_all("initialize_system", format!("{:?}", system))
+                    .unwrap();
+            });
+            Ok(())
+        })
         .run(tauri::generate_context!())?;
     Ok(())
 }
