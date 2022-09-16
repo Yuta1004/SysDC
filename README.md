@@ -27,6 +27,7 @@ flowchart TB
     cli--SysDCSystem-->tools
     tools-->debug
     tools-->json
+    tools-->view
 ```
 
 ## サンプルコードの実行
