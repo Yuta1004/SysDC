@@ -16,8 +16,7 @@ pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
             let app = app.app_handle();
             thread::spawn(move || {
                 thread::sleep(Duration::from_secs(1));
-                app.emit_all("initialize_system", format!("{:?}", system))
-                    .unwrap();
+                app.emit_all("initialize_system", system)
             });
             Ok(())
         })
