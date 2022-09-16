@@ -2720,6 +2720,7 @@ dependencies = [
  "anyhow",
  "serde",
  "serde_json",
+ "sysdc_parser",
  "tauri",
  "tauri-build",
 ]
