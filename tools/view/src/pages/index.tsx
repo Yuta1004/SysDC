@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 
-import { convert, SysDCSystem } from "../structure";
+import { convert } from "../sysdc_core/convert";
 
 function App() {
     const [system, setSystem] = useState({ units: [] });
