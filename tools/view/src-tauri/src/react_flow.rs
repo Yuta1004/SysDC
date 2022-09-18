@@ -27,7 +27,7 @@ impl Serialize for Node {
         let inner = NodeInner { label: &self.label };
 
         let mut s = serializer.serialize_struct("Node", 2)?;
-        s.serialize_field("id", &self.id.get_full_name())?;
+        s.serialize_field("id", &self.id.get_full_name().replace("._", ""))?;
         s.serialize_field("data", &inner)?;
         s.end()
     }
@@ -47,8 +47,8 @@ impl Serialize for Edge {
     {
         let mut s = serializer.serialize_struct("Edge", 4)?;
         s.serialize_field("id", &self.id)?;
-        s.serialize_field("source", &self.source.get_full_name())?;
-        s.serialize_field("target", &self.target.get_full_name())?;
+        s.serialize_field("source", &self.source.get_full_name().replace("._", ""))?;
+        s.serialize_field("target", &self.target.get_full_name().replace("._", ""))?;
         s.serialize_field("animated", &self.animated)?;
         s.end()
     }
