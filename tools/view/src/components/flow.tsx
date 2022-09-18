@@ -1,6 +1,8 @@
 import ReactFlow, { Node, Edge } from "react-flow-renderer";
 
-function FlowComponent({nodes, edges}) {
+export default FlowComponent;
+
+export function FlowComponent({nodes, edges}) {
     return (
         <ReactFlow
             nodes={nodes}
@@ -9,5 +11,3 @@ function FlowComponent({nodes, edges}) {
         />
     );
 }
-
-export default FlowComponent;
