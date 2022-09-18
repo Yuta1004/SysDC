@@ -76,6 +76,27 @@ impl EdgeGenerator {
     }
 }
 
+#[macro_use]
+pub mod macros {
+    macro_rules! node {
+        ($name:expr) => {
+            Node::new(
+                $name.clone(),
+                format!("{}({})", $name.name.clone(), $name.get_full_name()),
+            )
+        };
+    }
+
+    macro_rules! edge {
+        ($edge_generator:expr, $source:expr, $target:expr) => {
+            $edge_generator.gen($source.clone(), $target.clone(), false)
+        };
+    }
+
+    pub(crate) use edge;
+    pub(crate) use node;
+}
+
 #[cfg(test)]
 mod test {
     use serde::Serialize;
