@@ -10,14 +10,8 @@ function App() {
 
     useEffect(() => {
         invoke("get_flow").then(([nodes, edges]) => {
-            if (Array.isArray(nodes)) {
-                nodes.forEach(node => node["position"] = {x: Math.random()*120, y: Math.random()*120});
-                console.log(nodes);
-                setNodes(nodes);
-            }
-            if (Array.isArray(edges)) {
-                setEdges(edges);
-            }
+            Array.isArray(nodes) && setNodes(nodes);
+            Array.isArray(edges) && setEdges(edges);
         });
     }, []);
 
