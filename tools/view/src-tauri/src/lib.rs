@@ -3,23 +3,41 @@
     windows_subsystem = "windows"
 )]
 
-use std::thread;
-use std::time::Duration;
+use std::sync::Arc;
 
-use tauri::Manager;
+use tauri::{Manager, State};
 
 use sysdc_parser::structure::SysDCSystem;
 
 pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
     tauri::Builder::default()
-        .setup(move |app| {
-            let app = app.app_handle();
-            thread::spawn(move || {
-                thread::sleep(Duration::from_secs(1));
-                app.emit_all("initialize_system", system)
-            });
+        .setup(|app| {
+            app.manage(SysDCSystemManager::new(system));
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![
+            get_system
+        ])
         .run(tauri::generate_context!())?;
+
     Ok(())
+}
+
+#[tauri::command]
+fn get_system(manager: State<'_, SysDCSystemManager>) -> SysDCSystem {
+    (*manager.get_system()).clone()
+}
+
+struct SysDCSystemManager {
+    system: Arc<SysDCSystem>
+}
+
+impl SysDCSystemManager {
+    pub fn new(system: SysDCSystem) -> SysDCSystemManager {
+        SysDCSystemManager { system: Arc::new(system) }
+    }
+
+    pub fn get_system(&self) -> Arc<SysDCSystem> {
+        Arc::clone(&self.system)
+    }
 }

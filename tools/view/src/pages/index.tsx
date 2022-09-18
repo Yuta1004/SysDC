@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
 import ReactFlow from "react-flow-renderer";
+import { invoke } from "@tauri-apps/api/tauri";
 
 import { convert } from "../sysdc_core/convert";
 
 function App() {
-    const [system, setSystem] = useState({ units: [] });
-
     const initialNodes = [
         {
             id: '1',
@@ -34,16 +32,6 @@ function App() {
         { id: 'e2-3', source: '2', target: '3', animated: true },
     ];
 
-    useEffect(() => {
-        (async () => {
-            await listen("initialize_system", event => {
-                if (typeof event.payload == "object") {
-                    setSystem(convert(event.payload));
-                }
-            });
-        })();
-    }, []);
-
     return (
         <div
             className="container"
@@ -53,7 +41,15 @@ function App() {
             }}
         >
             <h1>SysDC</h1>
-            <p>{ JSON.stringify(system) }</p>
+            <button onClick={ () => {
+                invoke("get_system").then(system => {
+                    if (typeof system == "object") {
+                        console.log(convert(system));
+                    }
+                });
+            }}>
+                LoadSystem
+            </button>
             <hr/>
             <ReactFlow
                 nodes={initialNodes}
