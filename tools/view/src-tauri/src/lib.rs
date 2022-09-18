@@ -3,9 +3,11 @@
     windows_subsystem = "windows"
 )]
 
+mod command;
+
 use std::sync::Arc;
 
-use tauri::{Manager, State};
+use tauri::Manager;
 
 use sysdc_parser::structure::SysDCSystem;
 
@@ -16,19 +18,14 @@ pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            get_system
+            command::get_system
         ])
         .run(tauri::generate_context!())?;
 
     Ok(())
 }
 
-#[tauri::command]
-fn get_system(manager: State<'_, SysDCSystemManager>) -> SysDCSystem {
-    (*manager.get_system()).clone()
-}
-
-struct SysDCSystemManager {
+pub struct SysDCSystemManager {
     system: Arc<SysDCSystem>
 }
 
@@ -37,7 +34,7 @@ impl SysDCSystemManager {
         SysDCSystemManager { system: Arc::new(system) }
     }
 
-    pub fn get_system(&self) -> Arc<SysDCSystem> {
+    pub fn get(&self) -> Arc<SysDCSystem> {
         Arc::clone(&self.system)
     }
 }
