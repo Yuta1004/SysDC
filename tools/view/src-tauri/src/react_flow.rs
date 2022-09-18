@@ -34,19 +34,10 @@ impl Serialize for Node {
 }
 
 pub struct Edge {
+    id: i32,
     source: Name,
     target: Name,
     animated: bool,
-}
-
-impl Edge {
-    pub fn new(source: Name, target: Name, animated: bool) -> Edge {
-        Edge {
-            source,
-            target,
-            animated,
-        }
-    }
 }
 
 impl Serialize for Edge {
@@ -55,11 +46,33 @@ impl Serialize for Edge {
         S: serde::Serializer,
     {
         let mut s = serializer.serialize_struct("Edge", 4)?;
-        s.serialize_field("id", "a")?;
+        s.serialize_field("id", &self.id)?;
         s.serialize_field("source", &self.source.get_full_name())?;
         s.serialize_field("target", &self.target.get_full_name())?;
         s.serialize_field("animated", &self.animated)?;
         s.end()
+    }
+}
+
+pub struct EdgeGenerator {
+    registed_edge_nums: i32,
+}
+
+impl EdgeGenerator {
+    pub fn new() -> EdgeGenerator {
+        EdgeGenerator {
+            registed_edge_nums: 0,
+        }
+    }
+
+    pub fn gen(&mut self, source: Name, target: Name, animated: bool) -> Edge {
+        self.registed_edge_nums += 1;
+        Edge {
+            id: self.registed_edge_nums,
+            source,
+            target,
+            animated,
+        }
     }
 }
 
@@ -68,7 +81,7 @@ mod test {
     use serde::Serialize;
     use sysdc_parser::name::Name;
 
-    use super::{Edge, Node};
+    use super::{EdgeGenerator, Node};
 
     #[test]
     fn node_serialize() {
@@ -80,10 +93,10 @@ mod test {
     fn edge_serialize() {
         let source = Name::new(&Name::new_root(), "A".to_string());
         let target = Name::new(&Name::new_root(), "B".to_string());
-        let edge = Edge::new(source, target, false);
+        let edge = EdgeGenerator::new().gen(source, target, false);
         compare(
             edge,
-            "{\"id\":\"a\",\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
+            "{\"id\":1,\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
         );
     }
 
