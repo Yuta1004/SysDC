@@ -5,32 +5,21 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { convert } from "../sysdc_core/convert";
 
 function App() {
-    const initialNodes = [
-        {
-            id: '1',
-            type: 'input',
-            data: { label: 'Input Node' },
-            position: { x: 250, y: 25 },
-        },
+    const [nodes, setNodes] = useState([]);
+    const [edges, setEdges] = useState([]);
 
-        {
-            id: '2',
-            // you can also pass a React component as a label
-            data: { label: <div>Default Node</div> },
-            position: { x: 100, y: 125 },
-        },
-        {
-            id: '3',
-            type: 'output',
-            data: { label: 'Output Node' },
-            position: { x: 250, y: 250 },
-        },
-    ];
-
-    const initialEdges = [
-        { id: 'e1-2', source: '1', target: '2' },
-        { id: 'e2-3', source: '2', target: '3', animated: true },
-    ];
+    useEffect(() => {
+        Promise.all([invoke("get_nodes"), invoke("get_edges")]).then(([nodes, edges]) => {
+            if (Array.isArray(nodes)) {
+                nodes.forEach(node => node["position"] = {x: Math.random()*120, y: Math.random()*120});
+                console.log(nodes);
+                setNodes(nodes);
+            }
+            if (Array.isArray(edges)) {
+                setEdges(edges);
+            }
+        });
+    }, []);
 
     return (
         <div
@@ -52,8 +41,8 @@ function App() {
             </button>
             <hr/>
             <ReactFlow
-                nodes={initialNodes}
-                edges={initialEdges}
+                nodes={nodes}
+                edges={edges}
                 fitView
             />
         </div>
