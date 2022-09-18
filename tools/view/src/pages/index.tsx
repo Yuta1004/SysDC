@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import ReactFlow from "react-flow-renderer";
+import { Node, Edge } from "react-flow-renderer";
 import { invoke } from "@tauri-apps/api/tauri";
 
 import { convert } from "../sysdc_core/convert";
+import { SysDCSystem } from "../sysdc_core/structure";
+import FlowComponent from "../components/flow";
 
 function App() {
-    const [system, setSystem] = useState({ units: [] });
-    const [nodes, setNodes] = useState([]);
-    const [edges, setEdges] = useState([]);
+    const [system, setSystem] = useState<SysDCSystem>({ units: [] });
+    const [nodes, setNodes] = useState<Node<any>[]>([]);
+    const [edges, setEdges] = useState<Edge<any>[]>([]);
 
     useEffect(() => {
         Promise.all([
@@ -40,10 +42,9 @@ function App() {
             <h1>SysDC</h1>
             <p>{ JSON.stringify(system) }</p>
             <hr/>
-            <ReactFlow
+            <FlowComponent
                 nodes={nodes}
                 edges={edges}
-                fitView
             />
         </div>
     );
