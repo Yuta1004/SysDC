@@ -1,11 +1,11 @@
-use serde::Serialize;
 use serde::ser::SerializeStruct;
+use serde::Serialize;
 
 use sysdc_parser::name::Name;
 
 pub struct Node {
     id: Name,
-    label: String
+    label: String,
 }
 
 impl Node {
@@ -17,16 +17,14 @@ impl Node {
 impl Serialize for Node {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         #[derive(Serialize)]
         struct NodeInner<'a> {
-            label: &'a String
+            label: &'a String,
         }
 
-        let inner = NodeInner {
-            label: &self.label
-        };
+        let inner = NodeInner { label: &self.label };
 
         let mut s = serializer.serialize_struct("Node", 2)?;
         s.serialize_field("id", &self.id.get_full_name())?;
@@ -38,19 +36,23 @@ impl Serialize for Node {
 pub struct Edge {
     source: Name,
     target: Name,
-    animated: bool
+    animated: bool,
 }
 
 impl Edge {
     pub fn new(source: Name, target: Name, animated: bool) -> Edge {
-        Edge { source, target, animated }
+        Edge {
+            source,
+            target,
+            animated,
+        }
     }
 }
 
 impl Serialize for Edge {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         let mut s = serializer.serialize_struct("Edge", 4)?;
         s.serialize_field("id", "a")?;
@@ -66,7 +68,7 @@ mod test {
     use serde::Serialize;
     use sysdc_parser::name::Name;
 
-    use super::{Node, Edge};
+    use super::{Edge, Node};
 
     #[test]
     fn node_serialize() {
@@ -79,12 +81,15 @@ mod test {
         let source = Name::new(&Name::new_root(), "A".to_string());
         let target = Name::new(&Name::new_root(), "B".to_string());
         let edge = Edge::new(source, target, false);
-        compare(edge, "{\"id\":\"a\",\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}");
+        compare(
+            edge,
+            "{\"id\":\"a\",\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
+        );
     }
 
     fn compare<T>(node: T, json_str: &str)
     where
-        T: Serialize 
+        T: Serialize,
     {
         assert_eq!(serde_json::to_string(&node).unwrap(), json_str);
     }

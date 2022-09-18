@@ -18,21 +18,21 @@ pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
             app.manage(SysDCSystemWrapper::new(system));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
-            command::get_flow,
-        ])
+        .invoke_handler(tauri::generate_handler![command::get_flow,])
         .run(tauri::generate_context!())?;
 
     Ok(())
 }
 
 pub struct SysDCSystemWrapper {
-    system: Arc<SysDCSystem>
+    system: Arc<SysDCSystem>,
 }
 
 impl SysDCSystemWrapper {
     pub fn new(system: SysDCSystem) -> SysDCSystemWrapper {
-        SysDCSystemWrapper { system: Arc::new(system) }
+        SysDCSystemWrapper {
+            system: Arc::new(system),
+        }
     }
 
     pub fn get(&self) -> Arc<SysDCSystem> {
