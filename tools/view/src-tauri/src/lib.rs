@@ -19,9 +19,7 @@ pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            command::get_system,
-            command::get_nodes,
-            command::get_edges,
+            command::get_flow,
         ])
         .run(tauri::generate_context!())?;
 
