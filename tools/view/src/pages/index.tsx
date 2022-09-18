@@ -5,11 +5,19 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { convert } from "../sysdc_core/convert";
 
 function App() {
+    const [system, setSystem] = useState({ units: [] });
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
 
     useEffect(() => {
-        Promise.all([invoke("get_nodes"), invoke("get_edges")]).then(([nodes, edges]) => {
+        Promise.all([
+            invoke("get_system"),
+            invoke("get_nodes"),
+            invoke("get_edges")
+        ]).then(([system, nodes, edges]) => {
+            if (typeof system == "object") {
+                setSystem(convert(system));
+            }
             if (Array.isArray(nodes)) {
                 nodes.forEach(node => node["position"] = {x: Math.random()*120, y: Math.random()*120});
                 console.log(nodes);
@@ -30,15 +38,7 @@ function App() {
             }}
         >
             <h1>SysDC</h1>
-            <button onClick={ () => {
-                invoke("get_system").then(system => {
-                    if (typeof system == "object") {
-                        console.log(convert(system));
-                    }
-                });
-            }}>
-                LoadSystem
-            </button>
+            <p>{ JSON.stringify(system) }</p>
             <hr/>
             <ReactFlow
                 nodes={nodes}
