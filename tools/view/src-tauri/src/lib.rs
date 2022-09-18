@@ -14,7 +14,7 @@ use sysdc_parser::structure::SysDCSystem;
 pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
     tauri::Builder::default()
         .setup(|app| {
-            app.manage(SysDCSystemManager::new(system));
+            app.manage(SysDCSystemWrapper::new(system));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -25,13 +25,13 @@ pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub struct SysDCSystemManager {
+pub struct SysDCSystemWrapper {
     system: Arc<SysDCSystem>
 }
 
-impl SysDCSystemManager {
-    pub fn new(system: SysDCSystem) -> SysDCSystemManager {
-        SysDCSystemManager { system: Arc::new(system) }
+impl SysDCSystemWrapper {
+    pub fn new(system: SysDCSystem) -> SysDCSystemWrapper {
+        SysDCSystemWrapper { system: Arc::new(system) }
     }
 
     pub fn get(&self) -> Arc<SysDCSystem> {
