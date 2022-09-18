@@ -1,3 +1,5 @@
+export default SysDCSystem;
+
 export type Name = string;
 
 export type Type = string;

@@ -2718,6 +2718,7 @@ name = "sysdc_tool_view"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "once_cell",
  "serde",
  "serde_json",
  "sysdc_parser",

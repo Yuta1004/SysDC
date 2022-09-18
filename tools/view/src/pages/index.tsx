@@ -1,25 +1,32 @@
 import { useEffect, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
+import { Node, Edge } from "react-flow-renderer";
+import { invoke } from "@tauri-apps/api/tauri";
 
-import { convert } from "../sysdc_core/convert";
+import FlowComponent from "../components/flow";
 
 function App() {
-    const [system, setSystem] = useState({ units: [] });
+    const [nodes, setNodes] = useState<Node<any>[]>([]);
+    const [edges, setEdges] = useState<Edge<any>[]>([]);
 
     useEffect(() => {
-        (async () => {
-            await listen("initialize_system", event => {
-                if (typeof event.payload == "object") {
-                    setSystem(convert(event.payload));
-                }
-            });
-        })();
+        invoke("get_flow").then(([nodes, edges]) => {
+            Array.isArray(nodes) && setNodes(nodes);
+            Array.isArray(edges) && setEdges(edges);
+        });
     }, []);
 
     return (
-        <div className="container">
-            <h1>SysDC</h1>
-            <p>{ JSON.stringify(system) }</p>
+        <div
+            className="container"
+            style={{
+                width: "100vw",
+                height: "100vw"
+            }}
+        >
+            <FlowComponent
+                nodes={nodes}
+                edges={edges}
+            />
         </div>
     );
 }
