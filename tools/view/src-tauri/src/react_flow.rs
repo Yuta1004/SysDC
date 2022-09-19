@@ -27,16 +27,16 @@ impl Serialize for ReactFlowNode {
         S: serde::Serializer,
     {
         #[derive(Serialize)]
-        struct NodeInner<'a> {
+        struct Data<'a> {
             label: &'a String,
         }
 
-        let inner = NodeInner { label: &self.label };
+        let data = Data { label: &self.label };
 
         let mut s = serializer.serialize_struct("Node", 2)?;
         s.serialize_field("id", &self.id.get_full_name().replace("._", ""))?;
         s.serialize_field("type", &self.kind)?;
-        s.serialize_field("data", &inner)?;
+        s.serialize_field("data", &data)?;
         s.end()
     }
 }
