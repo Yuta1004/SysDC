@@ -2,15 +2,13 @@ use tauri::State;
 
 use super::super::react_flow::macros::{edge, node};
 use super::super::react_flow::{Edge, Node};
-use super::super::SysDCSystemWrapper;
-use sysdc_parser::structure::{SysDCAnnotation, SysDCFunction, SysDCSpawnDetail};
+use sysdc_parser::structure::{SysDCAnnotation, SysDCFunction, SysDCSpawnDetail, SysDCSystem};
 
 #[tauri::command]
-pub fn get_flow(system: State<'_, SysDCSystemWrapper>) -> (Vec<Node>, Vec<Edge>) {
+pub fn get_flow(system: State<'_, SysDCSystem>) -> (Vec<Node>, Vec<Edge>) {
     let mut nodes = vec![];
     let mut edges = vec![];
 
-    let system = system.get();
     for unit in &system.units {
         for module in &unit.modules {
             for func in &module.functions {
