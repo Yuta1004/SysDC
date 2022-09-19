@@ -18,58 +18,35 @@ pub enum ReactFlowNodeKind {
     AffectOuter,
 }
 
+#[derive(Serialize)]
 pub struct ReactFlowNode {
-    pub(super) id: Name,
+    pub(super) id: String,
+
+    #[serde(rename(serialize = "type"))]
     pub(super) kind: ReactFlowNodeKind,
-    pub(super) parent: Option<Name>,
+
+    #[serde(
+        rename(serialize = "parentNode"),
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub(super) parent: Option<String>,
+
+    pub(super) data: ReactFlowNodeData,
+}
+
+#[derive(Serialize)]
+pub struct ReactFlowNodeData {
     pub(super) label: String,
 }
 
-impl Serialize for ReactFlowNode {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        #[derive(Serialize)]
-        struct Data<'a> {
-            label: &'a String,
-        }
-
-        let data = Data { label: &self.label };
-
-        let mut s = serializer.serialize_struct("Node", 2)?;
-        s.serialize_field("id", &self.id.get_full_name().replace("._", ""))?;
-        s.serialize_field("type", &self.kind)?;
-        if let Some(parent) = &self.parent {
-            s.serialize_field("parentNode", &parent.get_full_name())?;
-        }
-        s.serialize_field("data", &data)?;
-        s.end()
-    }
-}
-
+#[derive(Serialize)]
 pub struct ReactFlowEdge {
     pub(super) id: i32,
-    pub(super) source: Name,
-    pub(super) target: Name,
+    pub(super) source: String,
+    pub(super) target: String,
     pub(super) animated: bool,
 }
 
-impl Serialize for ReactFlowEdge {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut s = serializer.serialize_struct("Edge", 4)?;
-        s.serialize_field("id", &self.id)?;
-        s.serialize_field("source", &self.source.get_full_name().replace("._", ""))?;
-        s.serialize_field("target", &self.target.get_full_name().replace("._", ""))?;
-        s.serialize_field("animated", &self.animated)?;
-        s.end()
-    }
-}
-
-#[macro_use]
 pub mod macros {
     use std::sync::Mutex;
 
@@ -86,16 +63,20 @@ pub mod macros {
                 | ReactFlowNodeKind::Argument
                 | ReactFlowNodeKind::Var
                 | ReactFlowNodeKind::ReturnVar => ReactFlowNode {
-                    id: $name.clone(),
+                    id: $name.get_full_name().replace("._", ""),
                     kind: $kind,
-                    parent: Some($name.clone().get_par_name(true)),
-                    label: format!("{}({})", $name.name.clone(), $name.get_full_name()),
+                    parent: Some($name.get_par_name(true).get_full_name()),
+                    data: ReactFlowNodeData {
+                        label: format!("{}({})", $name.name.clone(), $name.get_full_name()),
+                    },
                 },
                 _ => ReactFlowNode {
-                    id: $name.clone(),
+                    id: $name.get_full_name().replace("._", ""),
                     kind: $kind,
                     parent: None,
-                    label: format!("{}({})", $name.name.clone(), $name.get_full_name()),
+                    data: ReactFlowNodeData {
+                        label: format!("{}({})", $name.name.clone(), $name.get_full_name()),
+                    },
                 },
             }
         };
@@ -108,8 +89,8 @@ pub mod macros {
 
             ReactFlowEdge {
                 id: *id,
-                source: $source.clone(),
-                target: $target.clone(),
+                source: $source.get_full_name().replace("._", ""),
+                target: $target.get_full_name().replace("._", ""),
                 animated: false,
             }
         }};
@@ -125,7 +106,7 @@ mod test {
     use sysdc_parser::name::Name;
 
     use super::macros::{edge, node};
-    use super::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeKind};
+    use super::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeData, ReactFlowNodeKind};
 
     #[test]
     fn node_serialize() {
