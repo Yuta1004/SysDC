@@ -5,8 +5,8 @@ export default layout;
 
 const MARGIN_TOP_BOTTOM = 200;
 const MARGIN_LEFT_RIGHT = 200;
-const DEFAULT_NODE_WIDTH = 200;
-const DEFAULT_NODE_HEIGHT = 50;
+const DEFAULT_NODE_WIDTH = 250;
+const DEFAULT_NODE_HEIGHT = 100;
 
 export function layout(nodes: Node<any>[], edges: Edge<any>[]) {
     const unodes = nodes.filter(node => node.type === "Unit").map(unode => {
