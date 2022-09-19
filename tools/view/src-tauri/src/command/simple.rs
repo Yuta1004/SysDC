@@ -31,12 +31,12 @@ fn gen_func_flow(func: &SysDCFunction) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge
 
     // Node
     for (name, _) in &func.args {
-        nodes.push(node!(ReactFlowNodeKind::Var, name));
+        nodes.push(node!(ReactFlowNodeKind::Argument, name));
     }
     for annotation in &func.annotations {
         match annotation {
             SysDCAnnotation::Spawn { result, details } => {
-                nodes.push(node!(ReactFlowNodeKind::Var, result.0));
+                nodes.push(node!(ReactFlowNodeKind::ReturnVar, result.0));
                 for detail in details {
                     match detail {
                         SysDCSpawnDetail::Use(name, _) => {

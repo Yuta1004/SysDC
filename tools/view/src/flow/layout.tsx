@@ -9,10 +9,19 @@ const DEFAULT_NODE_WIDTH = 250;
 const DEFAULT_NODE_HEIGHT = 100;
 
 export function layout(nodes: Node<any>[], edges: Edge<any>[]) {
-    const unodes = nodes.filter(node => node.type === "Unit").map(unode => {
-        const mnodes = nodes.filter(node => node.type === "Module" && node.parentNode == unode.id).map(mnode => {
-            const fnodes = nodes.filter(node => node.type === "Function" && node.parentNode == mnode.id).map(fnode => {
-                const vnodes = nodes.filter(node => node.type === "Var" && node.parentNode == fnode.id);
+    const isUnit = node =>
+        node.type === "Unit";
+    const isModule = (node, pnode) =>
+        node.type === "Module" && node.parentNode === pnode.id;
+    const isFunction = (node, pnode) =>
+        node.type === "Function" && node.parentNode === pnode.id;
+    const isFunctionChild = (node, pnode) =>
+        ["Argument", "Var", "ReturnVar"].includes(node.type) && node.parentNode === pnode.id;
+
+    const unodes = nodes.filter(isUnit).map(unode => {
+        const mnodes = nodes.filter(node => isModule(node, unode)).map(mnode => {
+            const fnodes = nodes.filter(node => isFunction(node, mnode)).map(fnode => {
+                const vnodes = nodes.filter(node => isFunctionChild(node, fnode));
                 autoLayout(vnodes, edges);
                 fnode.style = getFlowSize(vnodes);
                 return fnode;

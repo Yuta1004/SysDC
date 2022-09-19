@@ -26,13 +26,37 @@ export function FunctionNode({ data }) {
     );
 }
 
+export function ArgumentNode({ data }) {
+    return (
+        <div className={styles.Argument}>
+            <Handle type="target" position={Position.Top}/>
+            <p className={styles.Name}>name</p>
+            <br/>
+            <p className={styles.Type}>(type)</p>
+            <Handle type="source" position={Position.Bottom}/>
+        </div>
+    );
+}
+
 export function VarNode({ data }) {
     return (
         <div className={styles.Var}>
             <Handle type="target" position={Position.Top}/>
-            <p className={styles.Var_Name}>name</p>
+            <p className={styles.Name}>name</p>
             <br/>
-            <p className={styles.Var_Type}>(type)</p>
+            <p className={styles.Type}>(type)</p>
+            <Handle type="source" position={Position.Bottom}/>
+        </div>
+    );
+}
+
+export function ReturnVarNode({ data }) {
+    return (
+        <div className={styles.ReturnVar}>
+            <Handle type="target" position={Position.Top}/>
+            <p className={styles.Name}>name</p>
+            <br/>
+            <p className={styles.Type}>(type)</p>
             <Handle type="source" position={Position.Bottom}/>
         </div>
     );

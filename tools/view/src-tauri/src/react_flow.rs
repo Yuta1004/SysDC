@@ -8,7 +8,9 @@ pub enum ReactFlowNodeKind {
     Unit,
     Module,
     Function,
+    Argument,
     Var,
+    ReturnVar,
     SpawnInner,
     SpawnOuter,
     AffectInner,
@@ -79,7 +81,9 @@ pub mod macros {
             match $kind {
                 ReactFlowNodeKind::Module
                 | ReactFlowNodeKind::Function
-                | ReactFlowNodeKind::Var => ReactFlowNode {
+                | ReactFlowNodeKind::Argument
+                | ReactFlowNodeKind::Var
+                | ReactFlowNodeKind::ReturnVar => ReactFlowNode {
                     id: $name.clone(),
                     kind: $kind,
                     parent: Some($name.clone().get_par_name(true)),

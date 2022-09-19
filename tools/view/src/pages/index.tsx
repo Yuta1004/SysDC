@@ -3,7 +3,14 @@ import ReactFlow, { Background, MiniMap, Controls, useNodesState, useEdgesState 
 import { invoke } from "@tauri-apps/api/tauri";
 
 import layout from "../flow/layout";
-import { UnitNode, ModuleNode, FunctionNode, VarNode } from "../flow/custom";
+import {
+    UnitNode,
+    ModuleNode,
+    FunctionNode,
+    ArgumentNode,
+    VarNode,
+    ReturnVarNode
+} from "../flow/custom";
 
 function App() {
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -13,7 +20,9 @@ function App() {
         Unit: UnitNode,
         Module: ModuleNode,
         Function: FunctionNode,
-        Var: VarNode
+        Argument: ArgumentNode,
+        Var: VarNode,
+        ReturnVar: ReturnVarNode,
     }), []);
 
     useEffect(() => {

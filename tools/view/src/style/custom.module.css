@@ -37,6 +37,28 @@
     margin: 0px;
 }
 
+.Name {
+    margin: 0px;
+    padding: 0px;
+    font-size: 2em;
+}
+
+.Type {
+    margin: 0px;
+    padding: 0px;
+    font-size: 1.5em;
+}
+
+.Argument {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    border: 5px inset #70007d;
+    border-radius: 10px;
+    background: #e4d6ffaa;
+    text-align: center;
+}
+
 .Var {
     width: 100%;
     height: 100%;
@@ -47,14 +69,13 @@
     text-align: center;
 }
 
-.Var_Name {
-    margin: 0px;
-    padding: 0px;
-    font-size: 2em;
+.ReturnVar {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    border: 5px outset #70007d;
+    border-radius: 10px;
+    background: #e4d6ffaa;
+    text-align: center;
 }
 
-.Var_Type {
-    margin: 0px;
-    padding: 0px;
-    font-size: 1.5em;
-}
