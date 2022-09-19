@@ -1,11 +1,11 @@
 use tauri::State;
 
 use super::super::react_flow::macros::{edge, node};
-use super::super::react_flow::{Edge, Node};
+use super::super::react_flow::{ReactFlowEdge, ReactFlowNode};
 use sysdc_parser::structure::{SysDCAnnotation, SysDCFunction, SysDCSpawnDetail, SysDCSystem};
 
 #[tauri::command]
-pub fn get_flow(system: State<'_, SysDCSystem>) -> (Vec<Node>, Vec<Edge>) {
+pub fn get_flow(system: State<'_, SysDCSystem>) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
     let mut nodes = vec![];
     let mut edges = vec![];
 
@@ -20,7 +20,11 @@ pub fn get_flow(system: State<'_, SysDCSystem>) -> (Vec<Node>, Vec<Edge>) {
     (nodes, edges)
 }
 
-fn gen_func_flow(func: &SysDCFunction, nodes: &mut Vec<Node>, edges: &mut Vec<Edge>) {
+fn gen_func_flow(
+    func: &SysDCFunction,
+    nodes: &mut Vec<ReactFlowNode>,
+    edges: &mut Vec<ReactFlowEdge>,
+) {
     // Node
     for (name, _) in &func.args {
         nodes.push(node!(name));
@@ -61,7 +65,7 @@ fn gen_func_flow(func: &SysDCFunction, nodes: &mut Vec<Node>, edges: &mut Vec<Ed
                             edges.extend(
                                 args.iter()
                                     .map(|(name, _)| edge!(name, var))
-                                    .collect::<Vec<Edge>>(),
+                                    .collect::<Vec<ReactFlowEdge>>(),
                             );
                         }
                         _ => {}

@@ -1,23 +1,14 @@
-use std::sync::Mutex;
-
-use once_cell::sync::Lazy;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
 
 use sysdc_parser::name::Name;
 
-pub struct Node {
-    id: Name,
-    label: String,
+pub struct ReactFlowNode {
+    pub(super) id: Name,
+    pub(super) label: String,
 }
 
-impl Node {
-    pub fn new(id: Name, label: String) -> Node {
-        Node { id, label }
-    }
-}
-
-impl Serialize for Node {
+impl Serialize for ReactFlowNode {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -36,30 +27,14 @@ impl Serialize for Node {
     }
 }
 
-pub struct Edge {
-    id: i32,
-    source: Name,
-    target: Name,
-    animated: bool,
+pub struct ReactFlowEdge {
+    pub(super) id: i32,
+    pub(super) source: Name,
+    pub(super) target: Name,
+    pub(super) animated: bool,
 }
 
-impl Edge {
-    pub fn new(source: Name, target: Name, animated: bool) -> Edge {
-        static CREATED_EDGE_NUMS: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
-
-        let mut id = CREATED_EDGE_NUMS.lock().unwrap();
-        *id += 1;
-
-        Edge {
-            id: *id,
-            source,
-            target,
-            animated,
-        }
-    }
-}
-
-impl Serialize for Edge {
+impl Serialize for ReactFlowEdge {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -75,19 +50,33 @@ impl Serialize for Edge {
 
 #[macro_use]
 pub mod macros {
+    use std::sync::Mutex;
+
+    use once_cell::sync::Lazy;
+
+    pub(crate) static CREATED_EDGE_NUMS: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
+
     macro_rules! node {
         ($name:expr) => {
-            Node::new(
-                $name.clone(),
-                format!("{}({})", $name.name.clone(), $name.get_full_name()),
-            )
+            ReactFlowNode {
+                id: $name.clone(),
+                label: format!("{}({})", $name.name.clone(), $name.get_full_name()),
+            }
         };
     }
 
     macro_rules! edge {
-        ($source:expr, $target:expr) => {
-            Edge::new($source.clone(), $target.clone(), false)
-        };
+        ($source:expr, $target:expr) => {{
+            let mut id = crate::react_flow::macros::CREATED_EDGE_NUMS.lock().unwrap();
+            *id += 1;
+
+            ReactFlowEdge {
+                id: *id,
+                source: $source.clone(),
+                target: $target.clone(),
+                animated: false,
+            }
+        }};
     }
 
     pub(crate) use edge;
@@ -99,20 +88,21 @@ mod test {
     use serde::Serialize;
     use sysdc_parser::name::Name;
 
-    use super::{Edge, Node};
+    use super::macros::{edge, node};
+    use super::{ReactFlowEdge, ReactFlowNode};
 
     #[test]
     fn node_serialize() {
-        let node = Node::new(Name::new_root(), "test".to_string());
-        compare(node, "{\"id\":\".0\",\"data\":{\"label\":\"test\"}}");
+        let node = node!(&Name::new(&Name::new_root(), "test".to_string()));
+        compare(node, "{\"id\":\".0.test\",\"data\":{\"label\":\"test(.0.test)\"}}");
     }
 
     #[test]
     fn edge_serialize() {
         let source = Name::new(&Name::new_root(), "A".to_string());
         let target = Name::new(&Name::new_root(), "B".to_string());
-        let edge_1 = Edge::new(source.clone(), target.clone(), false);
-        let edge_2 = Edge::new(source, target, false);
+        let edge_1 = edge!(&source, &target);
+        let edge_2 = edge!(&source, &target);
         compare(
             edge_1,
             "{\"id\":1,\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
