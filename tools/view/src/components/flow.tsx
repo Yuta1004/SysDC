@@ -14,6 +14,7 @@ export function FlowComponent({nodes, edges}) {
         <ReactFlow
             nodes={nodes}
             edges={edges}
+            defaultEdgeOptions={{ zIndex: 9999 }}
             fitView
         />
     );
