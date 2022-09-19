@@ -10,8 +10,11 @@ pub fn get_flow(system: State<'_, SysDCSystem>) -> (Vec<ReactFlowNode>, Vec<Reac
     let mut edges = vec![];
 
     for unit in &system.units {
+        nodes.push(node!(ReactFlowNodeKind::Unit, unit.name));
         for module in &unit.modules {
+            nodes.push(node!(ReactFlowNodeKind::Module, module.name));
             for func in &module.functions {
+                nodes.push(node!(ReactFlowNodeKind::Function, func.name));
                 gen_func_flow(func, &mut nodes, &mut edges);
             }
         }

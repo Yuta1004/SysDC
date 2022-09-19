@@ -18,6 +18,7 @@ pub enum ReactFlowNodeKind {
 pub struct ReactFlowNode {
     pub(super) id: Name,
     pub(super) kind: ReactFlowNodeKind,
+    pub(super) parent: Option<Name>,
     pub(super) label: String,
 }
 
@@ -36,6 +37,9 @@ impl Serialize for ReactFlowNode {
         let mut s = serializer.serialize_struct("Node", 2)?;
         s.serialize_field("id", &self.id.get_full_name().replace("._", ""))?;
         s.serialize_field("type", &self.kind)?;
+        if let Some(parent) = &self.parent {
+            s.serialize_field("parentNode", &parent.get_full_name())?;
+        }
         s.serialize_field("data", &data)?;
         s.end()
     }
@@ -76,10 +80,21 @@ pub mod macros {
         };
 
         ($kind:expr, $name:expr) => {
-            ReactFlowNode {
-                id: $name.clone(),
-                kind: $kind,
-                label: format!("{}({})", $name.name.clone(), $name.get_full_name()),
+            match $kind {
+                ReactFlowNodeKind::Module
+                | ReactFlowNodeKind::Function
+                | ReactFlowNodeKind::Var => ReactFlowNode {
+                    id: $name.clone(),
+                    kind: $kind,
+                    parent: Some($name.clone().get_par_name(true)),
+                    label: format!("{}({})", $name.name.clone(), $name.get_full_name()),
+                },
+                _ => ReactFlowNode {
+                    id: $name.clone(),
+                    kind: $kind,
+                    parent: None,
+                    label: format!("{}({})", $name.name.clone(), $name.get_full_name()),
+                }
             }
         };
     }
@@ -115,11 +130,11 @@ mod test {
         let name = Name::new(&Name::new_root(), "test".to_string());
         compare(
             node!(&name),
-            "{\"id\":\".0.test\",\"type\":\"Var\",\"data\":{\"label\":\"test(.0.test)\"}}",
+            "{\"id\":\".0.test\",\"type\":\"Var\",\"parentNode\":\".0\",\"data\":{\"label\":\"test(.0.test)\"}}",
         );
         compare(
             node!(ReactFlowNodeKind::Var, &name),
-            "{\"id\":\".0.test\",\"type\":\"Var\",\"data\":{\"label\":\"test(.0.test)\"}}",
+            "{\"id\":\".0.test\",\"type\":\"Var\",\"parentNode\":\".0\",\"data\":{\"label\":\"test(.0.test)\"}}",
         );
     }
 
