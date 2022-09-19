@@ -15,7 +15,9 @@ pub fn get_flow(system: State<'_, SysDCSystem>) -> (Vec<ReactFlowNode>, Vec<Reac
             nodes.push(node!(ReactFlowNodeKind::Module, module.name));
             for func in &module.functions {
                 nodes.push(node!(ReactFlowNodeKind::Function, func.name));
-                gen_func_flow(func, &mut nodes, &mut edges);
+                let (fnodes, fedges) = gen_func_flow(func);
+                nodes.extend(fnodes);
+                edges.extend(fedges);
             }
         }
     }
@@ -23,11 +25,10 @@ pub fn get_flow(system: State<'_, SysDCSystem>) -> (Vec<ReactFlowNode>, Vec<Reac
     (nodes, edges)
 }
 
-fn gen_func_flow(
-    func: &SysDCFunction,
-    nodes: &mut Vec<ReactFlowNode>,
-    edges: &mut Vec<ReactFlowEdge>,
-) {
+fn gen_func_flow(func: &SysDCFunction) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
+    let mut nodes = vec![];
+    let mut edges = vec![];
+
     // Node
     for (name, _) in &func.args {
         nodes.push(node!(name));
@@ -78,4 +79,6 @@ fn gen_func_flow(
             _ => {}
         }
     }
+
+    (nodes, edges)
 }

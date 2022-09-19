@@ -94,7 +94,7 @@ pub mod macros {
                     kind: $kind,
                     parent: None,
                     label: format!("{}({})", $name.name.clone(), $name.get_full_name()),
-                }
+                },
             }
         };
     }
