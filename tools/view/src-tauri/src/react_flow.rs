@@ -75,10 +75,6 @@ pub mod macros {
     pub(crate) static CREATED_EDGE_NUMS: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
 
     macro_rules! node {
-        ($name:expr) => {
-            node!(ReactFlowNodeKind::Var, $name)
-        };
-
         ($kind:expr, $name:expr) => {
             match $kind {
                 ReactFlowNodeKind::Module
@@ -128,10 +124,6 @@ mod test {
     #[test]
     fn node_serialize() {
         let name = Name::new(&Name::new_root(), "test".to_string());
-        compare(
-            node!(&name),
-            "{\"id\":\".0.test\",\"type\":\"Var\",\"parentNode\":\".0\",\"data\":{\"label\":\"test(.0.test)\"}}",
-        );
         compare(
             node!(ReactFlowNodeKind::Var, &name),
             "{\"id\":\".0.test\",\"type\":\"Var\",\"parentNode\":\".0\",\"data\":{\"label\":\"test(.0.test)\"}}",
