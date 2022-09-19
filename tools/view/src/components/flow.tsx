@@ -1,4 +1,4 @@
-import ReactFlow, { Node, Edge } from "react-flow-renderer";
+import ReactFlow, { Node, Edge, MiniMap, Controls } from "react-flow-renderer";
 import dagre from "dagre";
 
 export default FlowComponent;
@@ -16,7 +16,10 @@ export function FlowComponent({nodes, edges}) {
             edges={edges}
             defaultEdgeOptions={{ zIndex: 9999 }}
             fitView
-        />
+        >
+            <MiniMap/>
+            <Controls/>
+        </ReactFlow>
     );
 }
 
