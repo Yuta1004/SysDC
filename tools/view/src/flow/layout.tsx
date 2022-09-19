@@ -1,29 +1,14 @@
-import ReactFlow, { Node, Edge, MiniMap, Controls } from "react-flow-renderer";
+import { Node, Edge } from "react-flow-renderer";
 import dagre from "dagre";
 
-export default FlowComponent;
+export default layout;
 
 const MARGIN_TOP_BOTTOM = 200;
 const MARGIN_LEFT_RIGHT = 200;
 const DEFAULT_NODE_WIDTH = 200;
 const DEFAULT_NODE_HEIGHT = 50;
 
-export function FlowComponent({nodes, edges}) {
-    layout(nodes, edges);
-    return (
-        <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            defaultEdgeOptions={{ zIndex: 9999 }}
-            fitView
-        >
-            <MiniMap/>
-            <Controls/>
-        </ReactFlow>
-    );
-}
-
-function layout(nodes: Node<any>[], edges: Edge<any>[]) {
+export function layout(nodes: Node<any>[], edges: Edge<any>[]) {
     const unodes = nodes.filter(node => node.type === "Unit").map(unode => {
         const mnodes = nodes.filter(node => node.type === "Module" && node.parentNode == unode.id).map(mnode => {
             const fnodes = nodes.filter(node => node.type === "Function" && node.parentNode == mnode.id).map(fnode => {
