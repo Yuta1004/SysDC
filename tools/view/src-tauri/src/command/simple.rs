@@ -1,7 +1,7 @@
 use tauri::State;
 
 use super::super::react_flow::macros::{edge, node};
-use super::super::react_flow::{ReactFlowEdge, ReactFlowNode};
+use super::super::react_flow::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeKind};
 use sysdc_parser::structure::{SysDCAnnotation, SysDCFunction, SysDCSpawnDetail, SysDCSystem};
 
 #[tauri::command]

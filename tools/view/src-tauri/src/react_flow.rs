@@ -3,8 +3,21 @@ use serde::Serialize;
 
 use sysdc_parser::name::Name;
 
+#[derive(Serialize)]
+pub enum ReactFlowNodeKind {
+    Unit,
+    Module,
+    Function,
+    Var,
+    SpawnInner,
+    SpawnOuter,
+    AffectInner,
+    AffectOuter,
+}
+
 pub struct ReactFlowNode {
     pub(super) id: Name,
+    pub(super) kind: ReactFlowNodeKind,
     pub(super) label: String,
 }
 
@@ -22,6 +35,7 @@ impl Serialize for ReactFlowNode {
 
         let mut s = serializer.serialize_struct("Node", 2)?;
         s.serialize_field("id", &self.id.get_full_name().replace("._", ""))?;
+        s.serialize_field("type", &self.kind)?;
         s.serialize_field("data", &inner)?;
         s.end()
     }
@@ -58,8 +72,13 @@ pub mod macros {
 
     macro_rules! node {
         ($name:expr) => {
+            node!(ReactFlowNodeKind::Var, $name)
+        };
+
+        ($kind:expr, $name:expr) => {
             ReactFlowNode {
                 id: $name.clone(),
+                kind: $kind,
                 label: format!("{}({})", $name.name.clone(), $name.get_full_name()),
             }
         };
@@ -89,26 +108,31 @@ mod test {
     use sysdc_parser::name::Name;
 
     use super::macros::{edge, node};
-    use super::{ReactFlowEdge, ReactFlowNode};
+    use super::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeKind};
 
     #[test]
     fn node_serialize() {
-        let node = node!(&Name::new(&Name::new_root(), "test".to_string()));
-        compare(node, "{\"id\":\".0.test\",\"data\":{\"label\":\"test(.0.test)\"}}");
+        let name = Name::new(&Name::new_root(), "test".to_string());
+        compare(
+            node!(&name),
+            "{\"id\":\".0.test\",\"type\":\"Var\",\"data\":{\"label\":\"test(.0.test)\"}}",
+        );
+        compare(
+            node!(ReactFlowNodeKind::Var, &name),
+            "{\"id\":\".0.test\",\"type\":\"Var\",\"data\":{\"label\":\"test(.0.test)\"}}",
+        );
     }
 
     #[test]
     fn edge_serialize() {
         let source = Name::new(&Name::new_root(), "A".to_string());
         let target = Name::new(&Name::new_root(), "B".to_string());
-        let edge_1 = edge!(&source, &target);
-        let edge_2 = edge!(&source, &target);
         compare(
-            edge_1,
+            edge!(&source, &target),
             "{\"id\":1,\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
         );
         compare(
-            edge_2,
+            edge!(&source, &target),
             "{\"id\":2,\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
         );
     }
