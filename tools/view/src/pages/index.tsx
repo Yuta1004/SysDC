@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import ReactFlow, { MiniMap, Controls, useNodesState, useEdgesState } from "react-flow-renderer";
+import ReactFlow, { Background, MiniMap, Controls, useNodesState, useEdgesState } from "react-flow-renderer";
 import { invoke } from "@tauri-apps/api/tauri";
 
 import layout from "../flow/layout";
@@ -41,6 +41,7 @@ function App() {
                 defaultEdgeOptions={{ zIndex: 9999 }}
                 fitView
             >
+                <Background gap={24} size={1.5} color="#0006"/>
                 <MiniMap/>
                 <Controls/>
             </ReactFlow>
