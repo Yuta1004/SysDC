@@ -1,3 +1,6 @@
+use std::sync::Mutex;
+
+use once_cell::sync::Lazy;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
 
@@ -40,6 +43,22 @@ pub struct Edge {
     animated: bool,
 }
 
+impl Edge {
+    pub fn new(source: Name, target: Name, animated: bool) -> Edge {
+        static CREATED_EDGE_NUMS: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
+
+        let mut id = CREATED_EDGE_NUMS.lock().unwrap();
+        *id += 1;
+
+        Edge {
+            id: *id,
+            source,
+            target,
+            animated,
+        }
+    }
+}
+
 impl Serialize for Edge {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -51,28 +70,6 @@ impl Serialize for Edge {
         s.serialize_field("target", &self.target.get_full_name().replace("._", ""))?;
         s.serialize_field("animated", &self.animated)?;
         s.end()
-    }
-}
-
-pub struct EdgeGenerator {
-    registed_edge_nums: i32,
-}
-
-impl EdgeGenerator {
-    pub fn new() -> EdgeGenerator {
-        EdgeGenerator {
-            registed_edge_nums: 0,
-        }
-    }
-
-    pub fn gen(&mut self, source: Name, target: Name, animated: bool) -> Edge {
-        self.registed_edge_nums += 1;
-        Edge {
-            id: self.registed_edge_nums,
-            source,
-            target,
-            animated,
-        }
     }
 }
 
@@ -88,8 +85,8 @@ pub mod macros {
     }
 
     macro_rules! edge {
-        ($edge_generator:expr, $source:expr, $target:expr) => {
-            $edge_generator.gen($source.clone(), $target.clone(), false)
+        ($source:expr, $target:expr) => {
+            Edge::new($source.clone(), $target.clone(), false)
         };
     }
 
@@ -102,7 +99,7 @@ mod test {
     use serde::Serialize;
     use sysdc_parser::name::Name;
 
-    use super::{EdgeGenerator, Node};
+    use super::{Edge, Node};
 
     #[test]
     fn node_serialize() {
@@ -114,10 +111,15 @@ mod test {
     fn edge_serialize() {
         let source = Name::new(&Name::new_root(), "A".to_string());
         let target = Name::new(&Name::new_root(), "B".to_string());
-        let edge = EdgeGenerator::new().gen(source, target, false);
+        let edge_1 = Edge::new(source.clone(), target.clone(), false);
+        let edge_2 = Edge::new(source, target, false);
         compare(
-            edge,
+            edge_1,
             "{\"id\":1,\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
+        );
+        compare(
+            edge_2,
+            "{\"id\":2,\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
         );
     }
 
