@@ -20,31 +20,31 @@ pub enum ReactFlowNodeKind {
 
 #[derive(Serialize)]
 pub struct ReactFlowNode {
-    pub(super) id: String,
+    pub id: String,
 
     #[serde(rename(serialize = "type"))]
-    pub(super) kind: ReactFlowNodeKind,
+    pub kind: ReactFlowNodeKind,
 
     #[serde(
         rename(serialize = "parentNode"),
         skip_serializing_if = "Option::is_none"
     )]
-    pub(super) parent: Option<String>,
+    pub parent: Option<String>,
 
-    pub(super) data: ReactFlowNodeData,
+    pub data: ReactFlowNodeData,
 }
 
 #[derive(Serialize)]
 pub struct ReactFlowNodeData {
-    pub(super) label: String,
+    pub label: String,
 }
 
 #[derive(Serialize)]
 pub struct ReactFlowEdge {
-    pub(super) id: i32,
-    pub(super) source: String,
-    pub(super) target: String,
-    pub(super) animated: bool,
+    pub id: i32,
+    pub source: String,
+    pub target: String,
+    pub animated: bool,
 }
 
 pub mod macros {
