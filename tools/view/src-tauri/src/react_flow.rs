@@ -8,6 +8,7 @@ pub enum ReactFlowNodeKind {
     Unit,
     Module,
     Function,
+    Procedure,
     Argument,
     Var,
     ReturnVar,
@@ -81,6 +82,7 @@ pub mod macros {
             match $kind {
                 ReactFlowNodeKind::Module
                 | ReactFlowNodeKind::Function
+                | ReactFlowNodeKind::Procedure
                 | ReactFlowNodeKind::Argument
                 | ReactFlowNodeKind::Var
                 | ReactFlowNodeKind::ReturnVar => ReactFlowNode {

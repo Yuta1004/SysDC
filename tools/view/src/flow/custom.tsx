@@ -21,7 +21,18 @@ export function ModuleNode({ data }) {
 export function FunctionNode({ data }) {
     return (
         <div className={styles.Function}>
+            <Handle type="target" position={Position.Top}/>
             <h1>Function</h1>
+            <Handle type="source" position={Position.Bottom}/>
+        </div>
+    );
+}
+
+export function ProcedureNode({ data }) {
+    return (
+        <div className={styles.Procedure}>
+            <Handle type="target" position={Position.Top}/>
+            <h1>Procedure</h1>
         </div>
     );
 }

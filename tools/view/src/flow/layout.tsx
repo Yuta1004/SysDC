@@ -14,7 +14,7 @@ export function layout(nodes: Node<any>[], edges: Edge<any>[]) {
     const isModule = (node, pnode) =>
         node.type === "Module" && node.parentNode === pnode.id;
     const isFunction = (node, pnode) =>
-        node.type === "Function" && node.parentNode === pnode.id;
+        ["Function", "Procedure"].includes(node.type) && node.parentNode === pnode.id;
     const isFunctionChild = (node, pnode) =>
         ["Argument", "Var", "ReturnVar"].includes(node.type) && node.parentNode === pnode.id;
 

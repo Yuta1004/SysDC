@@ -7,6 +7,7 @@ import {
     UnitNode,
     ModuleNode,
     FunctionNode,
+    ProcedureNode,
     ArgumentNode,
     VarNode,
     ReturnVarNode
@@ -20,6 +21,7 @@ function App() {
         Unit: UnitNode,
         Module: ModuleNode,
         Function: FunctionNode,
+        Procedure: ProcedureNode,
         Argument: ArgumentNode,
         Var: VarNode,
         ReturnVar: ReturnVarNode,

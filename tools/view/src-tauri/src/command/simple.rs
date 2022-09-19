@@ -2,6 +2,7 @@ use tauri::State;
 
 use super::super::react_flow::macros::{edge, node};
 use super::super::react_flow::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeKind};
+use sysdc_parser::types::{Type, TypeKind};
 use sysdc_parser::structure::{SysDCAnnotation, SysDCFunction, SysDCSpawnDetail, SysDCSystem};
 
 #[tauri::command]
@@ -14,7 +15,11 @@ pub fn get_flow(system: State<'_, SysDCSystem>) -> (Vec<ReactFlowNode>, Vec<Reac
         for module in &unit.modules {
             nodes.push(node!(ReactFlowNodeKind::Module, module.name));
             for func in &module.functions {
-                nodes.push(node!(ReactFlowNodeKind::Function, func.name));
+                if let (_, Type { kind: TypeKind::Void, .. }) = func.returns {
+                    nodes.push(node!(ReactFlowNodeKind::Procedure, func.name));
+                } else {
+                    nodes.push(node!(ReactFlowNodeKind::Function, func.name));
+                }
                 let (fnodes, fedges) = gen_func_flow(func);
                 nodes.extend(fnodes);
                 edges.extend(fedges);
