@@ -9,7 +9,7 @@ use sysdc_parser::types::{Type, TypeKind};
 
 #[tauri::command]
 pub fn get_flow(system: State<'_, SysDCSystem>) -> ReactFlowDesign {
-    system.units.iter().map(|unit| gen_unit_flow(unit)).fold(
+    system.units.iter().map(gen_unit_flow).fold(
         (vec![], vec![]),
         |(mut nodes, mut edges), (_nodes, _edges)| {
             nodes.extend(_nodes);
@@ -20,38 +20,31 @@ pub fn get_flow(system: State<'_, SysDCSystem>) -> ReactFlowDesign {
 }
 
 fn gen_unit_flow(unit: &SysDCUnit) -> ReactFlowDesign {
-    unit.modules
-        .iter()
-        .map(|module| gen_module_flow(module))
-        .fold(
-            (
-                vec![ReactFlowNode::new(ReactFlowNodeKind::Unit, &unit.name)],
-                vec![],
-            ),
-            |(mut nodes, mut edges), (_nodes, _edges)| {
-                nodes.extend(_nodes);
-                edges.extend(_edges);
-                (nodes, edges)
-            },
-        )
+    unit.modules.iter().map(gen_module_flow).fold(
+        (
+            vec![ReactFlowNode::new(ReactFlowNodeKind::Unit, &unit.name)],
+            vec![],
+        ),
+        |(mut nodes, mut edges), (_nodes, _edges)| {
+            nodes.extend(_nodes);
+            edges.extend(_edges);
+            (nodes, edges)
+        },
+    )
 }
 
 fn gen_module_flow(module: &SysDCModule) -> ReactFlowDesign {
-    module
-        .functions
-        .iter()
-        .map(|func| gen_func_flow(func))
-        .fold(
-            (
-                vec![ReactFlowNode::new(ReactFlowNodeKind::Module, &module.name)],
-                vec![],
-            ),
-            |(mut nodes, mut edges), (_nodes, _edges)| {
-                nodes.extend(_nodes);
-                edges.extend(_edges);
-                (nodes, edges)
-            },
-        )
+    module.functions.iter().map(gen_func_flow).fold(
+        (
+            vec![ReactFlowNode::new(ReactFlowNodeKind::Module, &module.name)],
+            vec![],
+        ),
+        |(mut nodes, mut edges), (_nodes, _edges)| {
+            nodes.extend(_nodes);
+            edges.extend(_edges);
+            (nodes, edges)
+        },
+    )
 }
 
 fn gen_func_flow(func: &SysDCFunction) -> ReactFlowDesign {
