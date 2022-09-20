@@ -70,6 +70,7 @@ fn gen_func_flow(func: &SysDCFunction) -> ReactFlowDesign {
     } else {
         nodes.push(react_flow::node(ReactFlowNodeKind::Function, &func.name));
     }
+    nodes.push(react_flow::node(ReactFlowNodeKind::ReturnVar, &func.returns.0));
 
     func.args
         .iter()

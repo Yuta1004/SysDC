@@ -55,7 +55,7 @@ pub struct ReactFlowEdge {
 pub fn node(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
     match kind {
         ReactFlowNodeKind::Unit => ReactFlowNode {
-            id: name.get_full_name().replace("._", ""),
+            id: name.get_full_name(),
             kind,
             parent: None,
             data: ReactFlowNodeData {
@@ -68,7 +68,7 @@ pub fn node(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
         | ReactFlowNodeKind::Argument
         | ReactFlowNodeKind::Var
         | ReactFlowNodeKind::ReturnVar => ReactFlowNode {
-            id: name.get_full_name().replace("._", ""),
+            id: name.get_full_name(),
             kind,
             parent: Some(name.get_par_name(true).get_full_name()),
             data: ReactFlowNodeData {
@@ -81,15 +81,15 @@ pub fn node(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
 
 pub fn node_spawn(result: &Name) -> Vec<ReactFlowNode> {
     let inner = ReactFlowNode {
-        id: result.get_full_name().replace("._", "") + ":s:inner",
+        id: result.get_full_name() + ":s:inner",
         kind: ReactFlowNodeKind::SpawnInner,
-        parent: Some(result.get_full_name().replace("._", "") + ":s:outer"),
+        parent: Some(result.get_full_name() + ":s:outer"),
         data: ReactFlowNodeData {
             label: "".to_string(),
         },
     };
     let outer = ReactFlowNode {
-        id: result.get_full_name().replace("._", "") + ":s:outer",
+        id: result.get_full_name() + ":s:outer",
         kind: ReactFlowNodeKind::SpawnOuter,
         parent: Some(result.get_par_name(true).get_full_name()),
         data: ReactFlowNodeData {
@@ -114,8 +114,8 @@ pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<Rea
                 *id += 1;
                 *id
             },
-            source: aname.get_full_name().replace("._", ""),
-            target: name.get_full_name().replace("._", "") + ":s:outer",
+            source: aname.get_full_name(),
+            target: name.get_full_name() + ":s:outer",
             animated: false,
         });
     }
@@ -126,8 +126,8 @@ pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<Rea
             *id += 1;
             *id
         },
-        source: name.get_full_name().replace("._", "") + ":s:inner",
-        target: func.get_full_name().replace("._", ""),
+        source: name.get_full_name() + ":s:inner",
+        target: func.get_full_name(),
         animated: false,
     });
     edges.push(ReactFlowEdge {
@@ -135,19 +135,19 @@ pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<Rea
             *id += 1;
             *id
         },
-        source: func.get_full_name().replace("._", ""),
-        target: name.get_full_name().replace("._", "") + ":s:inner",
+        source: func.get_full_name(),
+        target: name.get_full_name() + ":s:inner",
         animated: false,
     });
 
-    // E: outer -> return
+    // E: outer -> result
     edges.push(ReactFlowEdge {
         id: {
             *id += 1;
             *id
         },
-        source: name.get_full_name().replace("._", "") + ":s:outer",
-        target: name.get_full_name().replace("._", ""),
+        source: name.get_full_name() + ":s:outer",
+        target: name.get_full_name(),
         animated: false,
     });
 
