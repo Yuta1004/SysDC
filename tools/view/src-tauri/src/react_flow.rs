@@ -1,6 +1,3 @@
-use std::sync::Mutex;
-
-use once_cell::sync::Lazy;
 use serde::Serialize;
 
 use sysdc_parser::name::Name;
