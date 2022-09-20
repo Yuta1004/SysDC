@@ -1,92 +1,104 @@
 use tauri::State;
 
-use super::super::react_flow::macros::{edge, node};
 use super::super::react_flow::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeKind};
+use sysdc_parser::structure::{
+    SysDCAnnotation, SysDCFunction, SysDCModule, SysDCSpawnDetail, SysDCSystem, SysDCUnit,
+};
 use sysdc_parser::types::{Type, TypeKind};
-use sysdc_parser::structure::{SysDCAnnotation, SysDCFunction, SysDCSpawnDetail, SysDCSystem};
 
 #[tauri::command]
 pub fn get_flow(system: State<'_, SysDCSystem>) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
-    let mut nodes = vec![];
-    let mut edges = vec![];
+    system.units.iter().map(|unit| gen_unit_flow(unit)).fold(
+        (vec![], vec![]),
+        |(mut nodes, mut edges), (_nodes, _edges)| {
+            nodes.extend(_nodes);
+            edges.extend(_edges);
+            (nodes, edges)
+        },
+    )
+}
 
-    for unit in &system.units {
-        nodes.push(node!(ReactFlowNodeKind::Unit, unit.name));
-        for module in &unit.modules {
-            nodes.push(node!(ReactFlowNodeKind::Module, module.name));
-            for func in &module.functions {
-                if let (_, Type { kind: TypeKind::Void, .. }) = func.returns {
-                    nodes.push(node!(ReactFlowNodeKind::Procedure, func.name));
-                } else {
-                    nodes.push(node!(ReactFlowNodeKind::Function, func.name));
-                }
-                let (fnodes, fedges) = gen_func_flow(func);
-                nodes.extend(fnodes);
-                edges.extend(fedges);
-            }
-        }
-    }
+fn gen_unit_flow(unit: &SysDCUnit) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
+    unit.modules
+        .iter()
+        .map(|module| gen_module_flow(module))
+        .fold(
+            (
+                vec![ReactFlowNode::new(ReactFlowNodeKind::Unit, &unit.name)],
+                vec![],
+            ),
+            |(mut nodes, mut edges), (_nodes, _edges)| {
+                nodes.extend(_nodes);
+                edges.extend(_edges);
+                (nodes, edges)
+            },
+        )
+}
 
-    (nodes, edges)
+fn gen_module_flow(module: &SysDCModule) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
+    module
+        .functions
+        .iter()
+        .map(|func| gen_func_flow(func))
+        .fold(
+            (
+                vec![ReactFlowNode::new(ReactFlowNodeKind::Module, &module.name)],
+                vec![],
+            ),
+            |(mut nodes, mut edges), (_nodes, _edges)| {
+                nodes.extend(_nodes);
+                edges.extend(_edges);
+                (nodes, edges)
+            },
+        )
 }
 
 fn gen_func_flow(func: &SysDCFunction) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
     let mut nodes = vec![];
     let mut edges = vec![];
 
-    // Node
-    for (name, _) in &func.args {
-        nodes.push(node!(ReactFlowNodeKind::Argument, name));
-    }
-    for annotation in &func.annotations {
-        match annotation {
-            SysDCAnnotation::Spawn { result, details } => {
-                nodes.push(node!(ReactFlowNodeKind::ReturnVar, result.0));
-                for detail in details {
-                    match detail {
-                        SysDCSpawnDetail::Use(name, _) => {
-                            nodes.push(node!(ReactFlowNodeKind::Var, name))
-                        }
-                        SysDCSpawnDetail::LetTo { name, .. } => {
-                            nodes.push(node!(ReactFlowNodeKind::Var, name))
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            _ => {}
-        }
+    if let (
+        _,
+        Type {
+            kind: TypeKind::Void,
+            ..
+        },
+    ) = func.returns
+    {
+        nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Procedure, &func.name));
+    } else {
+        nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Function, &func.name));
     }
 
-    // Edge
-    for annotation in &func.annotations {
-        match annotation {
-            SysDCAnnotation::Modify { target, uses } => {
-                for (name, _) in uses {
-                    edges.push(edge!(name, target.0));
-                }
-            }
-            SysDCAnnotation::Spawn { result, details } => {
-                for detail in details {
-                    match detail {
-                        SysDCSpawnDetail::Use(name, _) => {
-                            edges.push(edge!(name, result.0));
-                        }
-                        SysDCSpawnDetail::LetTo {
-                            name: var, args, ..
-                        } => {
-                            edges.extend(
-                                args.iter()
-                                    .map(|(name, _)| edge!(name, var))
-                                    .collect::<Vec<ReactFlowEdge>>(),
-                            );
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            _ => {}
-        }
+    func.args
+        .iter()
+        .for_each(|(name, _)| nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Argument, name)));
+
+    func.annotations
+        .iter()
+        .map(|annotation| gen_annotation_flow(annotation))
+        .for_each(|(_nodes, _edges)| {
+            nodes.extend(_nodes);
+            edges.extend(_edges);
+        });
+
+    (nodes, edges)
+}
+
+fn gen_annotation_flow(annotation: &SysDCAnnotation) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
+    let mut nodes = vec![];
+    let mut edges = vec![];
+
+    if let SysDCAnnotation::Affect { func, args } = annotation {
+        // unimplemented!();
+    }
+
+    if let SysDCAnnotation::Spawn { result, details } = annotation {
+        // unimplemented!();
+    }
+
+    if let SysDCAnnotation::Modify { target, uses } = annotation {
+        // unimplemented!();
     }
 
     (nodes, edges)

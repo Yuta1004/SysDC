@@ -1,4 +1,6 @@
-use serde::ser::SerializeStruct;
+use std::sync::Mutex;
+
+use once_cell::sync::Lazy;
 use serde::Serialize;
 
 use sysdc_parser::name::Name;
@@ -39,6 +41,34 @@ pub struct ReactFlowNodeData {
     pub label: String,
 }
 
+impl ReactFlowNode {
+    pub fn new(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
+        match kind {
+            ReactFlowNodeKind::Module
+            | ReactFlowNodeKind::Function
+            | ReactFlowNodeKind::Procedure
+            | ReactFlowNodeKind::Argument
+            | ReactFlowNodeKind::Var
+            | ReactFlowNodeKind::ReturnVar => ReactFlowNode {
+                id: name.get_full_name().replace("._", ""),
+                kind,
+                parent: Some(name.get_par_name(true).get_full_name()),
+                data: ReactFlowNodeData {
+                    label: format!("{}({})", name.name, name.get_full_name()),
+                },
+            },
+            _ => ReactFlowNode {
+                id: name.get_full_name().replace("._", ""),
+                kind,
+                parent: None,
+                data: ReactFlowNodeData {
+                    label: format!("{}({})", name.name, name.get_full_name()),
+                },
+            },
+        }
+    }
+}
+
 #[derive(Serialize)]
 pub struct ReactFlowEdge {
     pub id: i32,
@@ -47,57 +77,20 @@ pub struct ReactFlowEdge {
     pub animated: bool,
 }
 
-pub mod macros {
-    use std::sync::Mutex;
+impl ReactFlowEdge {
+    pub fn new(source: &Name, target: &Name) -> ReactFlowEdge {
+        static CREATED_EDGE_NUMS: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
 
-    use once_cell::sync::Lazy;
+        let mut id = CREATED_EDGE_NUMS.lock().unwrap();
+        *id += 1;
 
-    pub(crate) static CREATED_EDGE_NUMS: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
-
-    macro_rules! node {
-        ($kind:expr, $name:expr) => {
-            match $kind {
-                ReactFlowNodeKind::Module
-                | ReactFlowNodeKind::Function
-                | ReactFlowNodeKind::Procedure
-                | ReactFlowNodeKind::Argument
-                | ReactFlowNodeKind::Var
-                | ReactFlowNodeKind::ReturnVar => ReactFlowNode {
-                    id: $name.get_full_name().replace("._", ""),
-                    kind: $kind,
-                    parent: Some($name.get_par_name(true).get_full_name()),
-                    data: ReactFlowNodeData {
-                        label: format!("{}({})", $name.name.clone(), $name.get_full_name()),
-                    },
-                },
-                _ => ReactFlowNode {
-                    id: $name.get_full_name().replace("._", ""),
-                    kind: $kind,
-                    parent: None,
-                    data: ReactFlowNodeData {
-                        label: format!("{}({})", $name.name.clone(), $name.get_full_name()),
-                    },
-                },
-            }
-        };
+        ReactFlowEdge {
+            id: *id,
+            source: source.get_full_name().replace("._", ""),
+            target: target.get_full_name().replace("._", ""),
+            animated: false,
+        }
     }
-
-    macro_rules! edge {
-        ($source:expr, $target:expr) => {{
-            let mut id = crate::react_flow::macros::CREATED_EDGE_NUMS.lock().unwrap();
-            *id += 1;
-
-            ReactFlowEdge {
-                id: *id,
-                source: $source.get_full_name().replace("._", ""),
-                target: $target.get_full_name().replace("._", ""),
-                animated: false,
-            }
-        }};
-    }
-
-    pub(crate) use edge;
-    pub(crate) use node;
 }
 
 #[cfg(test)]
@@ -105,14 +98,13 @@ mod test {
     use serde::Serialize;
     use sysdc_parser::name::Name;
 
-    use super::macros::{edge, node};
-    use super::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeData, ReactFlowNodeKind};
+    use super::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeKind};
 
     #[test]
     fn node_serialize() {
         let name = Name::new(&Name::new_root(), "test".to_string());
         compare(
-            node!(ReactFlowNodeKind::Var, &name),
+            ReactFlowNode::new(ReactFlowNodeKind::Var, &name),
             "{\"id\":\".0.test\",\"type\":\"Var\",\"parentNode\":\".0\",\"data\":{\"label\":\"test(.0.test)\"}}",
         );
     }
@@ -122,19 +114,19 @@ mod test {
         let source = Name::new(&Name::new_root(), "A".to_string());
         let target = Name::new(&Name::new_root(), "B".to_string());
         compare(
-            edge!(&source, &target),
+            ReactFlowEdge::new(&source, &target),
             "{\"id\":1,\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
         );
         compare(
-            edge!(&source, &target),
+            ReactFlowEdge::new(&source, &target),
             "{\"id\":2,\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
         );
     }
 
-    fn compare<T>(node: T, json_str: &str)
+    fn compare<T>(elem: T, json_str: &str)
     where
         T: Serialize,
     {
-        assert_eq!(serde_json::to_string(&node).unwrap(), json_str);
+        assert_eq!(serde_json::to_string(&elem).unwrap(), json_str);
     }
 }
