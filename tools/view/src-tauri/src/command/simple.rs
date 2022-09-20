@@ -1,5 +1,6 @@
 use tauri::State;
 
+use super::super::react_flow;
 use super::super::react_flow::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeKind};
 use sysdc_parser::structure::{
     SysDCAnnotation, SysDCFunction, SysDCModule, SysDCSpawnDetail, SysDCSystem, SysDCUnit,
@@ -24,7 +25,7 @@ fn gen_unit_flow(unit: &SysDCUnit) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
         .map(|module| gen_module_flow(module))
         .fold(
             (
-                vec![ReactFlowNode::new(ReactFlowNodeKind::Unit, &unit.name)],
+                vec![react_flow::node(ReactFlowNodeKind::Unit, &unit.name)],
                 vec![],
             ),
             |(mut nodes, mut edges), (_nodes, _edges)| {
@@ -42,7 +43,7 @@ fn gen_module_flow(module: &SysDCModule) -> (Vec<ReactFlowNode>, Vec<ReactFlowEd
         .map(|func| gen_func_flow(func))
         .fold(
             (
-                vec![ReactFlowNode::new(ReactFlowNodeKind::Module, &module.name)],
+                vec![react_flow::node(ReactFlowNodeKind::Module, &module.name)],
                 vec![],
             ),
             |(mut nodes, mut edges), (_nodes, _edges)| {
@@ -65,14 +66,14 @@ fn gen_func_flow(func: &SysDCFunction) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge
         },
     ) = func.returns
     {
-        nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Procedure, &func.name));
+        nodes.push(react_flow::node(ReactFlowNodeKind::Procedure, &func.name));
     } else {
-        nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Function, &func.name));
+        nodes.push(react_flow::node(ReactFlowNodeKind::Function, &func.name));
     }
 
     func.args
         .iter()
-        .for_each(|(name, _)| nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Argument, name)));
+        .for_each(|(name, _)| nodes.push(react_flow::node(ReactFlowNodeKind::Argument, name)));
 
     func.annotations
         .iter()

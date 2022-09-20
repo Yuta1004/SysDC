@@ -22,74 +22,70 @@ pub enum ReactFlowNodeKind {
 
 #[derive(Serialize)]
 pub struct ReactFlowNode {
-    pub id: String,
+    id: String,
 
     #[serde(rename(serialize = "type"))]
-    pub kind: ReactFlowNodeKind,
+    kind: ReactFlowNodeKind,
 
     #[serde(
         rename(serialize = "parentNode"),
         skip_serializing_if = "Option::is_none"
     )]
-    pub parent: Option<String>,
+    parent: Option<String>,
 
-    pub data: ReactFlowNodeData,
+    data: ReactFlowNodeData,
 }
 
 #[derive(Serialize)]
 pub struct ReactFlowNodeData {
-    pub label: String,
-}
-
-impl ReactFlowNode {
-    pub fn new(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
-        match kind {
-            ReactFlowNodeKind::Module
-            | ReactFlowNodeKind::Function
-            | ReactFlowNodeKind::Procedure
-            | ReactFlowNodeKind::Argument
-            | ReactFlowNodeKind::Var
-            | ReactFlowNodeKind::ReturnVar => ReactFlowNode {
-                id: name.get_full_name().replace("._", ""),
-                kind,
-                parent: Some(name.get_par_name(true).get_full_name()),
-                data: ReactFlowNodeData {
-                    label: format!("{}({})", name.name, name.get_full_name()),
-                },
-            },
-            _ => ReactFlowNode {
-                id: name.get_full_name().replace("._", ""),
-                kind,
-                parent: None,
-                data: ReactFlowNodeData {
-                    label: format!("{}({})", name.name, name.get_full_name()),
-                },
-            },
-        }
-    }
+    label: String,
 }
 
 #[derive(Serialize)]
 pub struct ReactFlowEdge {
-    pub id: i32,
-    pub source: String,
-    pub target: String,
-    pub animated: bool,
+    id: i32,
+    source: String,
+    target: String,
+    animated: bool,
 }
 
-impl ReactFlowEdge {
-    pub fn new(source: &Name, target: &Name) -> ReactFlowEdge {
-        static CREATED_EDGE_NUMS: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
+pub fn node(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
+    match kind {
+        ReactFlowNodeKind::Module
+        | ReactFlowNodeKind::Function
+        | ReactFlowNodeKind::Procedure
+        | ReactFlowNodeKind::Argument
+        | ReactFlowNodeKind::Var
+        | ReactFlowNodeKind::ReturnVar => ReactFlowNode {
+            id: name.get_full_name().replace("._", ""),
+            kind,
+            parent: Some(name.get_par_name(true).get_full_name()),
+            data: ReactFlowNodeData {
+                label: format!("{}({})", name.name, name.get_full_name()),
+            },
+        },
+        _ => ReactFlowNode {
+            id: name.get_full_name().replace("._", ""),
+            kind,
+            parent: None,
+            data: ReactFlowNodeData {
+                label: format!("{}({})", name.name, name.get_full_name()),
+            },
+        },
+    }
+}
 
-        let mut id = CREATED_EDGE_NUMS.lock().unwrap();
-        *id += 1;
+pub fn edge(source: &Name, target: &Name) -> ReactFlowEdge {
+    static CREATED_EDGE_NUMS: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
 
-        ReactFlowEdge {
-            id: *id,
-            source: source.get_full_name().replace("._", ""),
-            target: target.get_full_name().replace("._", ""),
-            animated: false,
-        }
+    let mut id = CREATED_EDGE_NUMS.lock().unwrap();
+    *id += 1;
+
+    ReactFlowEdge {
+        id: *id,
+        source: source.get_full_name().replace("._", ""),
+        target: target.get_full_name().replace("._", ""),
+        animated: false,
     }
 }
 
@@ -104,7 +100,7 @@ mod test {
     fn node_serialize() {
         let name = Name::new(&Name::new_root(), "test".to_string());
         compare(
-            ReactFlowNode::new(ReactFlowNodeKind::Var, &name),
+            super::node(ReactFlowNodeKind::Var, &name),
             "{\"id\":\".0.test\",\"type\":\"Var\",\"parentNode\":\".0\",\"data\":{\"label\":\"test(.0.test)\"}}",
         );
     }
@@ -114,11 +110,11 @@ mod test {
         let source = Name::new(&Name::new_root(), "A".to_string());
         let target = Name::new(&Name::new_root(), "B".to_string());
         compare(
-            ReactFlowEdge::new(&source, &target),
+            super::edge(&source, &target),
             "{\"id\":1,\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
         );
         compare(
-            ReactFlowEdge::new(&source, &target),
+            super::edge(&source, &target),
             "{\"id\":2,\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
         );
     }
