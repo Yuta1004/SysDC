@@ -12,6 +12,7 @@ pub enum ReactFlowNodeKind {
     Procedure,
     Argument,
     Var,
+    DeadVar,
     ReturnVar,
     AffectOuter,
     AffectInner,
@@ -42,6 +43,7 @@ impl ReactFlowNode {
             | ReactFlowNodeKind::Procedure
             | ReactFlowNodeKind::Argument
             | ReactFlowNodeKind::Var
+            | ReactFlowNodeKind::DeadVar
             | ReactFlowNodeKind::ReturnVar => Some(name.get_par_name(true).get_full_name()),
             _ => panic!("Internal error"),
         };

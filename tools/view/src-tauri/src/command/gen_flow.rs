@@ -101,7 +101,7 @@ fn gen_annotation_flow(func: &SysDCFunction, annotation: &SysDCAnnotation) -> Re
         return if uses.len() == details.len() {
             gen_annotation_spawn_flow(&result.0, &Name::new_root(), &uses)
         } else {
-            let (nodes, mut edges) = details
+            let (mut nodes, mut edges) = details
                 .iter()
                 .filter_map(|detail| {
                     if let SysDCSpawnDetail::LetTo { name, func, args } = detail {
@@ -119,6 +119,7 @@ fn gen_annotation_flow(func: &SysDCFunction, annotation: &SysDCAnnotation) -> Re
                     },
                 );
             if let SysDCSpawnDetail::Return(name, _) = &details[details.len() - 1] {
+                nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Var, &result.0));
                 edges.push(ReactFlowEdge::new(
                     name.get_full_name(),
                     result.0.get_full_name(),
@@ -126,6 +127,28 @@ fn gen_annotation_flow(func: &SysDCFunction, annotation: &SysDCAnnotation) -> Re
             }
             (nodes, edges)
         };
+    }
+
+    if let SysDCAnnotation::Modify { target, uses } = annotation {
+        let dead_var_node = ReactFlowNode::new_with_full(
+            format!("{}:dead", target.0.get_full_name()),
+            ReactFlowNodeKind::DeadVar,
+            Some(func.name.get_full_name()),
+        );
+
+        let mut uses = uses.clone();
+        uses.push((
+            Name::new(
+                &target.0.get_par_name(true),
+                format!("{}:dead", target.0.name),
+            ),
+            target.1.clone(),
+        ));
+
+        let (mut nodes, edges) = gen_annotation_spawn_flow(&target.0, &Name::new_root(), &uses);
+        nodes.push(dead_var_node);
+
+        return (nodes, edges);
     }
 
     (vec![], vec![])

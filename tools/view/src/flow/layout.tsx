@@ -16,7 +16,7 @@ export function layout(nodes: Node<any>[], edges: Edge<any>[]) {
     const isFunction = (node, pnode) =>
         ["Function", "Procedure"].includes(node.type) && node.parentNode === pnode.id;
     const isFunctionChild = (node, pnode) =>
-        ["Argument", "Var", "ReturnVar", "AffectOuter", "SpawnOuter"].includes(node.type)
+        ["Argument", "Var", "DeadVar", "ReturnVar", "AffectOuter", "SpawnOuter"].includes(node.type)
         && node.parentNode === pnode.id;
     
     nodes.forEach(node =>{

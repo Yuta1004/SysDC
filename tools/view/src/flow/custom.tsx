@@ -61,6 +61,18 @@ export function VarNode({ data }) {
     );
 }
 
+export function DeadVarNode({ data }) {
+    return (
+        <div className={styles.DeadVar}>
+            <Handle type="target" position={Position.Top}/>
+            <p className={styles.Name}>name</p>
+            <br/>
+            <p className={styles.Type}>(type)</p>
+            <Handle type="source" position={Position.Bottom}/>
+        </div>
+    );
+}
+
 export function ReturnVarNode({ data }) {
     return (
         <div className={styles.ReturnVar}>
