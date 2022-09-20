@@ -147,26 +147,11 @@ pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<Rea
     edges
 }
 
-pub fn edge(source: &Name, target: &Name) -> ReactFlowEdge {
-    static CREATED_EDGE_NUMS: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
-
-    let mut id = CREATED_EDGE_NUMS.lock().unwrap();
-    *id += 1;
-
-    ReactFlowEdge {
-        id: format!("{}", *id),
-        source: source.get_full_name().replace("._", ""),
-        target: target.get_full_name().replace("._", ""),
-        animated: false,
-    }
-}
-
 #[cfg(test)]
 mod test {
     use serde::Serialize;
-    use sysdc_parser::name::Name;
 
-    use super::{ReactFlowNode, ReactFlowNodeData, ReactFlowNodeKind};
+    use super::{ReactFlowNode, ReactFlowNodeData, ReactFlowNodeKind, ReactFlowEdge};
 
     #[test]
     fn node_serialize_1() {
@@ -202,15 +187,15 @@ mod test {
 
     #[test]
     fn edge_serialize() {
-        let source = Name::new(&Name::new_root(), "A".to_string());
-        let target = Name::new(&Name::new_root(), "B".to_string());
+        let edge = ReactFlowEdge {
+            id: "test".to_string(),
+            source: ".0.A".to_string(),
+            target: ".0.B".to_string(),
+            animated: false
+        };
         compare(
-            super::edge(&source, &target),
-            "{\"id\":\"1\",\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
-        );
-        compare(
-            super::edge(&source, &target),
-            "{\"id\":\"2\",\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
+            edge,
+            "{\"id\":\"test\",\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
         );
     }
 
