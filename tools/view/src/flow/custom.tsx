@@ -73,6 +73,24 @@ export function ReturnVarNode({ data }) {
     );
 }
 
+export function AffectOuterNode({ data }) {
+    return (
+        <div className={styles.AffectOuter}>
+            <Handle type="target" position={Position.Top}/>
+            Affect
+        </div>
+    );
+}
+
+export function AffectInnerNode({ data }) {
+    return (
+        <div className={styles.AffectInner}>
+            <Handle type="source" position={Position.Right}/>
+            Affect
+        </div>
+    );
+}
+
 export function SpawnOuterNode({ data }) {
     return (
         <div className={styles.SpawnOuter}>

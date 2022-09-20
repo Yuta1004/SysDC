@@ -69,11 +69,11 @@ fn gen_func_flow(func: &SysDCFunction) -> ReactFlowDesign {
         nodes.push(react_flow::node(ReactFlowNodeKind::Procedure, &func.name));
     } else {
         nodes.push(react_flow::node(ReactFlowNodeKind::Function, &func.name));
+        nodes.push(react_flow::node(
+            ReactFlowNodeKind::ReturnVar,
+            &func.returns.0,
+        ));
     }
-    nodes.push(react_flow::node(
-        ReactFlowNodeKind::ReturnVar,
-        &func.returns.0,
-    ));
 
     func.args
         .iter()
@@ -81,7 +81,7 @@ fn gen_func_flow(func: &SysDCFunction) -> ReactFlowDesign {
 
     func.annotations
         .iter()
-        .map(|annotation| gen_annotation_flow(annotation))
+        .map(|annotation| gen_annotation_flow(func, annotation))
         .for_each(|(_nodes, _edges)| {
             nodes.extend(_nodes);
             edges.extend(_edges);
@@ -90,12 +90,13 @@ fn gen_func_flow(func: &SysDCFunction) -> ReactFlowDesign {
     (nodes, edges)
 }
 
-fn gen_annotation_flow(annotation: &SysDCAnnotation) -> ReactFlowDesign {
+fn gen_annotation_flow(func: &SysDCFunction, annotation: &SysDCAnnotation) -> ReactFlowDesign {
     let mut nodes = vec![];
     let mut edges = vec![];
 
-    if let SysDCAnnotation::Affect { func, args } = annotation {
-        // unimplemented!();
+    if let SysDCAnnotation::Affect { func: afunc, args } = annotation {
+        nodes.extend(react_flow::node_affect(&func.name, &afunc.0));
+        edges.extend(react_flow::edge_affect(&func.name, &afunc.0, args));
     }
 
     if let SysDCAnnotation::Spawn { details, .. } = annotation {

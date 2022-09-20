@@ -14,10 +14,10 @@ pub enum ReactFlowNodeKind {
     Argument,
     Var,
     ReturnVar,
-    SpawnOuter,
-    SpawnInner,
     AffectOuter,
     AffectInner,
+    SpawnOuter,
+    SpawnInner,
 }
 
 #[derive(Serialize)]
@@ -60,17 +60,60 @@ pub fn node(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
     }
 }
 
+pub fn node_affect(func: &Name, afunc: &Name) -> Vec<ReactFlowNode> {
+    let name_par = func.get_full_name();
+    let name = format!("{}:{}:affect", func.get_full_name(), afunc.get_full_name());
+
+    let inner = ReactFlowNode {
+        id: format!("{}:inner", name),
+        kind: ReactFlowNodeKind::AffectInner,
+        parent: Some(format!("{}:outer", name)),
+    };
+    let outer = ReactFlowNode {
+        id: format!("{}:outer", name),
+        kind: ReactFlowNodeKind::AffectOuter,
+        parent: Some(name_par),
+    };
+
+    vec![inner, outer]
+}
+
+pub fn edge_affect(func: &Name, afunc: &Name, args: &Vec<(Name, Type)>) -> Vec<ReactFlowEdge> {
+    let name = format!("{}:{}:affect", func.get_full_name(), afunc.get_full_name());
+    let afunc = afunc.get_full_name();
+
+    let mut edges = vec![];
+
+    // E: uses -> outer
+    for (aname, _) in args {
+        edges.push(ReactFlowEdge {
+            id: format!("{}/{}:outer", aname.get_full_name(), name),
+            source: aname.get_full_name(),
+            target: format!("{}:outer", name),
+        });
+    }
+
+    // E: inner -> func
+    edges.push(ReactFlowEdge {
+        id: format!("{}:inner/{}", name, afunc),
+        source: format!("{}:inner", name),
+        target: afunc.clone(),
+    });
+
+    edges
+}
+
 pub fn node_spawn(result: &Name) -> Vec<ReactFlowNode> {
     let result_par = result.get_par_name(true).get_full_name();
     let result = result.get_full_name();
 
     let inner = ReactFlowNode {
-        id: format!("{}:s:inner", result),
+        id: format!("{}:inner", result),
         kind: ReactFlowNodeKind::SpawnInner,
-        parent: Some(format!("{}:s:outer", result)),
+        parent: Some(format!("{}:outer", result)),
     };
     let outer = ReactFlowNode {
-        id: format!("{}:s:outer", result),
+        id: format!("{}:outer", result),
         kind: ReactFlowNodeKind::SpawnOuter,
         parent: Some(result_par.clone()),
     };
@@ -84,36 +127,36 @@ pub fn node_spawn(result: &Name) -> Vec<ReactFlowNode> {
 }
 
 pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<ReactFlowEdge> {
+    let mut edges = vec![];
+
     let name = name.get_full_name();
     let func = func.get_full_name();
-
-    let mut edges = vec![];
 
     // E: uses -> outer
     for (aname, _) in args {
         edges.push(ReactFlowEdge {
-            id: format!("{}/{}:s:outer", aname.get_full_name(), name),
+            id: format!("{}/{}:outer", aname.get_full_name(), name),
             source: aname.get_full_name(),
-            target: format!("{}:s:outer", name),
+            target: format!("{}:outer", name),
         });
     }
 
-    // E: inner -> func
+    // E: inner -> func, func -> inner
     edges.push(ReactFlowEdge {
-        id: format!("{}:s:inner/{}", name, func),
-        source: format!("{}:s:inner", name),
+        id: format!("{}:inner/{}", name, func),
+        source: format!("{}:inner", name),
         target: func.clone(),
     });
     edges.push(ReactFlowEdge {
-        id: format!("{}/{}:s:inner", func, name),
+        id: format!("{}/{}:inner", func, name),
         source: func,
-        target: format!("{}:s:inner", name),
+        target: format!("{}:inner", name),
     });
 
     // E: outer -> result
     edges.push(ReactFlowEdge {
-        id: format!("{}:s:outer/{}", name, name),
-        source: format!("{}:s:outer", name),
+        id: format!("{}:outer/{}", name, name),
+        source: format!("{}:outer", name),
         target: name,
     });
 
@@ -124,7 +167,7 @@ pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<Rea
 mod test {
     use serde::Serialize;
 
-    use super::{ReactFlowNode, ReactFlowNodeKind, ReactFlowEdge};
+    use super::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeKind};
 
     #[test]
     fn node_serialize_1() {
@@ -146,10 +189,7 @@ mod test {
             kind: ReactFlowNodeKind::Var,
             parent: None,
         };
-        compare(
-            hasnt_parent_node,
-            "{\"id\":\".0.test\",\"type\":\"Var\"}",
-        );
+        compare(hasnt_parent_node, "{\"id\":\".0.test\",\"type\":\"Var\"}");
     }
 
     #[test]

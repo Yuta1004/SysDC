@@ -11,6 +11,8 @@ import {
     ArgumentNode,
     VarNode,
     ReturnVarNode,
+    AffectOuterNode,
+    AffectInnerNode,
     SpawnOuterNode,
     SpawnInnerNode
 } from "../flow/custom";
@@ -27,6 +29,8 @@ function App() {
         Argument: ArgumentNode,
         Var: VarNode,
         ReturnVar: ReturnVarNode,
+        AffectOuter: AffectOuterNode,
+        AffectInner: AffectInnerNode,
         SpawnOuter: SpawnOuterNode,
         SpawnInner: SpawnInnerNode
     }), []);
