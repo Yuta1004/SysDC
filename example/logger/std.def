@@ -2,15 +2,3 @@ unit std;
 
 data String {}
 
-module IO {
-    proc stdout(msg: String) {}
-}
-
-data TimeStamp {}
-
-module Time {
-    func getNowTime() -> TimeStamp {
-        @return now
-        @spawn now: TimeStamp
-    }
-}

@@ -20,7 +20,12 @@ fn parse_example_compiler() {
 
 #[test]
 fn parse_example_logger() {
-    parse_files(&["../example/logger/logger.def", "../example/logger/std.def"])
+    parse_files(&[
+        "../example/logger/logger.def",
+        "../example/logger/std.def",
+        "../example/logger/std/io.def",
+        "../example/logger/std/time.def",
+    ])
 }
 
 fn parse_files(pathes: &[&str]) {
