@@ -46,108 +46,101 @@ pub struct ReactFlowNodeData {
 
 #[derive(Serialize)]
 pub struct ReactFlowEdge {
-    id: i32,
+    id: String,
     source: String,
     target: String,
     animated: bool,
 }
 
 pub fn node(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
-    match kind {
-        ReactFlowNodeKind::Unit => ReactFlowNode {
-            id: name.get_full_name(),
-            kind,
-            parent: None,
-            data: ReactFlowNodeData {
-                label: format!("{}({})", name.name, name.get_full_name()),
-            },
-        },
+    let parent = match kind {
+        ReactFlowNodeKind::Unit => None,
         ReactFlowNodeKind::Module
         | ReactFlowNodeKind::Function
         | ReactFlowNodeKind::Procedure
         | ReactFlowNodeKind::Argument
         | ReactFlowNodeKind::Var
-        | ReactFlowNodeKind::ReturnVar => ReactFlowNode {
-            id: name.get_full_name(),
-            kind,
-            parent: Some(name.get_par_name(true).get_full_name()),
-            data: ReactFlowNodeData {
-                label: format!("{}({})", name.name, name.get_full_name()),
-            },
-        },
+        | ReactFlowNodeKind::ReturnVar => Some(name.get_par_name(true).get_full_name()),
         _ => panic!("Internal error"),
+    };
+
+    ReactFlowNode {
+        id: name.get_full_name(),
+        kind,
+        parent,
+        data: ReactFlowNodeData {
+            label: format!("{}({})", name.name, name.get_full_name()),
+        },
     }
 }
 
 pub fn node_spawn(result: &Name) -> Vec<ReactFlowNode> {
+    let result_par = result.get_par_name(true).get_full_name();
+    let result = result.get_full_name();
+
     let inner = ReactFlowNode {
-        id: result.get_full_name() + ":s:inner",
+        id: format!("{}:s:inner", result),
         kind: ReactFlowNodeKind::SpawnInner,
-        parent: Some(result.get_full_name() + ":s:outer"),
+        parent: Some(format!("{}:s:outer", result)),
         data: ReactFlowNodeData {
             label: "".to_string(),
         },
     };
     let outer = ReactFlowNode {
-        id: result.get_full_name() + ":s:outer",
+        id: format!("{}:s:outer", result),
         kind: ReactFlowNodeKind::SpawnOuter,
-        parent: Some(result.get_par_name(true).get_full_name()),
+        parent: Some(result_par.clone()),
         data: ReactFlowNodeData {
             label: "".to_string(),
         },
     };
-    let result = node(ReactFlowNodeKind::Var, result);
+    let resultn = ReactFlowNode {
+        id: result,
+        kind: ReactFlowNodeKind::Var,
+        parent: Some(result_par),
+        data: ReactFlowNodeData {
+            label: "test".to_string()
+        }
+    };
 
-    vec![inner, outer, result]
+    vec![inner, outer, resultn]
 }
 
 pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<ReactFlowEdge> {
-    static CREATED_EDGE_NUMS: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
-    let mut id = CREATED_EDGE_NUMS.lock().unwrap();
+    let name = name.get_full_name();
+    let func = func.get_full_name();
 
     let mut edges = vec![];
 
     // E: uses -> outer
     for (aname, _) in args {
         edges.push(ReactFlowEdge {
-            id: {
-                *id += 1;
-                *id
-            },
+            id: format!("{}/{}:s:outer", aname.get_full_name(), name),
             source: aname.get_full_name(),
-            target: name.get_full_name() + ":s:outer",
+            target: format!("{}:s:outer", name),
             animated: false,
         });
     }
 
     // E: inner -> func
     edges.push(ReactFlowEdge {
-        id: {
-            *id += 1;
-            *id
-        },
-        source: name.get_full_name() + ":s:inner",
-        target: func.get_full_name(),
+        id: format!("{}:s:inner/{}", name, func),
+        source: format!("{}:s:inner", name),
+        target: func.clone(),
         animated: false,
     });
     edges.push(ReactFlowEdge {
-        id: {
-            *id += 1;
-            *id
-        },
-        source: func.get_full_name(),
-        target: name.get_full_name() + ":s:inner",
+        id: format!("{}/{}:s:inner", func, name),
+        source: func,
+        target: format!("{}:s:inner", name),
         animated: false,
     });
 
     // E: outer -> result
     edges.push(ReactFlowEdge {
-        id: {
-            *id += 1;
-            *id
-        },
-        source: name.get_full_name() + ":s:outer",
-        target: name.get_full_name(),
+        id: format!("{}:s:outer/{}", name, name),
+        source: format!("{}:s:outer", name),
+        target: name,
         animated: false,
     });
 
@@ -161,7 +154,7 @@ pub fn edge(source: &Name, target: &Name) -> ReactFlowEdge {
     *id += 1;
 
     ReactFlowEdge {
-        id: *id,
+        id: format!("{}", *id),
         source: source.get_full_name().replace("._", ""),
         target: target.get_full_name().replace("._", ""),
         animated: false,
@@ -181,7 +174,9 @@ mod test {
             id: ".0.test".to_string(),
             kind: ReactFlowNodeKind::Var,
             parent: Some(".0".to_string()),
-            data: ReactFlowNodeData { label: "test".to_string() }
+            data: ReactFlowNodeData {
+                label: "test".to_string(),
+            },
         };
         compare(
             has_parent_node,
@@ -195,7 +190,9 @@ mod test {
             id: ".0.test".to_string(),
             kind: ReactFlowNodeKind::Var,
             parent: None,
-            data: ReactFlowNodeData { label: "test".to_string() }
+            data: ReactFlowNodeData {
+                label: "test".to_string(),
+            },
         };
         compare(
             hasnt_parent_node,
@@ -209,11 +206,11 @@ mod test {
         let target = Name::new(&Name::new_root(), "B".to_string());
         compare(
             super::edge(&source, &target),
-            "{\"id\":1,\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
+            "{\"id\":\"1\",\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
         );
         compare(
             super::edge(&source, &target),
-            "{\"id\":2,\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
+            "{\"id\":\"2\",\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
         );
     }
 
