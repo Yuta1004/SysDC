@@ -36,7 +36,7 @@ function App() {
     }), []);
 
     useEffect(() => {
-        invoke("get_flow").then(([nodes, edges]) => {
+        invoke("gen_flow").then(([nodes, edges]) => {
             layout(nodes, edges);
             Array.isArray(nodes) && setNodes(nodes);
             Array.isArray(edges) && setEdges(edges);

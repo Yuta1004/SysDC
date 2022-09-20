@@ -16,7 +16,7 @@ pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
             app.manage(system);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![command::simple::get_flow])
+        .invoke_handler(tauri::generate_handler![command::gen_flow::gen_flow])
         .run(tauri::generate_context!())?;
 
     Ok(())

@@ -8,7 +8,7 @@ use sysdc_parser::structure::{
 use sysdc_parser::types::{Type, TypeKind};
 
 #[tauri::command]
-pub fn get_flow(system: State<'_, SysDCSystem>) -> ReactFlowDesign {
+pub fn gen_flow(system: State<'_, SysDCSystem>) -> ReactFlowDesign {
     system.units.iter().map(gen_unit_flow).fold(
         (vec![], vec![]),
         |(mut nodes, mut edges), (_nodes, _edges)| {
