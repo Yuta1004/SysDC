@@ -51,21 +51,12 @@ fn gen_func_flow(func: &SysDCFunction) -> ReactFlowDesign {
     let mut nodes = vec![];
     let mut edges = vec![];
 
-    if let (
-        _,
-        Type {
-            kind: TypeKind::Void,
-            ..
-        },
-    ) = func.returns
-    {
+    let is_procedure = func.returns.1.kind == TypeKind::Void;
+
+    if is_procedure {
         nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Procedure, &func.name));
     } else {
         nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Function, &func.name));
-        nodes.push(ReactFlowNode::new(
-            ReactFlowNodeKind::ReturnVar,
-            &func.returns.0,
-        ));
     }
 
     func.args
@@ -80,33 +71,64 @@ fn gen_func_flow(func: &SysDCFunction) -> ReactFlowDesign {
             edges.extend(_edges);
         });
 
+    if !is_procedure {
+        nodes.push(ReactFlowNode::new(
+            ReactFlowNodeKind::ReturnVar,
+            &func.returns.0,
+        ));
+    }
+
     (nodes, edges)
 }
 
 fn gen_annotation_flow(func: &SysDCFunction, annotation: &SysDCAnnotation) -> ReactFlowDesign {
-    match annotation {
-        SysDCAnnotation::Affect { func: afunc, args } => {
-            gen_annotation_affect_flow(&func.name, &afunc.0, args)
-        }
-        SysDCAnnotation::Spawn { details, .. } => details
+    if let SysDCAnnotation::Affect { func: afunc, args } = annotation {
+        return gen_annotation_affect_flow(&func.name, &afunc.0, args);
+    }
+
+    if let SysDCAnnotation::Spawn { result, details } = annotation {
+        let uses = details
             .iter()
             .filter_map(|detail| {
-                if let SysDCSpawnDetail::LetTo { name, func, args } = detail {
-                    Some(gen_annotation_spawn_flow(name, &func.0, args))
+                if let SysDCSpawnDetail::Use(name, types) = detail {
+                    Some((name.clone(), types.clone()))
                 } else {
                     None
                 }
             })
-            .fold(
-                (vec![], vec![]),
-                |(mut nodes, mut edges), (_nodes, _edges)| {
-                    nodes.extend(_nodes);
-                    edges.extend(_edges);
-                    (nodes, edges)
-                },
-            ),
-        _ => (vec![], vec![]),
+            .collect::<Vec<(Name, Type)>>();
+
+        return if uses.len() == details.len() {
+            gen_annotation_spawn_flow(&result.0, &Name::new_root(), &uses)
+        } else {
+            let (nodes, mut edges) = details
+                .iter()
+                .filter_map(|detail| {
+                    if let SysDCSpawnDetail::LetTo { name, func, args } = detail {
+                        Some(gen_annotation_spawn_flow(name, &func.0, args))
+                    } else {
+                        None
+                    }
+                })
+                .fold(
+                    (vec![], vec![]),
+                    |(mut nodes, mut edges), (_nodes, _edges)| {
+                        nodes.extend(_nodes);
+                        edges.extend(_edges);
+                        (nodes, edges)
+                    },
+                );
+            if let SysDCSpawnDetail::Return(name, _) = &details[details.len() - 1] {
+                edges.push(ReactFlowEdge::new(
+                    name.get_full_name(),
+                    result.0.get_full_name(),
+                ));
+            }
+            (nodes, edges)
+        };
     }
+
+    (vec![], vec![])
 }
 
 pub fn gen_annotation_affect_flow(
