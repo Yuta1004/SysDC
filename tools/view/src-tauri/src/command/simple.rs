@@ -1,14 +1,14 @@
 use tauri::State;
 
 use super::super::react_flow;
-use super::super::react_flow::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeKind};
+use super::super::react_flow::{ReactFlowDesign, ReactFlowNodeKind};
 use sysdc_parser::structure::{
     SysDCAnnotation, SysDCFunction, SysDCModule, SysDCSpawnDetail, SysDCSystem, SysDCUnit,
 };
 use sysdc_parser::types::{Type, TypeKind};
 
 #[tauri::command]
-pub fn get_flow(system: State<'_, SysDCSystem>) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
+pub fn get_flow(system: State<'_, SysDCSystem>) -> ReactFlowDesign {
     system.units.iter().map(|unit| gen_unit_flow(unit)).fold(
         (vec![], vec![]),
         |(mut nodes, mut edges), (_nodes, _edges)| {
@@ -19,7 +19,7 @@ pub fn get_flow(system: State<'_, SysDCSystem>) -> (Vec<ReactFlowNode>, Vec<Reac
     )
 }
 
-fn gen_unit_flow(unit: &SysDCUnit) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
+fn gen_unit_flow(unit: &SysDCUnit) -> ReactFlowDesign {
     unit.modules
         .iter()
         .map(|module| gen_module_flow(module))
@@ -36,7 +36,7 @@ fn gen_unit_flow(unit: &SysDCUnit) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
         )
 }
 
-fn gen_module_flow(module: &SysDCModule) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
+fn gen_module_flow(module: &SysDCModule) -> ReactFlowDesign {
     module
         .functions
         .iter()
@@ -54,7 +54,7 @@ fn gen_module_flow(module: &SysDCModule) -> (Vec<ReactFlowNode>, Vec<ReactFlowEd
         )
 }
 
-fn gen_func_flow(func: &SysDCFunction) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
+fn gen_func_flow(func: &SysDCFunction) -> ReactFlowDesign {
     let mut nodes = vec![];
     let mut edges = vec![];
 
@@ -86,7 +86,7 @@ fn gen_func_flow(func: &SysDCFunction) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge
     (nodes, edges)
 }
 
-fn gen_annotation_flow(annotation: &SysDCAnnotation) -> (Vec<ReactFlowNode>, Vec<ReactFlowEdge>) {
+fn gen_annotation_flow(annotation: &SysDCAnnotation) -> ReactFlowDesign {
     let mut nodes = vec![];
     let mut edges = vec![];
 

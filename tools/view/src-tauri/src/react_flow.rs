@@ -5,6 +5,8 @@ use serde::Serialize;
 
 use sysdc_parser::name::Name;
 
+pub type ReactFlowDesign = (Vec<ReactFlowNode>, Vec<ReactFlowEdge>);
+
 #[derive(Serialize)]
 pub enum ReactFlowNodeKind {
     Unit,
@@ -94,7 +96,7 @@ mod test {
     use serde::Serialize;
     use sysdc_parser::name::Name;
 
-    use super::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeKind};
+    use super::ReactFlowNodeKind;
 
     #[test]
     fn node_serialize() {
