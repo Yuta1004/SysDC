@@ -173,14 +173,33 @@ mod test {
     use serde::Serialize;
     use sysdc_parser::name::Name;
 
-    use super::ReactFlowNodeKind;
+    use super::{ReactFlowNode, ReactFlowNodeData, ReactFlowNodeKind};
 
     #[test]
-    fn node_serialize() {
-        let name = Name::new(&Name::new_root(), "test".to_string());
+    fn node_serialize_1() {
+        let has_parent_node = ReactFlowNode {
+            id: ".0.test".to_string(),
+            kind: ReactFlowNodeKind::Var,
+            parent: Some(".0".to_string()),
+            data: ReactFlowNodeData { label: "test".to_string() }
+        };
         compare(
-            super::node(ReactFlowNodeKind::Var, &name),
-            "{\"id\":\".0.test\",\"type\":\"Var\",\"parentNode\":\".0\",\"data\":{\"label\":\"test(.0.test)\"}}",
+            has_parent_node,
+            "{\"id\":\".0.test\",\"type\":\"Var\",\"parentNode\":\".0\",\"data\":{\"label\":\"test\"}}",
+        );
+    }
+
+    #[test]
+    fn node_serialize_2() {
+        let hasnt_parent_node = ReactFlowNode {
+            id: ".0.test".to_string(),
+            kind: ReactFlowNodeKind::Var,
+            parent: None,
+            data: ReactFlowNodeData { label: "test".to_string() }
+        };
+        compare(
+            hasnt_parent_node,
+            "{\"id\":\".0.test\",\"type\":\"Var\",\"data\":{\"label\":\"test\"}}",
         );
     }
 
