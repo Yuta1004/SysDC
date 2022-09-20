@@ -3,8 +3,8 @@ import dagre from "dagre";
 
 export default layout;
 
-const MARGIN_TOP_BOTTOM = 200;
-const MARGIN_LEFT_RIGHT = 200;
+const MARGIN_TOP_BOTTOM = 120;
+const MARGIN_LEFT_RIGHT = 120;
 const DEFAULT_NODE_WIDTH = 250;
 const DEFAULT_NODE_HEIGHT = 100;
 
