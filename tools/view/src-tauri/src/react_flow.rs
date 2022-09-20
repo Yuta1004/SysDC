@@ -34,6 +34,35 @@ pub struct ReactFlowNode {
     parent: Option<String>,
 }
 
+impl ReactFlowNode {
+    pub fn new(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
+        let parent = match kind {
+            ReactFlowNodeKind::Unit => None,
+            ReactFlowNodeKind::Module
+            | ReactFlowNodeKind::Function
+            | ReactFlowNodeKind::Procedure
+            | ReactFlowNodeKind::Argument
+            | ReactFlowNodeKind::Var
+            | ReactFlowNodeKind::ReturnVar => Some(name.get_par_name(true).get_full_name()),
+            _ => panic!("Internal error"),
+        };
+
+        ReactFlowNode {
+            id: name.get_full_name(),
+            kind,
+            parent,
+        }
+    }
+
+    pub fn new_with_full(
+        id: String,
+        kind: ReactFlowNodeKind,
+        parent: Option<String>,
+    ) -> ReactFlowNode {
+        ReactFlowNode { id, kind, parent }
+    }
+}
+
 #[derive(Serialize)]
 pub struct ReactFlowEdge {
     id: String,
@@ -41,22 +70,13 @@ pub struct ReactFlowEdge {
     target: String,
 }
 
-pub fn node(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
-    let parent = match kind {
-        ReactFlowNodeKind::Unit => None,
-        ReactFlowNodeKind::Module
-        | ReactFlowNodeKind::Function
-        | ReactFlowNodeKind::Procedure
-        | ReactFlowNodeKind::Argument
-        | ReactFlowNodeKind::Var
-        | ReactFlowNodeKind::ReturnVar => Some(name.get_par_name(true).get_full_name()),
-        _ => panic!("Internal error"),
-    };
-
-    ReactFlowNode {
-        id: name.get_full_name(),
-        kind,
-        parent,
+impl ReactFlowEdge {
+    pub fn new(source: String, target: String) -> ReactFlowEdge {
+        ReactFlowEdge {
+            id: format!("{}/{}", source, target),
+            source,
+            target,
+        }
     }
 }
 
@@ -64,16 +84,16 @@ pub fn node_affect(func: &Name, afunc: &Name) -> Vec<ReactFlowNode> {
     let name_par = func.get_full_name();
     let name = format!("{}:{}:affect", func.get_full_name(), afunc.get_full_name());
 
-    let inner = ReactFlowNode {
-        id: format!("{}:inner", name),
-        kind: ReactFlowNodeKind::AffectInner,
-        parent: Some(format!("{}:outer", name)),
-    };
-    let outer = ReactFlowNode {
-        id: format!("{}:outer", name),
-        kind: ReactFlowNodeKind::AffectOuter,
-        parent: Some(name_par),
-    };
+    let inner = ReactFlowNode::new_with_full(
+        format!("{}:inner", name),
+        ReactFlowNodeKind::AffectInner,
+        Some(format!("{}:outer", name)),
+    );
+    let outer = ReactFlowNode::new_with_full(
+        format!("{}:outer", name),
+        ReactFlowNodeKind::AffectOuter,
+        Some(name_par),
+    );
 
     vec![inner, outer]
 }
@@ -86,19 +106,14 @@ pub fn edge_affect(func: &Name, afunc: &Name, args: &Vec<(Name, Type)>) -> Vec<R
 
     // E: uses -> outer
     for (aname, _) in args {
-        edges.push(ReactFlowEdge {
-            id: format!("{}/{}:outer", aname.get_full_name(), name),
-            source: aname.get_full_name(),
-            target: format!("{}:outer", name),
-        });
+        edges.push(ReactFlowEdge::new(
+            aname.get_full_name(),
+            format!("{}:outer", name),
+        ));
     }
 
     // E: inner -> func
-    edges.push(ReactFlowEdge {
-        id: format!("{}:inner/{}", name, afunc),
-        source: format!("{}:inner", name),
-        target: afunc.clone(),
-    });
+    edges.push(ReactFlowEdge::new(format!("{}:inner", name), afunc));
 
     edges
 }
@@ -107,21 +122,17 @@ pub fn node_spawn(result: &Name) -> Vec<ReactFlowNode> {
     let result_par = result.get_par_name(true).get_full_name();
     let result = result.get_full_name();
 
-    let inner = ReactFlowNode {
-        id: format!("{}:inner", result),
-        kind: ReactFlowNodeKind::SpawnInner,
-        parent: Some(format!("{}:outer", result)),
-    };
-    let outer = ReactFlowNode {
-        id: format!("{}:outer", result),
-        kind: ReactFlowNodeKind::SpawnOuter,
-        parent: Some(result_par.clone()),
-    };
-    let resultn = ReactFlowNode {
-        id: result,
-        kind: ReactFlowNodeKind::Var,
-        parent: Some(result_par),
-    };
+    let inner = ReactFlowNode::new_with_full(
+        format!("{}:inner", result),
+        ReactFlowNodeKind::SpawnInner,
+        Some(format!("{}:outer", result)),
+    );
+    let outer = ReactFlowNode::new_with_full(
+        format!("{}:outer", result),
+        ReactFlowNodeKind::SpawnOuter,
+        Some(result_par.clone()),
+    );
+    let resultn = ReactFlowNode::new_with_full(result, ReactFlowNodeKind::Var, Some(result_par));
 
     vec![inner, outer, resultn]
 }
@@ -134,31 +145,18 @@ pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<Rea
 
     // E: uses -> outer
     for (aname, _) in args {
-        edges.push(ReactFlowEdge {
-            id: format!("{}/{}:outer", aname.get_full_name(), name),
-            source: aname.get_full_name(),
-            target: format!("{}:outer", name),
-        });
+        edges.push(ReactFlowEdge::new(
+            aname.get_full_name(),
+            format!("{}:outer", name),
+        ));
     }
 
     // E: inner -> func, func -> inner
-    edges.push(ReactFlowEdge {
-        id: format!("{}:inner/{}", name, func),
-        source: format!("{}:inner", name),
-        target: func.clone(),
-    });
-    edges.push(ReactFlowEdge {
-        id: format!("{}/{}:inner", func, name),
-        source: func,
-        target: format!("{}:inner", name),
-    });
+    edges.push(ReactFlowEdge::new(format!("{}:inner", name), func.clone()));
+    edges.push(ReactFlowEdge::new(func, format!("{}:inner", name)));
 
     // E: outer -> result
-    edges.push(ReactFlowEdge {
-        id: format!("{}:outer/{}", name, name),
-        source: format!("{}:outer", name),
-        target: name,
-    });
+    edges.push(ReactFlowEdge::new(format!("{}:outer", name), name));
 
     edges
 }

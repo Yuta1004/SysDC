@@ -1,7 +1,7 @@
 use tauri::State;
 
 use super::super::react_flow;
-use super::super::react_flow::{ReactFlowDesign, ReactFlowNodeKind};
+use super::super::react_flow::{ReactFlowDesign, ReactFlowNode, ReactFlowNodeKind};
 use sysdc_parser::structure::{
     SysDCAnnotation, SysDCFunction, SysDCModule, SysDCSpawnDetail, SysDCSystem, SysDCUnit,
 };
@@ -25,7 +25,7 @@ fn gen_unit_flow(unit: &SysDCUnit) -> ReactFlowDesign {
         .map(|module| gen_module_flow(module))
         .fold(
             (
-                vec![react_flow::node(ReactFlowNodeKind::Unit, &unit.name)],
+                vec![ReactFlowNode::new(ReactFlowNodeKind::Unit, &unit.name)],
                 vec![],
             ),
             |(mut nodes, mut edges), (_nodes, _edges)| {
@@ -43,7 +43,7 @@ fn gen_module_flow(module: &SysDCModule) -> ReactFlowDesign {
         .map(|func| gen_func_flow(func))
         .fold(
             (
-                vec![react_flow::node(ReactFlowNodeKind::Module, &module.name)],
+                vec![ReactFlowNode::new(ReactFlowNodeKind::Module, &module.name)],
                 vec![],
             ),
             |(mut nodes, mut edges), (_nodes, _edges)| {
@@ -66,10 +66,10 @@ fn gen_func_flow(func: &SysDCFunction) -> ReactFlowDesign {
         },
     ) = func.returns
     {
-        nodes.push(react_flow::node(ReactFlowNodeKind::Procedure, &func.name));
+        nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Procedure, &func.name));
     } else {
-        nodes.push(react_flow::node(ReactFlowNodeKind::Function, &func.name));
-        nodes.push(react_flow::node(
+        nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Function, &func.name));
+        nodes.push(ReactFlowNode::new(
             ReactFlowNodeKind::ReturnVar,
             &func.returns.0,
         ));
@@ -77,7 +77,7 @@ fn gen_func_flow(func: &SysDCFunction) -> ReactFlowDesign {
 
     func.args
         .iter()
-        .for_each(|(name, _)| nodes.push(react_flow::node(ReactFlowNodeKind::Argument, name)));
+        .for_each(|(name, _)| nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Argument, name)));
 
     func.annotations
         .iter()
