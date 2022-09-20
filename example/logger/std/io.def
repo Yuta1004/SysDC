@@ -1,0 +1,5 @@
+unit std.io;
+
+module IO {
+    proc stdout(msg: String) {}
+}

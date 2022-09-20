@@ -1,15 +1,45 @@
-import { useEffect, useState } from "react";
-import { Node, Edge } from "react-flow-renderer";
+import React, { useEffect, useMemo } from "react";
+import ReactFlow, { Background, MiniMap, Controls, useNodesState, useEdgesState } from "react-flow-renderer";
 import { invoke } from "@tauri-apps/api/tauri";
 
-import FlowComponent from "../components/flow";
+import layout from "../flow/layout";
+import {
+    UnitNode,
+    ModuleNode,
+    FunctionNode,
+    ProcedureNode,
+    ArgumentNode,
+    VarNode,
+    DeadVarNode,
+    ReturnVarNode,
+    AffectOuterNode,
+    AffectInnerNode,
+    SpawnOuterNode,
+    SpawnInnerNode
+} from "../flow/custom";
 
 function App() {
-    const [nodes, setNodes] = useState<Node<any>[]>([]);
-    const [edges, setEdges] = useState<Edge<any>[]>([]);
+    const [nodes, setNodes, onNodesChange] = useNodesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+    const customNodeTypes = useMemo(() => ({
+        Unit: UnitNode,
+        Module: ModuleNode,
+        Function: FunctionNode,
+        Procedure: ProcedureNode,
+        Argument: ArgumentNode,
+        Var: VarNode,
+        DeadVar: DeadVarNode,
+        ReturnVar: ReturnVarNode,
+        AffectOuter: AffectOuterNode,
+        AffectInner: AffectInnerNode,
+        SpawnOuter: SpawnOuterNode,
+        SpawnInner: SpawnInnerNode
+    }), []);
 
     useEffect(() => {
-        invoke("get_flow").then(([nodes, edges]) => {
+        invoke("gen_flow").then(([nodes, edges]) => {
+            layout(nodes, edges);
             Array.isArray(nodes) && setNodes(nodes);
             Array.isArray(edges) && setEdges(edges);
         });
@@ -20,13 +50,23 @@ function App() {
             className="container"
             style={{
                 width: "100vw",
-                height: "100vw"
+                height: "100vh"
             }}
         >
-            <FlowComponent
+            <ReactFlow
                 nodes={nodes}
                 edges={edges}
-            />
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                nodeTypes={customNodeTypes}
+                defaultEdgeOptions={{ zIndex: 9999 }}
+                minZoom={0}
+                fitView
+            >
+                <Background gap={24} size={1.5} color="#0006"/>
+                <MiniMap/>
+                <Controls/>
+            </ReactFlow>
         </div>
     );
 }

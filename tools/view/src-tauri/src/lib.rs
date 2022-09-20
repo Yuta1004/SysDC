@@ -6,8 +6,6 @@
 mod command;
 mod react_flow;
 
-use std::sync::Arc;
-
 use tauri::Manager;
 
 use sysdc_parser::structure::SysDCSystem;
@@ -15,27 +13,11 @@ use sysdc_parser::structure::SysDCSystem;
 pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
     tauri::Builder::default()
         .setup(|app| {
-            app.manage(SysDCSystemWrapper::new(system));
+            app.manage(system);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![command::get_flow,])
+        .invoke_handler(tauri::generate_handler![command::gen_flow::gen_flow])
         .run(tauri::generate_context!())?;
 
     Ok(())
-}
-
-pub struct SysDCSystemWrapper {
-    system: Arc<SysDCSystem>,
-}
-
-impl SysDCSystemWrapper {
-    pub fn new(system: SysDCSystem) -> SysDCSystemWrapper {
-        SysDCSystemWrapper {
-            system: Arc::new(system),
-        }
-    }
-
-    pub fn get(&self) -> Arc<SysDCSystem> {
-        Arc::clone(&self.system)
-    }
 }
