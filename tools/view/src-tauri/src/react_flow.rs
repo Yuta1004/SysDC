@@ -35,13 +35,6 @@ pub struct ReactFlowNode {
         skip_serializing_if = "Option::is_none"
     )]
     parent: Option<String>,
-
-    data: ReactFlowNodeData,
-}
-
-#[derive(Serialize)]
-pub struct ReactFlowNodeData {
-    label: String,
 }
 
 #[derive(Serialize)]
@@ -49,7 +42,6 @@ pub struct ReactFlowEdge {
     id: String,
     source: String,
     target: String,
-    animated: bool,
 }
 
 pub fn node(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
@@ -68,9 +60,6 @@ pub fn node(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
         id: name.get_full_name(),
         kind,
         parent,
-        data: ReactFlowNodeData {
-            label: format!("{}({})", name.name, name.get_full_name()),
-        },
     }
 }
 
@@ -82,25 +71,16 @@ pub fn node_spawn(result: &Name) -> Vec<ReactFlowNode> {
         id: format!("{}:s:inner", result),
         kind: ReactFlowNodeKind::SpawnInner,
         parent: Some(format!("{}:s:outer", result)),
-        data: ReactFlowNodeData {
-            label: "".to_string(),
-        },
     };
     let outer = ReactFlowNode {
         id: format!("{}:s:outer", result),
         kind: ReactFlowNodeKind::SpawnOuter,
         parent: Some(result_par.clone()),
-        data: ReactFlowNodeData {
-            label: "".to_string(),
-        },
     };
     let resultn = ReactFlowNode {
         id: result,
         kind: ReactFlowNodeKind::Var,
         parent: Some(result_par),
-        data: ReactFlowNodeData {
-            label: "test".to_string()
-        }
     };
 
     vec![inner, outer, resultn]
@@ -118,7 +98,6 @@ pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<Rea
             id: format!("{}/{}:s:outer", aname.get_full_name(), name),
             source: aname.get_full_name(),
             target: format!("{}:s:outer", name),
-            animated: false,
         });
     }
 
@@ -127,13 +106,11 @@ pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<Rea
         id: format!("{}:s:inner/{}", name, func),
         source: format!("{}:s:inner", name),
         target: func.clone(),
-        animated: false,
     });
     edges.push(ReactFlowEdge {
         id: format!("{}/{}:s:inner", func, name),
         source: func,
         target: format!("{}:s:inner", name),
-        animated: false,
     });
 
     // E: outer -> result
@@ -141,7 +118,6 @@ pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<Rea
         id: format!("{}:s:outer/{}", name, name),
         source: format!("{}:s:outer", name),
         target: name,
-        animated: false,
     });
 
     edges
@@ -151,7 +127,7 @@ pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<Rea
 mod test {
     use serde::Serialize;
 
-    use super::{ReactFlowNode, ReactFlowNodeData, ReactFlowNodeKind, ReactFlowEdge};
+    use super::{ReactFlowNode, ReactFlowNodeKind, ReactFlowEdge};
 
     #[test]
     fn node_serialize_1() {
@@ -159,13 +135,10 @@ mod test {
             id: ".0.test".to_string(),
             kind: ReactFlowNodeKind::Var,
             parent: Some(".0".to_string()),
-            data: ReactFlowNodeData {
-                label: "test".to_string(),
-            },
         };
         compare(
             has_parent_node,
-            "{\"id\":\".0.test\",\"type\":\"Var\",\"parentNode\":\".0\",\"data\":{\"label\":\"test\"}}",
+            "{\"id\":\".0.test\",\"type\":\"Var\",\"parentNode\":\".0\"}",
         );
     }
 
@@ -175,13 +148,10 @@ mod test {
             id: ".0.test".to_string(),
             kind: ReactFlowNodeKind::Var,
             parent: None,
-            data: ReactFlowNodeData {
-                label: "test".to_string(),
-            },
         };
         compare(
             hasnt_parent_node,
-            "{\"id\":\".0.test\",\"type\":\"Var\",\"data\":{\"label\":\"test\"}}",
+            "{\"id\":\".0.test\",\"type\":\"Var\"}",
         );
     }
 
@@ -191,11 +161,10 @@ mod test {
             id: "test".to_string(),
             source: ".0.A".to_string(),
             target: ".0.B".to_string(),
-            animated: false
         };
         compare(
             edge,
-            "{\"id\":\"test\",\"source\":\".0.A\",\"target\":\".0.B\",\"animated\":false}",
+            "{\"id\":\"test\",\"source\":\".0.A\",\"target\":\".0.B\"}",
         );
     }
 
