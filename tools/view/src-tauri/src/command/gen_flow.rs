@@ -1,6 +1,8 @@
 use tauri::State;
 
-use super::super::react_flow::{ReactFlowDesign, ReactFlowEdge, ReactFlowNode, ReactFlowNodeKind};
+use super::super::react_flow::{
+    ReactFlowDesign, ReactFlowEdge, ReactFlowNode, ReactFlowNodeData, ReactFlowNodeKind,
+};
 use sysdc_parser::name::Name;
 use sysdc_parser::structure::{
     SysDCAnnotation, SysDCFunction, SysDCModule, SysDCSpawnDetail, SysDCSystem, SysDCUnit,
@@ -22,7 +24,11 @@ pub fn gen_flow(system: State<'_, SysDCSystem>) -> ReactFlowDesign {
 fn gen_unit_flow(unit: &SysDCUnit) -> ReactFlowDesign {
     unit.modules.iter().map(gen_module_flow).fold(
         (
-            vec![ReactFlowNode::new(ReactFlowNodeKind::Unit, &unit.name)],
+            vec![ReactFlowNode::new(
+                ReactFlowNodeKind::Unit,
+                &unit.name,
+                None,
+            )],
             vec![],
         ),
         |(mut nodes, mut edges), (_nodes, _edges)| {
@@ -36,7 +42,11 @@ fn gen_unit_flow(unit: &SysDCUnit) -> ReactFlowDesign {
 fn gen_module_flow(module: &SysDCModule) -> ReactFlowDesign {
     module.functions.iter().map(gen_func_flow).fold(
         (
-            vec![ReactFlowNode::new(ReactFlowNodeKind::Module, &module.name)],
+            vec![ReactFlowNode::new(
+                ReactFlowNodeKind::Module,
+                &module.name,
+                None,
+            )],
             vec![],
         ),
         |(mut nodes, mut edges), (_nodes, _edges)| {
@@ -54,14 +64,26 @@ fn gen_func_flow(func: &SysDCFunction) -> ReactFlowDesign {
     let is_procedure = func.returns.1.kind == TypeKind::Void;
 
     if is_procedure {
-        nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Procedure, &func.name));
+        nodes.push(ReactFlowNode::new(
+            ReactFlowNodeKind::Procedure,
+            &func.name,
+            None,
+        ));
     } else {
-        nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Function, &func.name));
+        nodes.push(ReactFlowNode::new(
+            ReactFlowNodeKind::Function,
+            &func.name,
+            None,
+        ));
     }
 
-    func.args
-        .iter()
-        .for_each(|(name, _)| nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Argument, name)));
+    func.args.iter().for_each(|(name, types)| {
+        nodes.push(ReactFlowNode::new(
+            ReactFlowNodeKind::Argument,
+            name,
+            Some(types),
+        ))
+    });
 
     func.annotations
         .iter()
@@ -75,6 +97,7 @@ fn gen_func_flow(func: &SysDCFunction) -> ReactFlowDesign {
         nodes.push(ReactFlowNode::new(
             ReactFlowNodeKind::ReturnVar,
             &func.returns.0,
+            Some(&func.returns.1),
         ));
     }
 
@@ -99,13 +122,17 @@ fn gen_annotation_flow(func: &SysDCFunction, annotation: &SysDCAnnotation) -> Re
             .collect::<Vec<(Name, Type)>>();
 
         return if uses.len() == details.len() {
-            gen_annotation_spawn_flow(&result.0, &Name::new_root(), &uses)
+            gen_annotation_spawn_flow(result, &Name::new_root(), &uses)
         } else {
             let (mut nodes, mut edges) = details
                 .iter()
                 .filter_map(|detail| {
                     if let SysDCSpawnDetail::LetTo { name, func, args } = detail {
-                        Some(gen_annotation_spawn_flow(name, &func.0, args))
+                        Some(gen_annotation_spawn_flow(
+                            &(name.clone(), func.1.clone()),
+                            &func.0,
+                            args,
+                        ))
                     } else {
                         None
                     }
@@ -119,7 +146,11 @@ fn gen_annotation_flow(func: &SysDCFunction, annotation: &SysDCAnnotation) -> Re
                     },
                 );
             if let SysDCSpawnDetail::Return(name, _) = &details[details.len() - 1] {
-                nodes.push(ReactFlowNode::new(ReactFlowNodeKind::Var, &result.0));
+                nodes.push(ReactFlowNode::new(
+                    ReactFlowNodeKind::Var,
+                    &result.0,
+                    Some(&result.1),
+                ));
                 edges.push(ReactFlowEdge::new(
                     name.get_full_name(),
                     result.0.get_full_name(),
@@ -134,6 +165,7 @@ fn gen_annotation_flow(func: &SysDCFunction, annotation: &SysDCAnnotation) -> Re
             format!("{}:dead", target.0.get_full_name()),
             ReactFlowNodeKind::DeadVar,
             Some(func.name.get_full_name()),
+            ReactFlowNodeData::new(Some(target.clone())),
         );
 
         let mut uses = uses.clone();
@@ -145,7 +177,7 @@ fn gen_annotation_flow(func: &SysDCFunction, annotation: &SysDCAnnotation) -> Re
             target.1.clone(),
         ));
 
-        let (mut nodes, edges) = gen_annotation_spawn_flow(&target.0, &Name::new_root(), &uses);
+        let (mut nodes, edges) = gen_annotation_spawn_flow(target, &Name::new_root(), &uses);
         nodes.push(dead_var_node);
 
         return (nodes, edges);
@@ -171,6 +203,7 @@ pub fn gen_annotation_affect_flow(
             format!("{}:inner", name),
             ReactFlowNodeKind::AffectInner,
             Some(format!("{}:outer", name)),
+            ReactFlowNodeData::new(None),
         ));
 
         // N: outer
@@ -178,6 +211,7 @@ pub fn gen_annotation_affect_flow(
             format!("{}:outer", name),
             ReactFlowNodeKind::AffectOuter,
             Some(name_par),
+            ReactFlowNodeData::new(None),
         ));
     }
 
@@ -201,7 +235,7 @@ pub fn gen_annotation_affect_flow(
 }
 
 pub fn gen_annotation_spawn_flow(
-    result: &Name,
+    result: &(Name, Type),
     func: &Name,
     args: &Vec<(Name, Type)>,
 ) -> ReactFlowDesign {
@@ -209,33 +243,36 @@ pub fn gen_annotation_spawn_flow(
     let mut edges = vec![];
 
     {
-        let result_par = result.get_par_name(true).get_full_name();
-        let result = result.get_full_name();
+        let result_par_fn = result.0.get_par_name(true).get_full_name();
+        let result_fn = result.0.get_full_name();
 
         // N: inner
         nodes.push(ReactFlowNode::new_with_full(
-            format!("{}:inner", result),
+            format!("{}:inner", result_fn),
             ReactFlowNodeKind::SpawnInner,
-            Some(format!("{}:outer", result)),
+            Some(format!("{}:outer", result_fn)),
+            ReactFlowNodeData::new(None),
         ));
 
         // N: outer
         nodes.push(ReactFlowNode::new_with_full(
-            format!("{}:outer", result),
+            format!("{}:outer", result_fn),
             ReactFlowNodeKind::SpawnOuter,
-            Some(result_par.clone()),
+            Some(result_par_fn.clone()),
+            ReactFlowNodeData::new(None),
         ));
 
         // N: result
         nodes.push(ReactFlowNode::new_with_full(
-            result,
+            result_fn,
             ReactFlowNodeKind::Var,
-            Some(result_par),
+            Some(result_par_fn),
+            ReactFlowNodeData::new(Some(result.clone())),
         ));
     }
 
     {
-        let result = result.get_full_name();
+        let result = result.0.get_full_name();
         let func = func.get_full_name();
 
         // E: uses -> outer

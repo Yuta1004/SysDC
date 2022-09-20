@@ -1,6 +1,7 @@
 use serde::Serialize;
 
 use sysdc_parser::name::Name;
+use sysdc_parser::types::Type;
 
 pub type ReactFlowDesign = (Vec<ReactFlowNode>, Vec<ReactFlowEdge>);
 
@@ -32,10 +33,12 @@ pub struct ReactFlowNode {
         skip_serializing_if = "Option::is_none"
     )]
     parent: Option<String>,
+
+    data: ReactFlowNodeData,
 }
 
 impl ReactFlowNode {
-    pub fn new(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
+    pub fn new(kind: ReactFlowNodeKind, name: &Name, types: Option<&Type>) -> ReactFlowNode {
         let parent = match kind {
             ReactFlowNodeKind::Unit => None,
             ReactFlowNodeKind::Module
@@ -47,11 +50,17 @@ impl ReactFlowNode {
             | ReactFlowNodeKind::ReturnVar => Some(name.get_par_name(true).get_full_name()),
             _ => panic!("Internal error"),
         };
+        let data = if let Some(types) = types {
+            (name.clone(), types.clone())
+        } else {
+            (name.clone(), Type::from("void".to_string()))
+        };
 
         ReactFlowNode {
             id: name.get_full_name(),
             kind,
             parent,
+            data: ReactFlowNodeData::new(Some(data)),
         }
     }
 
@@ -59,8 +68,39 @@ impl ReactFlowNode {
         id: String,
         kind: ReactFlowNodeKind,
         parent: Option<String>,
+        data: ReactFlowNodeData,
     ) -> ReactFlowNode {
-        ReactFlowNode { id, kind, parent }
+        ReactFlowNode {
+            id,
+            kind,
+            parent,
+            data,
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct ReactFlowNodeData {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<Name>,
+
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    types: Option<Type>,
+}
+
+impl ReactFlowNodeData {
+    pub fn new(info: Option<(Name, Type)>) -> ReactFlowNodeData {
+        if let Some((name, types)) = info {
+            ReactFlowNodeData {
+                name: Some(name),
+                types: Some(types),
+            }
+        } else {
+            ReactFlowNodeData {
+                name: None,
+                types: None,
+            }
+        }
     }
 }
 
@@ -85,29 +125,42 @@ impl ReactFlowEdge {
 mod test {
     use serde::Serialize;
 
-    use super::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeKind};
+    use super::{ReactFlowEdge, ReactFlowNode, ReactFlowNodeData, ReactFlowNodeKind};
+    use sysdc_parser::name::Name;
+    use sysdc_parser::types::Type;
 
     #[test]
     fn node_serialize_1() {
-        let has_parent_node = ReactFlowNode {
-            id: ".0.test".to_string(),
-            kind: ReactFlowNodeKind::Var,
-            parent: Some(".0".to_string()),
-        };
+        let has_parent_node = ReactFlowNode::new_with_full(
+            ".0.test".to_string(),
+            ReactFlowNodeKind::Var,
+            Some(".0".to_string()),
+            ReactFlowNodeData::new(Some((
+                Name::new(&Name::new_root(), "test".to_string()),
+                Type::from("void".to_string()),
+            ))),
+        );
         compare(
             has_parent_node,
-            "{\"id\":\".0.test\",\"type\":\"Var\",\"parentNode\":\".0\"}",
+            "{\"id\":\".0.test\",\"type\":\"Var\",\"parentNode\":\".0\",\"data\":{\"name\":{\"name\":\"test\",\"namespace\":\".0\"},\"type\":{\"kind\":\"void\",\"refs\":null}}}",
         );
     }
 
     #[test]
     fn node_serialize_2() {
-        let hasnt_parent_node = ReactFlowNode {
-            id: ".0.test".to_string(),
-            kind: ReactFlowNodeKind::Var,
-            parent: None,
-        };
-        compare(hasnt_parent_node, "{\"id\":\".0.test\",\"type\":\"Var\"}");
+        let hasnt_parent_node = ReactFlowNode::new_with_full(
+            ".0.test".to_string(),
+            ReactFlowNodeKind::Var,
+            None,
+            ReactFlowNodeData::new(Some((
+                Name::new(&Name::new_root(), "test".to_string()),
+                Type::from("void".to_string()),
+            ))),
+        );
+        compare(
+            hasnt_parent_node,
+        "{\"id\":\".0.test\",\"type\":\"Var\",\"data\":{\"name\":{\"name\":\"test\",\"namespace\":\".0\"},\"type\":{\"kind\":\"void\",\"refs\":null}}}",
+        );
     }
 
     #[test]

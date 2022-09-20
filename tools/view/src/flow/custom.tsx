@@ -1,3 +1,4 @@
+import { type } from "os";
 import { Handle, Position } from "react-flow-renderer";
 
 import styles from "../style/custom.module.css";
@@ -5,7 +6,7 @@ import styles from "../style/custom.module.css";
 export function UnitNode({ data }) {
     return (
         <div className={styles.Unit}>
-            <h1>Unit</h1>
+            <h1>{data.name.name}</h1>
         </div>
     );
 }
@@ -13,7 +14,7 @@ export function UnitNode({ data }) {
 export function ModuleNode({ data }) {
     return (
         <div className={styles.Module}>
-            <h1>Module</h1>
+            <h1>{data.name.name}</h1>
         </div>
     );
 }
@@ -22,7 +23,7 @@ export function FunctionNode({ data }) {
     return (
         <div className={styles.Function}>
             <Handle type="target" position={Position.Top}/>
-            <h1>Function</h1>
+            <h1>{data.name.name}</h1>
             <Handle type="source" position={Position.Bottom}/>
         </div>
     );
@@ -32,19 +33,26 @@ export function ProcedureNode({ data }) {
     return (
         <div className={styles.Procedure}>
             <Handle type="target" position={Position.Top}/>
-            <h1>Procedure</h1>
+            <h1>{data.name.name}</h1>
         </div>
     );
 }
 
 export function ArgumentNode({ data }) {
     return (
-        <div className={styles.Argument}>
-            <Handle type="target" position={Position.Top}/>
-            <p className={styles.Name}>name</p>
-            <br/>
-            <p className={styles.Type}>(type)</p>
-            <Handle type="source" position={Position.Bottom}/>
+        <div>
+            Argument
+            <div className={styles.Argument}>
+                <div className={styles.FixedHandle}>
+                    <Handle type="target" position={Position.Top}/>
+                </div>
+                <p className={styles.Name}>{data.name.name}</p>
+                <br/>
+                <p className={styles.Type}>({data.type.kind === "Data" ? data.type.refs.name : data.type.kind})</p>
+                <div className={styles.FixedHandle}>
+                    <Handle type="source" position={Position.Bottom}/>
+                </div>
+            </div>
         </div>
     );
 }
@@ -53,9 +61,9 @@ export function VarNode({ data }) {
     return (
         <div className={styles.Var}>
             <Handle type="target" position={Position.Top}/>
-            <p className={styles.Name}>name</p>
+            <p className={styles.Name}>{data.name.name}</p>
             <br/>
-            <p className={styles.Type}>(type)</p>
+            <p className={styles.Type}>({data.type.kind === "Data" ? data.type.refs.name : data.type.kind})</p>
             <Handle type="source" position={Position.Bottom}/>
         </div>
     );
@@ -65,9 +73,9 @@ export function DeadVarNode({ data }) {
     return (
         <div className={styles.DeadVar}>
             <Handle type="target" position={Position.Top}/>
-            <p className={styles.Name}>name</p>
+            <p className={styles.Name}>{data.name.name}</p>
             <br/>
-            <p className={styles.Type}>(type)</p>
+            <p className={styles.Type}>({data.type.kind === "Data" ? data.type.refs.name : data.type.kind})</p>
             <Handle type="source" position={Position.Bottom}/>
         </div>
     );
@@ -75,12 +83,19 @@ export function DeadVarNode({ data }) {
 
 export function ReturnVarNode({ data }) {
     return (
-        <div className={styles.ReturnVar}>
-            <Handle type="target" position={Position.Top}/>
-            <p className={styles.Name}>name</p>
-            <br/>
-            <p className={styles.Type}>(type)</p>
-            <Handle type="source" position={Position.Bottom}/>
+        <div>
+            Return
+            <div className={styles.ReturnVar}>
+                <div className={styles.FixedHandle}>
+                    <Handle type="target" position={Position.Top}/>
+                </div>
+                <p className={styles.Name}>{data.name.name}</p>
+                <br/>
+                <p className={styles.Type}>({data.type.kind === "Data" ? data.type.refs.name : data.type.kind})</p>
+                <div className={styles.FixedHandle}>
+                    <Handle type="source" position={Position.Bottom}/>
+                </div>
+            </div>
         </div>
     );
 }
@@ -88,7 +103,7 @@ export function ReturnVarNode({ data }) {
 export function AffectOuterNode({ data }) {
     return (
         <div className={styles.AffectOuter}>
-            <Handle type="target" position={Position.Top}/>
+            <Handle className={styles.Hidden} type="target" position={Position.Top}/>
             Affect
         </div>
     );
@@ -106,9 +121,9 @@ export function AffectInnerNode({ data }) {
 export function SpawnOuterNode({ data }) {
     return (
         <div className={styles.SpawnOuter}>
-            <Handle type="target" position={Position.Top}/>
+            <Handle className={styles.Hidden} type="target" position={Position.Top}/>
             Spawn
-            <Handle type="source" position={Position.Bottom}/>
+            <Handle className={styles.Hidden} type="source" position={Position.Bottom}/>
         </div>
     );
 }

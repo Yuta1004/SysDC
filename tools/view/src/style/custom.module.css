@@ -1,71 +1,70 @@
+/* General */
+.Hidden {
+    visibility: hidden;
+}
+
+.Name {
+    margin: 10px 10px -10px 10px;
+    font-size: 2em;
+}
+
+.Type {
+    margin: -10px 10px 10px 10px;
+    font-size: 1.5em;
+}
+
+/* Nodes */
 .Unit {
     width: 100%;
     height: 100%;
-    padding: 10px;
     border: 3px solid #7d0000;
     border-radius: 10px;
     background: #ffedd655;
 }
 
 .Unit h1 {
-    margin: 0px;
+    margin: 10px;
 }
 
 .Module {
     width: 100%;
     height: 100%;
-    padding: 10px;
     border: 3px solid #007d00;
     border-radius: 10px;
     background: #d6ffe0aa;
 }
 
 .Module h1 {
-    margin: 0px;
+    margin: 10px;
 }
 
 .Function {
     width: 100%;
     height: 100%;
-    padding: 0px 10px 0 10px;
     border: 3px solid #00477d;
     border-radius: 10px;
     background: #d6f3ffaa;
 }
 
 .Function h1 {
-    margin-top: 10px;
+    margin: 10px;
 }
 
 .Procedure {
     width: 100%;
     height: 100%;
-    padding: 10px;
     border: 3px solid #00477d;
     border-radius: 10px;
     background: #d6f3ffaa;
 }
 
 .Procedure h1 {
-    margin: 0px;
-}
-
-.Name {
-    margin: 0px;
-    padding: 0px;
-    font-size: 2em;
-}
-
-.Type {
-    margin: 0px;
-    padding: 0px;
-    font-size: 1.5em;
+    margin: 10px;
 }
 
 .Argument {
     width: 100%;
     height: 100%;
-    padding: 10px;
     border: 5px inset #70007d;
     border-radius: 10px;
     background: #e4d6ffaa;
@@ -75,7 +74,6 @@
 .Var {
     width: 100%;
     height: 100%;
-    padding: 10px;
     border: 1px solid #70007d;
     border-radius: 10px;
     background: #e4d6ffaa;
@@ -85,7 +83,6 @@
 .DeadVar {
     width: 100%;
     height: 100%;
-    padding: 10px;
     border: 2px solid #000;
     border-radius: 10px;
     background: #bbba;
@@ -95,7 +92,6 @@
 .ReturnVar {
     width: 100%;
     height: 100%;
-    padding: 10px;
     border: 5px outset #70007d;
     border-radius: 10px;
     background: #e4d6ffaa;
@@ -105,39 +101,34 @@
 .AffectOuter {
     width: 100%;
     height: 100%;
-    padding: 10px;
-    border: 1px solid #000;
-    border-radius: 10px;
-    /* background: #e4d6ffaa; */
+    font-size: 1.5em;
     text-align: center;
 }
 
 .AffectInner {
     width: 100%;
     height: 100%;
-    padding: 10px;
-    border: 1px solid #000;
-    border-radius: 10px;
-    /* background: #e4d6ffaa; */
-    text-align: center;
+    visibility: hidden;
 }
 
 .SpawnOuter {
     width: 100%;
     height: 100%;
-    padding: 10px;
-    border: 1px solid #000;
-    border-radius: 10px;
-    /* background: #e4d6ffaa; */
+    font-size: 1.5em;
     text-align: center;
 }
 
 .SpawnInner {
     width: 100%;
     height: 100%;
-    padding: 10px;
-    border: 1px solid #000;
-    border-radius: 10px;
-    /* background: #e4d6ffaa; */
-    text-align: center;
+    visibility: hidden;
+}
+
+.FixedHandle {
+    margin: 0px;
+    transform: translateY(0);
+}
+
+.HiddenHandle {
+    visibility: hidden;
 }
