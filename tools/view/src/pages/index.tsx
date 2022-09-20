@@ -60,6 +60,7 @@ function App() {
                 onEdgesChange={onEdgesChange}
                 nodeTypes={customNodeTypes}
                 defaultEdgeOptions={{ zIndex: 9999 }}
+                minZoom={0}
                 fitView
             >
                 <Background gap={24} size={1.5} color="#0006"/>
