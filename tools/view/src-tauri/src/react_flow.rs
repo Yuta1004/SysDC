@@ -1,7 +1,6 @@
 use serde::Serialize;
 
 use sysdc_parser::name::Name;
-use sysdc_parser::types::Type;
 
 pub type ReactFlowDesign = (Vec<ReactFlowNode>, Vec<ReactFlowEdge>);
 
@@ -78,87 +77,6 @@ impl ReactFlowEdge {
             target,
         }
     }
-}
-
-pub fn node_affect(func: &Name, afunc: &Name) -> Vec<ReactFlowNode> {
-    let name_par = func.get_full_name();
-    let name = format!("{}:{}:affect", func.get_full_name(), afunc.get_full_name());
-
-    let inner = ReactFlowNode::new_with_full(
-        format!("{}:inner", name),
-        ReactFlowNodeKind::AffectInner,
-        Some(format!("{}:outer", name)),
-    );
-    let outer = ReactFlowNode::new_with_full(
-        format!("{}:outer", name),
-        ReactFlowNodeKind::AffectOuter,
-        Some(name_par),
-    );
-
-    vec![inner, outer]
-}
-
-pub fn edge_affect(func: &Name, afunc: &Name, args: &Vec<(Name, Type)>) -> Vec<ReactFlowEdge> {
-    let name = format!("{}:{}:affect", func.get_full_name(), afunc.get_full_name());
-    let afunc = afunc.get_full_name();
-
-    let mut edges = vec![];
-
-    // E: uses -> outer
-    for (aname, _) in args {
-        edges.push(ReactFlowEdge::new(
-            aname.get_full_name(),
-            format!("{}:outer", name),
-        ));
-    }
-
-    // E: inner -> func
-    edges.push(ReactFlowEdge::new(format!("{}:inner", name), afunc));
-
-    edges
-}
-
-pub fn node_spawn(result: &Name) -> Vec<ReactFlowNode> {
-    let result_par = result.get_par_name(true).get_full_name();
-    let result = result.get_full_name();
-
-    let inner = ReactFlowNode::new_with_full(
-        format!("{}:inner", result),
-        ReactFlowNodeKind::SpawnInner,
-        Some(format!("{}:outer", result)),
-    );
-    let outer = ReactFlowNode::new_with_full(
-        format!("{}:outer", result),
-        ReactFlowNodeKind::SpawnOuter,
-        Some(result_par.clone()),
-    );
-    let resultn = ReactFlowNode::new_with_full(result, ReactFlowNodeKind::Var, Some(result_par));
-
-    vec![inner, outer, resultn]
-}
-
-pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<ReactFlowEdge> {
-    let mut edges = vec![];
-
-    let name = name.get_full_name();
-    let func = func.get_full_name();
-
-    // E: uses -> outer
-    for (aname, _) in args {
-        edges.push(ReactFlowEdge::new(
-            aname.get_full_name(),
-            format!("{}:outer", name),
-        ));
-    }
-
-    // E: inner -> func, func -> inner
-    edges.push(ReactFlowEdge::new(format!("{}:inner", name), func.clone()));
-    edges.push(ReactFlowEdge::new(func, format!("{}:inner", name)));
-
-    // E: outer -> result
-    edges.push(ReactFlowEdge::new(format!("{}:outer", name), name));
-
-    edges
 }
 
 #[cfg(test)]
