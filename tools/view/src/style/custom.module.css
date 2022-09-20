@@ -92,3 +92,22 @@
     text-align: center;
 }
 
+.SpawnOuter {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    border: 1px solid #000;
+    border-radius: 10px;
+    /* background: #e4d6ffaa; */
+    text-align: center;
+}
+
+.SpawnInner {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    border: 1px solid #000;
+    border-radius: 10px;
+    /* background: #e4d6ffaa; */
+    text-align: center;
+}

@@ -16,7 +16,15 @@ export function layout(nodes: Node<any>[], edges: Edge<any>[]) {
     const isFunction = (node, pnode) =>
         ["Function", "Procedure"].includes(node.type) && node.parentNode === pnode.id;
     const isFunctionChild = (node, pnode) =>
-        ["Argument", "Var", "ReturnVar"].includes(node.type) && node.parentNode === pnode.id;
+        ["Argument", "Var", "ReturnVar", "SpawnOuter"].includes(node.type)
+        && node.parentNode === pnode.id;
+    
+    nodes.forEach(node =>{
+        node.position = {
+            x: -MARGIN_LEFT_RIGHT/2,
+            y: -MARGIN_TOP_BOTTOM/2
+        };
+    });
 
     const unodes = nodes.filter(isUnit).map(unode => {
         const mnodes = nodes.filter(node => isModule(node, unode)).map(mnode => {

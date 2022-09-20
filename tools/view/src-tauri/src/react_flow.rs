@@ -4,6 +4,7 @@ use once_cell::sync::Lazy;
 use serde::Serialize;
 
 use sysdc_parser::name::Name;
+use sysdc_parser::types::Type;
 
 pub type ReactFlowDesign = (Vec<ReactFlowNode>, Vec<ReactFlowEdge>);
 
@@ -16,10 +17,10 @@ pub enum ReactFlowNodeKind {
     Argument,
     Var,
     ReturnVar,
-    SpawnInner,
     SpawnOuter,
-    AffectInner,
+    SpawnInner,
     AffectOuter,
+    AffectInner,
 }
 
 #[derive(Serialize)]
@@ -53,6 +54,14 @@ pub struct ReactFlowEdge {
 
 pub fn node(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
     match kind {
+        ReactFlowNodeKind::Unit => ReactFlowNode {
+            id: name.get_full_name().replace("._", ""),
+            kind,
+            parent: None,
+            data: ReactFlowNodeData {
+                label: format!("{}({})", name.name, name.get_full_name()),
+            },
+        },
         ReactFlowNodeKind::Module
         | ReactFlowNodeKind::Function
         | ReactFlowNodeKind::Procedure
@@ -66,15 +75,83 @@ pub fn node(kind: ReactFlowNodeKind, name: &Name) -> ReactFlowNode {
                 label: format!("{}({})", name.name, name.get_full_name()),
             },
         },
-        _ => ReactFlowNode {
-            id: name.get_full_name().replace("._", ""),
-            kind,
-            parent: None,
-            data: ReactFlowNodeData {
-                label: format!("{}({})", name.name, name.get_full_name()),
-            },
-        },
+        _ => panic!("Internal error"),
     }
+}
+
+pub fn node_spawn(result: &Name) -> Vec<ReactFlowNode> {
+    let inner = ReactFlowNode {
+        id: result.get_full_name().replace("._", "") + ":s:inner",
+        kind: ReactFlowNodeKind::SpawnInner,
+        parent: Some(result.get_full_name().replace("._", "") + ":s:outer"),
+        data: ReactFlowNodeData {
+            label: "".to_string(),
+        },
+    };
+    let outer = ReactFlowNode {
+        id: result.get_full_name().replace("._", "") + ":s:outer",
+        kind: ReactFlowNodeKind::SpawnOuter,
+        parent: Some(result.get_par_name(true).get_full_name()),
+        data: ReactFlowNodeData {
+            label: "".to_string(),
+        },
+    };
+    let result = node(ReactFlowNodeKind::Var, result);
+
+    vec![inner, outer, result]
+}
+
+pub fn edge_spawn(name: &Name, func: &Name, args: &Vec<(Name, Type)>) -> Vec<ReactFlowEdge> {
+    static CREATED_EDGE_NUMS: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0));
+    let mut id = CREATED_EDGE_NUMS.lock().unwrap();
+
+    let mut edges = vec![];
+
+    // E: uses -> outer
+    for (aname, _) in args {
+        edges.push(ReactFlowEdge {
+            id: {
+                *id += 1;
+                *id
+            },
+            source: aname.get_full_name().replace("._", ""),
+            target: name.get_full_name().replace("._", "") + ":s:outer",
+            animated: false,
+        });
+    }
+
+    // E: inner -> func
+    edges.push(ReactFlowEdge {
+        id: {
+            *id += 1;
+            *id
+        },
+        source: name.get_full_name().replace("._", "") + ":s:inner",
+        target: func.get_full_name().replace("._", ""),
+        animated: false,
+    });
+    edges.push(ReactFlowEdge {
+        id: {
+            *id += 1;
+            *id
+        },
+        source: func.get_full_name().replace("._", ""),
+        target: name.get_full_name().replace("._", "") + ":s:inner",
+        animated: false,
+    });
+
+    // E: outer -> return
+    edges.push(ReactFlowEdge {
+        id: {
+            *id += 1;
+            *id
+        },
+        source: name.get_full_name().replace("._", "") + ":s:outer",
+        target: name.get_full_name().replace("._", ""),
+        animated: false,
+    });
+
+    edges
 }
 
 pub fn edge(source: &Name, target: &Name) -> ReactFlowEdge {

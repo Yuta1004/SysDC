@@ -10,7 +10,9 @@ import {
     ProcedureNode,
     ArgumentNode,
     VarNode,
-    ReturnVarNode
+    ReturnVarNode,
+    SpawnOuterNode,
+    SpawnInnerNode
 } from "../flow/custom";
 
 function App() {
@@ -25,6 +27,8 @@ function App() {
         Argument: ArgumentNode,
         Var: VarNode,
         ReturnVar: ReturnVarNode,
+        SpawnOuter: SpawnOuterNode,
+        SpawnInner: SpawnInnerNode
     }), []);
 
     useEffect(() => {

@@ -94,8 +94,13 @@ fn gen_annotation_flow(annotation: &SysDCAnnotation) -> ReactFlowDesign {
         // unimplemented!();
     }
 
-    if let SysDCAnnotation::Spawn { result, details } = annotation {
-        // unimplemented!();
+    if let SysDCAnnotation::Spawn { details, .. } = annotation {
+        for detail in details {
+            if let SysDCSpawnDetail::LetTo { name, func, args } = detail {
+                nodes.extend(react_flow::node_spawn(name));
+                edges.extend(react_flow::edge_spawn(name, &func.0, args))
+            }
+        }
     }
 
     if let SysDCAnnotation::Modify { target, uses } = annotation {

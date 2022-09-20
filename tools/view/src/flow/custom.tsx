@@ -72,3 +72,23 @@ export function ReturnVarNode({ data }) {
         </div>
     );
 }
+
+export function SpawnOuterNode({ data }) {
+    return (
+        <div className={styles.SpawnOuter}>
+            <Handle type="target" position={Position.Top}/>
+            Spawn
+            <Handle type="source" position={Position.Bottom}/>
+        </div>
+    );
+}
+
+export function SpawnInnerNode({ data }) {
+    return (
+        <div className={styles.SpawnInner}>
+            <Handle type="target" position={Position.Right}/>
+            Spawn
+            <Handle type="source" position={Position.Right}/>
+        </div>
+    );
+}
