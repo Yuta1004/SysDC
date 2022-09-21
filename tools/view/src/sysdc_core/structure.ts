@@ -1,6 +1,7 @@
 export default SysDCSystem;
 
 export type Name = {
+    readonly fname: string,
     readonly name: string,
     readonly namespace: string
 }

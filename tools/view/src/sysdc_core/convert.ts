@@ -81,6 +81,7 @@ function convertSpawnDetail(obj: Object): SysDCSpawnDetail {
 
 function convertName(obj: object): Name {
     return {
+        fname: obj["namespace"]+"."+obj["name"],
         name: obj["name"],
         namespace: obj["namespace"]
     };

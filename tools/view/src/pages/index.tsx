@@ -4,7 +4,6 @@ import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Drawer from "@mui/material/Drawer";
 import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
 import ListSubheader from "@mui/material/ListSubheader";
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -16,6 +15,7 @@ import LinearProgress from "@mui/material/LinearProgress";
 import MenuIcon from "@mui/icons-material/Menu";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
 import Inventory from "@mui/icons-material/Inventory";
 import ArrowDownward from "@mui/icons-material/ArrowDownward";
 import ImportExport from "@mui/icons-material/ImportExport";
@@ -61,6 +61,7 @@ function App() {
     const [generatingFlow, setGeneratingFlow] = useState(true);
     const [openDrawer, setOpenDrawer] = useState(false);
     const [unitListItems, setUnitListItems] = useState([]);
+    const [expandUnitList, setExpandUnitList] = useState({});
 
     useEffect(() => {
         invoke("get_system").then(_system => {
@@ -84,28 +85,51 @@ function App() {
                         </ListItemButton>
                     );
                     return (<>
-                        <ListItemButton key={mod.name.name} sx={{ pl: 4 }}>
+                        <ListItemButton
+                            key={mod.name.name}
+                            sx={{ pl: 4 }}
+                            onClick={() => {
+                                const _expandUnitList = expandUnitList;
+                                _expandUnitList[mod.name.fname] = !expandUnitList[mod.name.fname];
+                                setExpandUnitList(JSON.parse(JSON.stringify(_expandUnitList)));
+                            }}
+                        >
                             <ListItemText primary={mod.name.name}/>
-                            <ExpandLess/>
+                            {expandUnitList[mod.name.fname] ? <ExpandLess/> : <ExpandMore/>}
                         </ListItemButton>
-                        <Collapse in={true} timeout="auto" unmountOnExit>
+                        <Collapse
+                            in={expandUnitList[mod.name.namespace+"."+mod.name.name]}
+                            timeout="auto"
+                            unmountOnExit
+                        >
                             <List component="div" disablePadding>{funcItems}</List>
                         </Collapse>
                     </>);
                 });
                 return (<>
-                    <ListItemButton key={unit.name.namespace+"."+unit.name.name}>
+                    <ListItemButton
+                        key={unit.name.namespace+"."+unit.name.name}
+                        onClick={() => {
+                            const _expandUnitList = expandUnitList;
+                            _expandUnitList[unit.name.fname] = !expandUnitList[unit.name.fname];
+                            setExpandUnitList(JSON.parse(JSON.stringify(_expandUnitList)));
+                        }}
+                    >
                         <ListItemText primary={unit.name.namespace+"."+unit.name.name}/>
-                        <ExpandLess/>
+                        {expandUnitList[unit.name.fname] ? <ExpandLess/> : <ExpandMore/>}
                     </ListItemButton>
-                    <Collapse in={true} timeout="auto" unmountOnExit>
+                    <Collapse
+                        in={expandUnitList[unit.name.namespace+"."+unit.name.name]}
+                        timeout="auto"
+                        unmountOnExit
+                    >
                         <List component="div" disablePadding>{[...dataItems, ...modItems]}</List>
                     </Collapse>
                 </>);
             });
             setUnitListItems(_unitListItems);
         });
-    }, []);
+    }, [expandUnitList]);
 
     useEffect(() => {
         invoke("gen_flow").then(([nodes, edges]) => {
