@@ -1,5 +1,11 @@
 import React, { useEffect, useMemo } from "react";
 import ReactFlow, { Background, MiniMap, Controls, useNodesState, useEdgesState } from "react-flow-renderer";
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import MenuIcon from '@mui/icons-material/Menu';
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { invoke } from "@tauri-apps/api/tauri";
 
 import layout from "../flow/layout";
@@ -53,6 +59,31 @@ function App() {
                 height: "100vh"
             }}
         >
+            <AppBar
+                position="fixed"
+                color="default"
+            >
+                <Toolbar>
+                    <IconButton
+                        size="large"
+                        edge="start"
+                        color="inherit"
+                        aria-label="menu"
+                        sx={{ mr: 2 }}
+                    >
+                        <MenuIcon/>
+                    </IconButton>
+                    <Typography variant="h6" component="h6" sx={{ flexGrow: 1 }}>
+                        SysDC-View
+                    </Typography>
+                    <IconButton
+                        size="large"
+                        color="inherit"
+                    >
+                        <RefreshIcon/>
+                    </IconButton>
+                </Toolbar>
+            </AppBar>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
