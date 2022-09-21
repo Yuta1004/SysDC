@@ -21,12 +21,12 @@ export const Flow = (props: FlowProps) => {
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
     useEffect(() => {
-        props.onLoadStart();
+        props.onLoadStart != null && props.onLoadStart();
         invoke("gen_flow").then(([nodes, edges]) => {
             layout(nodes, edges);
             Array.isArray(nodes) && setNodes(nodes);
             Array.isArray(edges) && setEdges(edges);
-            props.onLoadFinish();
+            props.onLoadFinish != null && props.onLoadFinish();
         });
     }, []);
 
