@@ -20,79 +20,95 @@ import ImportExport from "@mui/icons-material/ImportExport";
 import { invoke } from "@tauri-apps/api/tauri";
 
 import convert from "../sysdc_core/convert";
+import { SysDCUnit, SysDCData, SysDCModule, SysDCFunction } from "../sysdc_core/structure";
 
 const Header = () => {
     const [openDrawer, setOpenDrawer] = useState(false);
     const [unitListItems, setUnitListItems] = useState([]);
-    const [expandUnitList, setExpandUnitList] = useState({});
+    const [unitListCState, setUnitListCState] = useState({});
+
+    const makeUnitListItems = (unit: SysDCUnit): JSX.Element => {
+        return (<>
+            <ListItemButton
+                key={unit.name.namespace+"."+unit.name.name}
+                onClick={() => {
+                    const _unitListCState = unitListCState;
+                    _unitListCState[unit.name.fname] = !unitListCState[unit.name.fname];
+                    setUnitListCState(JSON.parse(JSON.stringify(_unitListCState)));
+                }}
+            >
+                <ListItemText primary={unit.name.namespace+"."+unit.name.name}/>
+                {unitListCState[unit.name.fname] ? <ExpandLess/> : <ExpandMore/>}
+            </ListItemButton>
+            <Collapse
+                in={unitListCState[unit.name.namespace+"."+unit.name.name]}
+                timeout="auto"
+                unmountOnExit
+            >
+                <List component="div" disablePadding>
+                    {[
+                        ...unit.data.map(makeDataListItems),
+                        ...unit.modules.map(makeModuleListItems)
+                    ]}
+                </List>
+            </Collapse>
+        </>);
+    }
+
+    const makeDataListItems = (data: SysDCData): JSX.Element => {
+        return (
+            <ListItemButton key={data.name.name} sx={{ pl: 4 }}>
+                <ListItemIcon>
+                    <Inventory/>
+                </ListItemIcon>
+                <ListItemText primary={data.name.name}/>
+            </ListItemButton>
+        );
+    }
+
+    const makeModuleListItems = (mod: SysDCModule): JSX.Element => {
+        return (<>
+            <ListItemButton
+                key={mod.name.name}
+                sx={{ pl: 4 }}
+                onClick={() => {
+                    const _unitListCState = unitListCState;
+                    _unitListCState[mod.name.fname] = !unitListCState[mod.name.fname];
+                    setUnitListCState(JSON.parse(JSON.stringify(_unitListCState)));
+                }}
+            >
+                <ListItemText primary={mod.name.name}/>
+                {unitListCState[mod.name.fname] ? <ExpandLess/> : <ExpandMore/>}
+            </ListItemButton>
+            <Collapse
+                in={unitListCState[mod.name.namespace+"."+mod.name.name]}
+                timeout="auto"
+                unmountOnExit
+            >
+                <List component="div" disablePadding>
+                    {mod.functions.map(makeFunctionListItems)}
+                </List>
+            </Collapse>
+        </>);
+    };
+
+    const makeFunctionListItems = (func: SysDCFunction): JSX.Element => {
+        return (
+            <ListItemButton key={func.name.name} sx={{ pl: 8 }}>
+                <ListItemIcon>
+                    {func.return[1] === "void" ? <ArrowDownward/> : <ImportExport/> }
+                </ListItemIcon>
+                <ListItemText primary={func.name.name}/>
+            </ListItemButton>
+        );
+    };
 
     useEffect(() => {
         invoke("get_system").then(_system => {
             const system = (typeof _system == "object" && convert(_system));
-            const _unitListItems = system.units.map(unit => {
-                const dataItems = unit.data.map(data =>
-                    <ListItemButton key={data.name.name} sx={{ pl: 4 }}>
-                        <ListItemIcon>
-                            <Inventory/>
-                        </ListItemIcon>
-                        <ListItemText primary={data.name.name}/>
-                    </ListItemButton>
-                );
-                const modItems = unit.modules.map(mod => {
-                    const funcItems = mod.functions.map(func =>
-                        <ListItemButton key={func.name.name} sx={{ pl: 8 }}>
-                            <ListItemIcon>
-                                {func.return[1] === "void" ? <ArrowDownward/> : <ImportExport/> }
-                            </ListItemIcon>
-                            <ListItemText primary={func.name.name}/>
-                        </ListItemButton>
-                    );
-                    return (<>
-                        <ListItemButton
-                            key={mod.name.name}
-                            sx={{ pl: 4 }}
-                            onClick={() => {
-                                const _expandUnitList = expandUnitList;
-                                _expandUnitList[mod.name.fname] = !expandUnitList[mod.name.fname];
-                                setExpandUnitList(JSON.parse(JSON.stringify(_expandUnitList)));
-                            }}
-                        >
-                            <ListItemText primary={mod.name.name}/>
-                            {expandUnitList[mod.name.fname] ? <ExpandLess/> : <ExpandMore/>}
-                        </ListItemButton>
-                        <Collapse
-                            in={expandUnitList[mod.name.namespace+"."+mod.name.name]}
-                            timeout="auto"
-                            unmountOnExit
-                        >
-                            <List component="div" disablePadding>{funcItems}</List>
-                        </Collapse>
-                    </>);
-                });
-                return (<>
-                    <ListItemButton
-                        key={unit.name.namespace+"."+unit.name.name}
-                        onClick={() => {
-                            const _expandUnitList = expandUnitList;
-                            _expandUnitList[unit.name.fname] = !expandUnitList[unit.name.fname];
-                            setExpandUnitList(JSON.parse(JSON.stringify(_expandUnitList)));
-                        }}
-                    >
-                        <ListItemText primary={unit.name.namespace+"."+unit.name.name}/>
-                        {expandUnitList[unit.name.fname] ? <ExpandLess/> : <ExpandMore/>}
-                    </ListItemButton>
-                    <Collapse
-                        in={expandUnitList[unit.name.namespace+"."+unit.name.name]}
-                        timeout="auto"
-                        unmountOnExit
-                    >
-                        <List component="div" disablePadding>{[...dataItems, ...modItems]}</List>
-                    </Collapse>
-                </>);
-            });
-            setUnitListItems(_unitListItems);
-        });
-    }, [expandUnitList]);
+            setUnitListItems(system.units.map(makeUnitListItems));
+        })
+    }, [unitListCState]);
 
     return (
     <>
