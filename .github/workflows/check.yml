@@ -19,7 +19,7 @@ jobs:
     - uses: ./.github/actions/cache_cargo
     - uses: ./.github/actions/setup_libraries
     - name: Make dist dir
-      run: make -p tools/view/dist 
+      run: mkdir -p tools/view/dist 
     - name: Build
       run: cargo build
 
