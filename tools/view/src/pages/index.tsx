@@ -187,7 +187,6 @@ function App() {
                 open={openDrawer}
                 sx={{
                     minWidth: "15%",
-                    padding: "25px",
                     flexShrink: 0,
                     [`& .MuiDrawer-paper`]: { minWidth: "15%", boxSizing: 'border-box' }
                 }}
