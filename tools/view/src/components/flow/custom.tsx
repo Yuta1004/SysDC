@@ -1,7 +1,23 @@
-import { type } from "os";
 import { Handle, Position } from "react-flow-renderer";
 
-import styles from "../style/custom.module.css";
+import styles from "../../style/custom.module.css";
+
+export const CUSTOM_NODE_TYPES = {
+    Unit: UnitNode,
+    Module: ModuleNode,
+    Function: FunctionNode,
+    Procedure: ProcedureNode,
+    Argument: ArgumentNode,
+    Var: VarNode,
+    DeadVar: DeadVarNode,
+    ReturnVar: ReturnVarNode,
+    AffectOuter: AffectOuterNode,
+    AffectInner: AffectInnerNode,
+    SpawnOuter: SpawnOuterNode,
+    SpawnInner: SpawnInnerNode
+}
+
+export default CUSTOM_NODE_TYPES;
 
 export function UnitNode({ data }) {
     return (
