@@ -79,6 +79,7 @@ function App() {
                     <IconButton
                         size="large"
                         color="inherit"
+                        onClick={() => { window.location.reload() }}
                     >
                         <RefreshIcon/>
                     </IconButton>
