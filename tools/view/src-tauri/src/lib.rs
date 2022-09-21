@@ -6,7 +6,7 @@
 mod command;
 mod react_flow;
 
-use tauri::{LogicalPosition, Manager, Position};
+use tauri::{LogicalSize, Manager, Size};
 
 use sysdc_parser::structure::SysDCSystem;
 
@@ -14,14 +14,12 @@ pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
     tauri::Builder::default()
         .setup(|app| {
             app.manage(system);
-
-            let window = app.get_window("main").unwrap();
-            let pwsize = *window.current_monitor()?.unwrap().size();
-            window.set_size(pwsize)?;
-            window.set_position(Position::Logical(
-                LogicalPosition { x: 0.0, y: 0.0 }
-            ))?;
-
+            app.get_window("main")
+                .unwrap()
+                .set_size(Size::Logical(LogicalSize {
+                    width: 1024.0,
+                    height: 768.0,
+                }))?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
