@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import ReactFlow, { Background, MiniMap, Controls, useNodesState, useEdgesState } from "react-flow-renderer";
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import RefreshIcon from "@mui/icons-material/Refresh";
+import LinearProgress from "@mui/material/LinearProgress";
 import { invoke } from "@tauri-apps/api/tauri";
 
 import layout from "../flow/layout";
@@ -27,6 +28,7 @@ import {
 function App() {
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+    const [generatingFlow, setGeneratingFlow] = useState(true);
 
     const customNodeTypes = useMemo(() => ({
         Unit: UnitNode,
@@ -48,6 +50,7 @@ function App() {
             layout(nodes, edges);
             Array.isArray(nodes) && setNodes(nodes);
             Array.isArray(edges) && setEdges(edges);
+            setGeneratingFlow(false)
         });
     }, []);
 
@@ -84,6 +87,7 @@ function App() {
                         <RefreshIcon/>
                     </IconButton>
                 </Toolbar>
+                <LinearProgress style={{ display: generatingFlow ? "block" : "none" }}/>
             </AppBar>
             <ReactFlow
                 nodes={nodes}
@@ -94,6 +98,7 @@ function App() {
                 defaultEdgeOptions={{ zIndex: 9999 }}
                 minZoom={0}
                 fitView
+                style={{ visibility: generatingFlow ? "hidden" : "visible" }}
             >
                 <Background gap={24} size={1.5} color="#0006"/>
                 <MiniMap/>
