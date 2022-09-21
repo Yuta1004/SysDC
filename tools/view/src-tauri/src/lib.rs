@@ -6,7 +6,7 @@
 mod command;
 mod react_flow;
 
-use tauri::{Manager};
+use tauri::{LogicalPosition, Manager, Position};
 
 use sysdc_parser::structure::SysDCSystem;
 
@@ -18,6 +18,9 @@ pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
             let window = app.get_window("main").unwrap();
             let pwsize = *window.current_monitor()?.unwrap().size();
             window.set_size(pwsize)?;
+            window.set_position(Position::Logical(
+                LogicalPosition { x: 0.0, y: 0.0 }
+            ))?;
 
             Ok(())
         })
