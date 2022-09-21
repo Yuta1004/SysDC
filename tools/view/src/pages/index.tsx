@@ -2,11 +2,23 @@ import React, { useState, useEffect, useMemo } from "react";
 import ReactFlow, { Background, MiniMap, Controls, useNodesState, useEdgesState } from "react-flow-renderer";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
+import Drawer from "@mui/material/Drawer";
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListSubheader from "@mui/material/ListSubheader";
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Collapse from "@mui/material/Collapse";
+import FormGroup from "@mui/material/FormGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Checkbox from "@mui/material/Checkbox";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
+import LinearProgress from "@mui/material/LinearProgress";
 import MenuIcon from "@mui/icons-material/Menu";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import LinearProgress from "@mui/material/LinearProgress";
+import ExpandLess from "@mui/icons-material/ExpandLess";
 import { invoke } from "@tauri-apps/api/tauri";
 
 import layout from "../flow/layout";
@@ -46,6 +58,7 @@ function App() {
 
     /* 描画制御周りで扱うState */
     const [generatingFlow, setGeneratingFlow] = useState(true);
+    const [openDrawer, setOpenDrawer] = useState(false);
 
     useEffect(() => {
         invoke("gen_flow").then(([nodes, edges]) => {
@@ -67,6 +80,7 @@ function App() {
             <AppBar
                 position="fixed"
                 color="default"
+                sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
             >
                 <Toolbar>
                     <IconButton
@@ -75,6 +89,7 @@ function App() {
                         color="inherit"
                         aria-label="menu"
                         sx={{ mr: 2 }}
+                        onClick={() => setOpenDrawer(!openDrawer)}
                     >
                         <MenuIcon/>
                     </IconButton>
@@ -95,6 +110,42 @@ function App() {
                 </Toolbar>
                 <LinearProgress style={{ display: generatingFlow ? "block" : "none" }}/>
             </AppBar>
+            <Drawer
+                variant="persistent"
+                anchor="left"
+                open={openDrawer}
+                sx={{
+                    minWidth: "15%",
+                    flexShrink: 0,
+                    [`& .MuiDrawer-paper`]: { minWidth: "15%", boxSizing: 'border-box' }
+                }}
+            >
+                <Toolbar/>
+                <List subheader={
+                    <ListSubheader component="div" id="nested-list-subheader">
+                        表示
+                    </ListSubheader>
+                }>
+                    <ListItemButton>
+                        <ListItemIcon>
+                            <MenuIcon/>
+                        </ListItemIcon>
+                        <ListItemText primary="Unit"/>
+                        <ExpandLess/>
+                    </ListItemButton>
+                    <Collapse in={true} timeout="auto" unmountOnExit>
+                        <List component="div" disablePadding>
+                            {[".0.test", ".0.test.A", ".0.test.B", ".0.test.B.aaa"].map((text, _) => (
+                                <ListItem key={text} sx={{ pl: 4 }} disablePadding>
+                                    <FormGroup>
+                                        <FormControlLabel control={<Checkbox defaultChecked />} label={text} />
+                                    </FormGroup>
+                                </ListItem>
+                            ))}
+                        </List>
+                    </Collapse>
+                </List>
+            </Drawer>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
