@@ -80,14 +80,18 @@ function convertSpawnDetail(obj: Object): SysDCSpawnDetail {
 }
 
 function convertName(obj: object): Name {
-    return obj["namespace"] + "." + obj["name"];
+    return {
+        fname: obj["namespace"]+"."+obj["name"],
+        name: obj["name"],
+        namespace: obj["namespace"]
+    };
 }
 
 function convertType(obj: object): Type {
     if (obj["refs"] == null) {
         return obj["kind"];
     }
-    return convertName(obj["refs"]);
+    return obj["refs"]["namespace"] + "." + obj["refs"]["name"];
 }
 
 function convertNameType(obj: object): [Name, Type] {

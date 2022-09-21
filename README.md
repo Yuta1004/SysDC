@@ -30,20 +30,27 @@ flowchart TB
     tools-->view
 ```
 
+## ビルド
+
+```
+$ make build
+```
+
 ## サンプルコードの実行
 
 ### Box
 
 ```
-$ cargo run parse example/box/*.def
+$ ./sysdc parse example/box/*.def
 Load: box.def
 1 units loaded!
 
-$ cargo run exec debug
+$ ./sysdc exec debug
 
-$ cargo run exec json
+$ ./sysdc exec json
+
+$ ./sysdc exec view
 ```
-
 
 ## コマンド
 
@@ -84,4 +91,3 @@ $ cargo run exec json
 
 - -a / --args : ツールに渡す引数
 - -i / --input : 内部表現が保存されたファイル名 (省略した場合 `out.sysdc`)
-
