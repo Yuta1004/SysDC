@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import ReactFlow, { Background, MiniMap, Controls, useNodesState, useEdgesState } from "react-flow-renderer";
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import MenuIcon from '@mui/icons-material/Menu';
+import AppBar from "@mui/material/AppBar";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import IconButton from "@mui/material/IconButton";
+import MenuIcon from "@mui/icons-material/Menu";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import LinearProgress from "@mui/material/LinearProgress";
 import { invoke } from "@tauri-apps/api/tauri";
@@ -26,10 +26,9 @@ import {
 } from "../flow/custom";
 
 function App() {
+    /* ReactFlowで扱うState */
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-    const [generatingFlow, setGeneratingFlow] = useState(true);
-
     const customNodeTypes = useMemo(() => ({
         Unit: UnitNode,
         Module: ModuleNode,
@@ -44,6 +43,9 @@ function App() {
         SpawnOuter: SpawnOuterNode,
         SpawnInner: SpawnInnerNode
     }), []);
+
+    /* 描画制御周りで扱うState */
+    const [generatingFlow, setGeneratingFlow] = useState(true);
 
     useEffect(() => {
         invoke("gen_flow").then(([nodes, edges]) => {
@@ -76,7 +78,11 @@ function App() {
                     >
                         <MenuIcon/>
                     </IconButton>
-                    <Typography variant="h6" component="h6" sx={{ flexGrow: 1 }}>
+                    <Typography
+                        variant="h6"
+                        component="h6"
+                        sx={{ flexGrow: 1 }}
+                    >
                         SysDC-View
                     </Typography>
                     <IconButton
@@ -100,7 +106,11 @@ function App() {
                 fitView
                 style={{ visibility: generatingFlow ? "hidden" : "visible" }}
             >
-                <Background gap={24} size={1.5} color="#0006"/>
+                <Background
+                    gap={24}
+                    size={1.5}
+                    color="#0006"
+                />
                 <MiniMap/>
                 <Controls/>
             </ReactFlow>
