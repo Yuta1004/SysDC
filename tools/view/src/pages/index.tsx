@@ -10,18 +10,19 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Collapse from "@mui/material/Collapse";
-import FormGroup from "@mui/material/FormGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import LinearProgress from "@mui/material/LinearProgress";
 import MenuIcon from "@mui/icons-material/Menu";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ExpandLess from "@mui/icons-material/ExpandLess";
+import Inventory from "@mui/icons-material/Inventory";
+import ArrowDownward from "@mui/icons-material/ArrowDownward";
+import ImportExport from "@mui/icons-material/ImportExport";
 import { invoke } from "@tauri-apps/api/tauri";
 
 import layout from "../flow/layout";
+import convert from "../sysdc_core/convert";
 import {
     UnitNode,
     ModuleNode,
@@ -59,6 +60,52 @@ function App() {
     /* 描画制御周りで扱うState */
     const [generatingFlow, setGeneratingFlow] = useState(true);
     const [openDrawer, setOpenDrawer] = useState(false);
+    const [unitListItems, setUnitListItems] = useState([]);
+
+    useEffect(() => {
+        invoke("get_system").then(_system => {
+            const system = (typeof _system == "object" && convert(_system));
+            const _unitListItems = system.units.map(unit => {
+                const dataItems = unit.data.map(data =>
+                    <ListItemButton key={data.name.name} sx={{ pl: 4 }}>
+                        <ListItemIcon>
+                            <Inventory/>
+                        </ListItemIcon>
+                        <ListItemText primary={data.name.name}/>
+                    </ListItemButton>
+                );
+                const modItems = unit.modules.map(mod => {
+                    const funcItems = mod.functions.map(func =>
+                        <ListItemButton key={func.name.name} sx={{ pl: 8 }}>
+                            <ListItemIcon>
+                                {func.return[1] === "void" ? <ArrowDownward/> : <ImportExport/> }
+                            </ListItemIcon>
+                            <ListItemText primary={func.name.name}/>
+                        </ListItemButton>
+                    );
+                    return (<>
+                        <ListItemButton key={mod.name.name} sx={{ pl: 4 }}>
+                            <ListItemText primary={mod.name.name}/>
+                            <ExpandLess/>
+                        </ListItemButton>
+                        <Collapse in={true} timeout="auto" unmountOnExit>
+                            <List component="div" disablePadding>{funcItems}</List>
+                        </Collapse>
+                    </>);
+                });
+                return (<>
+                    <ListItemButton key={unit.name.namespace+"."+unit.name.name}>
+                        <ListItemText primary={unit.name.namespace+"."+unit.name.name}/>
+                        <ExpandLess/>
+                    </ListItemButton>
+                    <Collapse in={true} timeout="auto" unmountOnExit>
+                        <List component="div" disablePadding>{[...dataItems, ...modItems]}</List>
+                    </Collapse>
+                </>);
+            });
+            setUnitListItems(_unitListItems);
+        });
+    }, []);
 
     useEffect(() => {
         invoke("gen_flow").then(([nodes, edges]) => {
@@ -116,6 +163,7 @@ function App() {
                 open={openDrawer}
                 sx={{
                     minWidth: "15%",
+                    padding: "25px",
                     flexShrink: 0,
                     [`& .MuiDrawer-paper`]: { minWidth: "15%", boxSizing: 'border-box' }
                 }}
@@ -123,27 +171,10 @@ function App() {
                 <Toolbar/>
                 <List subheader={
                     <ListSubheader component="div" id="nested-list-subheader">
-                        表示
+                        構成
                     </ListSubheader>
                 }>
-                    <ListItemButton>
-                        <ListItemIcon>
-                            <MenuIcon/>
-                        </ListItemIcon>
-                        <ListItemText primary="Unit"/>
-                        <ExpandLess/>
-                    </ListItemButton>
-                    <Collapse in={true} timeout="auto" unmountOnExit>
-                        <List component="div" disablePadding>
-                            {[".0.test", ".0.test.A", ".0.test.B", ".0.test.B.aaa"].map((text, _) => (
-                                <ListItem key={text} sx={{ pl: 4 }} disablePadding>
-                                    <FormGroup>
-                                        <FormControlLabel control={<Checkbox defaultChecked />} label={text} />
-                                    </FormGroup>
-                                </ListItem>
-                            ))}
-                        </List>
-                    </Collapse>
+                    {unitListItems}
                 </List>
             </Drawer>
             <ReactFlow

@@ -1,6 +1,9 @@
 export default SysDCSystem;
 
-export type Name = string;
+export type Name = {
+    readonly name: string,
+    readonly namespace: string
+}
 
 export type Type = string;
 
