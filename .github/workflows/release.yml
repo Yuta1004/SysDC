@@ -45,7 +45,7 @@ jobs:
 
     # Upload artifact
     - name: Make package
-      run: powershell Compress-Archive -Path target/x86_64-pc-windows-msvc/release/sysdc.exe -DestinationPath SysDC-x86_64-windows.zip
+      run: powershell Compress-Archive -Path target/x86_64-pc-windows-msvc/release/sysdc.exe,example/ -DestinationPath SysDC-x86_64-windows.zip
 
     - name: Upload artifact
       uses: actions/upload-artifact@v3
@@ -83,7 +83,7 @@ jobs:
 
     # Upload artifact
     - name: Make package
-      run: zip --junk-paths SysDC-x86_64-macos target/x86_64-apple-darwin/release/sysdc
+      run: zip --junk-paths SysDC-x86_64-macos target/x86_64-apple-darwin/release/sysdc example/
 
     - name: Upload artifact
       uses: actions/upload-artifact@v3
