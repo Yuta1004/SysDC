@@ -75,6 +75,9 @@ jobs:
       working-directory: ./tools/view
 
     # Build
+    - name: Make dist dir
+      run: mkdir -p tools/view/dist
+
     - name: Build
       run: cargo build --release --target=x86_64-apple-darwin
       env:
