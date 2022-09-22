@@ -61,9 +61,15 @@ jobs:
     - name: Setup npm modules
       run: npm install
       working-directory: ./tools/view
+    
+    - name: Build React project (on Windows)
+      if: matrix.target == 'x86_64-pc-windows-msvc'
+      run: npm run build
+      working-directory: ./tools/view
 
     # Build
     - name: Make dist dir
+      if: matrix.target != 'x86_64-pc-windows-msvc'
       run: mkdir -p ./tools/view/dist
     
     # - name: Build (on Linux)
@@ -72,11 +78,14 @@ jobs:
 
     - name: Build (on Windows)
       if: matrix.target == 'x86_64-pc-windows-msvc'
-      run: RUSTFLAGS="-C" target-feature=+crt-static" cargo build --release --target=x86_64-pc-windows-msvc
+      run: cargo build --release --target=x86_64-pc-windows-msvc
+      env:
+        DONT_BUILD_REACT:
+        RUSTFLAGS: -C target-feature=+crt-static
 
     # - name: Build (on MacOS)
     #   if: matrix.target == 'x86_64-apple-darwin'
-    #   run: cargo build --release --target=x86_64-apple-darwin
+    #   run: RUSTFLAGS="-C" target-feature=+crt-static" cargo build --release --target=x86_64-apple-darwin
 
     # Create GitHub Release
     - name: Create release
