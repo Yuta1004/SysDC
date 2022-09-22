@@ -41,7 +41,7 @@ jobs:
       uses: ./.github/actions/setup_libraries
 
     - name: Setup musl-tools (on Linux)
-      run: sudo apt install musl-tools
+      run: sudo apt install musl-dev musl-tools libstdc++6
 
     # Setup (Rust)
     - name: Setup rustup
