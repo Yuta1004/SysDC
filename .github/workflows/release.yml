@@ -53,45 +53,47 @@ jobs:
         name: Windows
         path: ./SysDC-x86_64-windows.zip
 
-  # build-on-macos:
-  #   runs-on: macos-latest
+  build-on-macos:
+    runs-on: macos-latest
 
-  #   steps:
-  #   - name: Setup repository
-  #     uses: actions/checkout@v3
+    steps:
+    - name: Setup repository
+      uses: actions/checkout@v3
 
-  #   # Setup (Rust)
-  #   - name: Setup rust toolschain
-  #     run: rustup target add x86_64-apple-darwin
+    # Setup (Rust)
+    - name: Setup rust toolschain
+      run: rustup target add x86_64-apple-darwin
     
-  #   # Setup (Node.js)
-  #   - name: Setup node
-  #     uses: actions/setup-node@v3
-  #     with:
-  #       node-version: 18
+    # Setup (Node.js)
+    - name: Setup node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
 
-  #   - name: Setup npm modules
-  #     run: npm install
-  #     working-directory: ./tools/view
+    - name: Setup npm modules
+      run: npm install
+      working-directory: ./tools/view
 
-  #   # Build
-  #   - name: Build
-  #     run: cargo build --release --target=x86_64-apple-darwin
-  #     env:
-  #       DONT_BUILD_REACT:
-  #       RUSTFLAGS: -C target-feature=+crt-static
+    # Build
+    - name: Build
+      run: cargo build --release --target=x86_64-apple-darwin
+      env:
+        DONT_BUILD_REACT:
+        RUSTFLAGS: -C target-feature=+crt-static
 
-  #   # Upload artifact
-  #   - name: Upload artifact
-  #     uses: actions/upload-artifact@v3
-  #     with:
-  #       name: macos
-  #       path: ./target/x86_64-apple-darwin/release/sysdc
+    # Upload artifact
+    - name: Make package
+      run: zip --junk-paths SysDC-x86_64-macos target/x86_64-apple-darwin/release/sysdc
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: MacOS
+        path: ./SysDC-x86_64-macos.zip
 
   create-release:
     runs-on: ubuntu-latest
-    # needs: [build-on-windows, build-on-macos]
-    needs: build-on-windows
+    needs: [build-on-windows, build-on-macos]
 
     # Create empty release
     steps:
@@ -110,11 +112,6 @@ jobs:
       with:
         path: ./
 
-    # - name: Download artifact built on Macos
-    #   uses: actions/download-artifact@v3
-    #   with:
-    #     name: macos
-
     # Upload to GitHub Release
     - name: Upload (Windows)
       uses: actions/upload-release-asset@v1
@@ -124,10 +121,10 @@ jobs:
         asset_name: SysDC-x86_64-windows.zip
         asset_content_type: application/zip
 
-    # - name: Upload (MacOS)
-    #   uses: actions/upload-release-asset@v1
-    #   with:
-    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #     asset_path: ./macos
-    #     asset_name: sysdc-macos-x86_64
-    #     asset_content_type: application/octet-stream
+    - name: Upload (MacOS)
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./MacOS/SysDC-x86_64-macos.zip
+        asset_name: SysDC-x86_64-macos.zip
+        asset_content_type: application/zip
