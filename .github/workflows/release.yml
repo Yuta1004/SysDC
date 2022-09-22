@@ -24,7 +24,7 @@ jobs:
             name: sysdc-x86_64-linux-musl
           # - target: x86_64-pc-windows-msvc
           #   os: windows-latest
-          #   name: sysdc-windows-x86_64
+          #   name: sysdc-windows-x86_64.exe
           # - target: x86_64-apple-darwin
           #   os: macos-latest
           #   name: sysdc-macos-x86_64
