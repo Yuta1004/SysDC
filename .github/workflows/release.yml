@@ -10,36 +10,61 @@ env:
   CARGO_TERM_COLOR: always
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-
-
 jobs:
   build-on-ubuntu:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-musl
+        include:
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+
+    runs-on: ${{ matrix.os }}
+
     steps:
-    - uses: actions/checkout@v3
-    - uses: ./.github/actions/cache_cargo
-    - uses: ./.github/actions/setup_libraries
-    - name: Setup musl-tools
+    - name: Setup repository
+      uses: actions/checkout@v3
+
+    # Setup (depends os)
+    - name: Setup libraries (on Linux)
+      if: matrix.target == "x86_64-unknown-linux-musl"
+      uses: ./.github/actions/setup_libraries
+
+    - name: Setup musl-tools (on Linux)
       run: sudo apt install musl-tools
-    - uses: actions/setup-node@v3
+
+    # Setup (Rust)
+    - name: Setup rustup
+      run: rustup target add ${{ matrix.target }}
+
+    # Setup (Node.js)
+    - name: Setup node
+      uses: actions/setup-node@v3
       with:
         node-version: 18
+
     - name: Setup npm modules
       run: npm install
       working-directory: ./tools/view
+
+    # Build
     - name: Make dist dir
       run: mkdir -p ./tools/view/dist
-    - name: Setup rustup
-      run: rustup target add x86_64-unknown-linux-musl 
-    - name: Build
+    
+    - name: Build (on Linux)
+      if: matrix.target == "x86_64-unknown-linux-musl"
       run: PKG_CONFIG_SYSROOT_DIR=/ RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target=x86_64-unknown-linux-musl
+
+    # Github Release
     - name: Create release
       id: create_release
       uses: actions/create-release@v1
       with:
         tag_name: tmp
         release_name: tmp
-    - name: Upload to release
+
+    - name: Upload
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
