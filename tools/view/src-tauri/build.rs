@@ -1,11 +1,13 @@
 use std::process::Command;
 
 fn main() {
-    Command::new("npm")
-        .args(&["run", "build"])
-        .current_dir("../")
-        .status()
-        .unwrap();
+    if option_env!("DONT_BUILD_REACT").is_none() {
+        Command::new("npm")
+            .args(&["run", "build"])
+            .current_dir("../")
+            .status()
+            .unwrap();
+    }
 
     tauri_build::build();
 
