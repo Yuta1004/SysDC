@@ -16,18 +16,18 @@ jobs:
       matrix:
         target:
           - x86_64-unknown-linux-musl
-          - x86_64-pc-windows-msvc
-          - x86_64-apple-darwin
+          # - x86_64-pc-windows-msvc
+          # - x86_64-apple-darwin
         include:
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
             name: sysdc-x86_64-linux-musl
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            name: sysdc-windows-x86_64
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            name: sysdc-macos-x86_64
+          # - target: x86_64-pc-windows-msvc
+          #   os: windows-latest
+          #   name: sysdc-windows-x86_64
+          # - target: x86_64-apple-darwin
+          #   os: macos-latest
+          #   name: sysdc-macos-x86_64
 
     runs-on: ${{ matrix.os }}
 
