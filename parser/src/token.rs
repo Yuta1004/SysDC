@@ -272,7 +272,7 @@ impl From<char> for CharType {
             '>' => CharType::SymbolAllow2,
 
             '%' => CharType::Comment,
-            ' ' | '\t' => CharType::Space,
+            ' ' | '\t' | '\r' => CharType::Space,
             '\n' => CharType::NewLine,
 
             _ => CharType::Other,
@@ -358,6 +358,8 @@ mod test {
                             Comment
                             あああ？
                         %
+
+                        \n \r\n \r\n \n
 
                         @affect IO.stdout(box)
 
