@@ -8,6 +8,10 @@
 
 ## ビルド
 
+```
+$ make build
+```
+
 ### 依存関係
 
 - `cargo`
@@ -32,10 +36,6 @@ $ npm --version
 ```
 
 </details>
-
-```
-$ make build
-```
 
 ## サンプルコードの実行
 
@@ -81,7 +81,7 @@ $ ./sysdc exec view
 #### 実行例
 
 ```
-./sysdc exec json -i compiler.sysdc --args compiler.json
+./sysdc exec json -i compiler.sysdc
 ```
 
 #### 引数
@@ -90,9 +90,7 @@ $ ./sysdc exec view
 
 #### オプション
 
-- -a / --args : ツールに渡す引数
 - -i / --input : 内部表現が保存されたファイル名 (省略した場合 `out.sysdc`)
-
 
 ## 構成
 
@@ -117,3 +115,8 @@ flowchart TB
     tools-->json
     tools-->view
 ```
+
+## ライセンス
+
+Apache License 2.0  
+Copyright 2022 Yuta NAKAGAMI
