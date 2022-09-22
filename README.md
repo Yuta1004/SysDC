@@ -1,36 +1,37 @@
 # SysDC
 
-[![check](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml/badge.svg?branch=develop)](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml)
+[![check](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml/badge.svg?branch=master)](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml)
 
 ## 概要
 
 システム設計支援言語
 
-## 構成
+## ビルド
 
-### src(cli) [bin]
+### 依存関係
 
-CLI
+- `cargo`
+- `node`
+- `npm`
 
-### parser [lib]
+<details>
+<summary>確認済環境</summary>
 
-プログラムを内部表現に変換する
+```
+$ cargo --version
+cargo 1.63.0 (fd9c4297c 2022-07-01)
 
-### tools [lib]
+$ rustc --version
+rustc 1.63.0 (4b91a6ea7 2022-08-08)
 
-内部表現を利用するツール群
+$ node --version
+v18.9.0
 
-```mermaid
-flowchart TB
-    cli--*.def-->parser
-    parser--SysDCSystem-->cli
-    cli--SysDCSystem-->tools
-    tools-->debug
-    tools-->json
-    tools-->view
+$ npm --version
+8.19.2
 ```
 
-## ビルド
+</details>
 
 ```
 $ make build
@@ -91,3 +92,28 @@ $ ./sysdc exec view
 
 - -a / --args : ツールに渡す引数
 - -i / --input : 内部表現が保存されたファイル名 (省略した場合 `out.sysdc`)
+
+
+## 構成
+
+### src(cli) [bin]
+
+CLI
+
+### parser [lib]
+
+プログラムを内部表現に変換する
+
+### tools [lib]
+
+内部表現を利用するツール群
+
+```mermaid
+flowchart TB
+    cli--*.def-->parser
+    parser--SysDCSystem-->cli
+    cli--SysDCSystem-->tools
+    tools-->debug
+    tools-->json
+    tools-->view
+```
