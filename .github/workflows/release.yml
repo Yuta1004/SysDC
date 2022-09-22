@@ -25,11 +25,16 @@ jobs:
       working-directory: ./tools/view
     - name: Make dist dir
       run: mkdir -p ./tools/view/dist
+    - name: Setup rustup
+      run: rustup target add x86_64-unknown-linux-musl 
     - name: Build
-      run: cargo build --release
+      run: RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target=x86_64-unknown-linux-musl
     - name: Create release
       id: create_release
       uses: actions/create-release@v1
+      with:
+        tag_name: tmp
+        release_name: tmp
     - name: Upload to release
       uses: actions/upload-release-asset@v1
       with:
