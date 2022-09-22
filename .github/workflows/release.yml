@@ -81,7 +81,6 @@ jobs:
     - name: Build
       run: cargo build --release --target=x86_64-apple-darwin
       env:
-        DONT_BUILD_REACT:
         RUSTFLAGS: -C target-feature=+crt-static
 
     # Upload artifact
