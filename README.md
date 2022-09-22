@@ -8,6 +8,10 @@
 
 ## ビルド
 
+```
+$ make build
+```
+
 ### 依存関係
 
 - `cargo`
@@ -32,10 +36,6 @@ $ npm --version
 ```
 
 </details>
-
-```
-$ make build
-```
 
 ## サンプルコードの実行
 
@@ -117,3 +117,8 @@ flowchart TB
     tools-->json
     tools-->view
 ```
+
+## ライセンス
+
+Apache License 2.0  
+Copyright 2022 Yuta NAKAGAMI
