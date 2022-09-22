@@ -28,7 +28,7 @@ jobs:
     - name: Setup rustup
       run: rustup target add x86_64-unknown-linux-musl 
     - name: Build
-      run: RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target=x86_64-unknown-linux-musl
+      run: PKG_CONFIG_SYSROOT_DIR=/ RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target=x86_64-unknown-linux-musl
     - name: Create release
       id: create_release
       uses: actions/create-release@v1
@@ -40,4 +40,4 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./target/release/sysdc
-        asset_name: sysdc-linux
+        asset_name: sysdc-x86_64-linux-musl
