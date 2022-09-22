@@ -86,7 +86,9 @@ jobs:
 
     # Upload artifact
     - name: Make package
-      run: zip --junk-paths SysDC-x86_64-macos target/x86_64-apple-darwin/release/sysdc example/
+      run: |
+        cp target/x86_64-apple-darwin/release/sysdc .
+        zip -r SysDC-x86_64-macos sysdc example/
 
     - name: Upload artifact
       uses: actions/upload-artifact@v3
