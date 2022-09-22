@@ -41,7 +41,7 @@ jobs:
       uses: ./.github/actions/setup_libraries
 
     - name: Setup musl-tools (on Linux)
-      if: matrix.targt == 'x86_64-unknown-linux-musl'
+      if: matrix.target == 'x86_64-unknown-linux-musl'
       run: sudo apt install musl-dev musl-tools libstdc++6
 
     # Setup (Rust)
