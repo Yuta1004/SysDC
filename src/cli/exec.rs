@@ -17,9 +17,6 @@ pub struct ExecCmd {
     #[clap(required = true)]
     tool: String,
 
-    #[clap(short, long)]
-    args: Vec<String>,
-
     #[clap(short, long, default_value = "out.sysdc")]
     input: String,
 }
