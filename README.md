@@ -7,8 +7,6 @@
 
 システム設計支援言語
 
-[Webサイト](https://sysdc.nakagamiyuta.dev)
-
 ## ビルド
 
 ```
@@ -66,7 +64,7 @@ $ ./sysdc exec view
 #### 実行例
 
 ```
-./sysdc parse example/compiler/*.def -o compiler.sysdc
+./sysdc parse example/logger/**/*.def -o logger.sysdc
 ```
 
 #### 引数
@@ -84,7 +82,7 @@ $ ./sysdc exec view
 #### 実行例
 
 ```
-./sysdc exec json -i compiler.sysdc
+./sysdc exec json -i logger.sysdc
 ```
 
 #### 引数
