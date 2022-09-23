@@ -1,0 +1,30 @@
+unit box;
+
+data Box {
+    x: i32,
+    y: i32,
+    w: i32,
+    h: i32
+}
+
+module BoxModule {
+    func new(x: i32, y: i32, w: i32, h: i32) -> Box {
+        @return box
+
+        @spawn box: Box {
+            use x, y, w, h;
+        }
+    }
+
+    proc move(box: Box, dx: i32, dy: i32) {
+        @modify box {
+            use dx, dy;
+        }
+    }
+
+    proc changeSize(box: Box, w: i32, h: i32) {
+        @modify box {
+            use w, h;
+        }
+    }
+}

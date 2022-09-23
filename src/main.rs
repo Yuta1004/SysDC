@@ -1,3 +1,5 @@
+mod cli;
+
 fn main() {
-    println!("Hello SysDC!");
+    cli::App::run();
 }

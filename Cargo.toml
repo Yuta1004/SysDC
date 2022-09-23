@@ -1,6 +1,25 @@
 [package]
 name = "sysdc"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+serde = "1.0.143"
+serde_json = "1.0.83"
+rmp-serde = "1.1.0"
+clap = { version = "3.2.7", features = ["derive"] }
+glob = "0.3.0"
+anyhow = { version = "1.0.64", features = ["backtrace"] }
+thiserror = "1.0.34"
+sysdc_parser = { path = "parser" }
+sysdc_tool_debug = { path = "tools/debug" }
+sysdc_tool_json = { path = "tools/json" }
+sysdc_tool_view = { path = "tools/view/src-tauri" }
+
+[workspace]
+members = [
+    "parser",
+    "tools/debug",
+    "tools/json",
+    "tools/view/src-tauri"
+]

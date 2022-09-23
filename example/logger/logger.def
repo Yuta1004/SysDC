@@ -1,0 +1,33 @@
+unit logger;
+
+from std import String;
+from std.io import IO;
+from std.time import TimeStamp, Time;
+
+module Logger {
+    proc info(msg: String) {
+        @affect IO.stdout(msg)
+
+        @modify msg {
+            use timestamp;
+        }
+
+        @spawn timestamp: TimeStamp {
+            let now = Time.getNowTime();
+            return now;
+        }
+    }
+
+    proc error(msg: String) {
+        @affect IO.stdout(msg)
+
+        @modify msg {
+            use timestamp;
+        }
+
+        @spawn timestamp: TimeStamp {
+            let now = Time.getNowTime();
+            return now;
+        }
+    }
+}

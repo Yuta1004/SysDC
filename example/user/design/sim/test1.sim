@@ -1,4 +1,0 @@
-ref user User;
-
-create user: User;
-user::greet();
