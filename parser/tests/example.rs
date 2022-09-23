@@ -8,17 +8,6 @@ fn parse_example_box() {
 }
 
 #[test]
-fn parse_example_compiler() {
-    parse_files(&[
-        "../example/compiler/compiler.def",
-        "../example/compiler/parser.def",
-        "../example/compiler/std.def",
-        "../example/compiler/structure.def",
-        "../example/compiler/tokenizer.def",
-    ]);
-}
-
-#[test]
 fn parse_example_logger() {
     parse_files(&[
         "../example/logger/logger.def",
