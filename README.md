@@ -1,6 +1,7 @@
 # SysDC
 
 [![check](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml/badge.svg?branch=master)](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml)
+![VERSILN-Badge](https://img.shields.io/github/v/release/Yuta1004/SysDC?style=flat)
 
 ## 概要
 
@@ -63,7 +64,7 @@ $ ./sysdc exec view
 #### 実行例
 
 ```
-./sysdc parse example/compiler/*.def -o compiler.sysdc
+./sysdc parse example/logger/**/*.def -o logger.sysdc
 ```
 
 #### 引数
@@ -81,7 +82,7 @@ $ ./sysdc exec view
 #### 実行例
 
 ```
-./sysdc exec json -i compiler.sysdc
+./sysdc exec json -i logger.sysdc
 ```
 
 #### 引数
