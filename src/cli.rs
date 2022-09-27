@@ -8,9 +8,9 @@ use clap::{AppSettings, Parser, Subcommand};
 use exec::ExecCmd;
 use parse::ParseCmd;
 
-/// SysDC: System Definition Language and Tools
+/// System Definition Language and Tools
 #[derive(Parser)]
-#[clap(author, version, name = "subcommand")]
+#[clap(author, version, name = "SysDC")]
 #[clap(global_settings(&[AppSettings::DisableHelpSubcommand]))]
 pub struct App {
     #[clap(subcommand)]

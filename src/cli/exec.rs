@@ -12,7 +12,6 @@ enum ExecError {
 }
 
 #[derive(Parser)]
-#[clap(name = "subcommand")]
 pub struct ExecCmd {
     #[clap(required = true)]
     tool: String,
