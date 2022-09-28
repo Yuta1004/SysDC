@@ -1,12 +1,10 @@
 mod parse;
 mod exec;
+mod tool;
 
 use std::process::exit;
 
 use clap::{AppSettings, Parser, Subcommand};
-
-use exec::ExecCmd;
-use parse::ParseCmd;
 
 /// Programming Language aiming to support Software Design and Development
 #[derive(Parser)]
@@ -21,10 +19,13 @@ pub struct App {
 #[allow(non_camel_case_types)]
 enum AppSub {
     /// Parse files *.def into *sysdc
-    parse(ParseCmd),
+    parse(parse::ParseCmd),
 
     /// Execute a tool using a *.sysdc file
-    exec(ExecCmd),
+    exec(exec::ExecCmd),
+
+    /// Manage tools
+    tool(tool::ToolCmd),
 }
 
 impl App {
@@ -32,6 +33,7 @@ impl App {
         let result = match App::parse().sub {
             AppSub::parse(cmd) => cmd.run(),
             AppSub::exec(cmd) => cmd.run(),
+            AppSub::tool(cmd) => cmd.run(),
         };
         match result {
             Ok(_) => exit(0),
