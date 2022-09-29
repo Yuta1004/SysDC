@@ -26,6 +26,7 @@ impl Parser {
     }
 
     pub fn check(self) -> anyhow::Result<SysDCSystem> {
-        check::check(unchecked::SysDCSystem::new(self.units))
+        let system = unchecked::SysDCSystem::new(self.units);
+        check::check(system)
     }
 }
