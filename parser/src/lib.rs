@@ -20,19 +20,11 @@ pub struct Parser {
 impl Parser {
     pub fn parse(&mut self, filename: String, program: &str) -> anyhow::Result<()> {
         let tokenizer = Tokenizer::new(filename, program);
-        match UnitParser::parse(tokenizer) {
-            Ok(unit) => {
-                self.units.push(unit);
-                Ok(())
-            }
-            Err(err) => Err(err),
-        }
+        self.units.push(UnitParser::parse(tokenizer)?);
+        Ok(())
     }
 
     pub fn check(self) -> anyhow::Result<SysDCSystem> {
-        match check::check(unchecked::SysDCSystem::new(self.units)) {
-            Ok(system) => Ok(system),
-            Err(err) => Err(err),
-        }
+        check::check(unchecked::SysDCSystem::new(self.units))
     }
 }
