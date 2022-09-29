@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/cache_cargo
     - uses: ./.github/actions/setup_libraries
+    - uses: ./.github/actions/cache_cargo
     - name: Make dist dir
       run: mkdir -p tools/view/dist 
     - name: Build
@@ -39,8 +39,8 @@ jobs:
     needs: cache
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/cache_cargo
     - uses: ./.github/actions/setup_libraries
+    - uses: ./.github/actions/cache_cargo
     - name: Setup rustup
       run: rustup component add clippy
     - name: Make dist dir
@@ -53,8 +53,8 @@ jobs:
     needs: cache
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/cache_cargo
     - uses: ./.github/actions/setup_libraries
+    - uses: ./.github/actions/cache_cargo
     - name: Make dist dir
       run: mkdir -p tools/view/dist
     - name: Test
