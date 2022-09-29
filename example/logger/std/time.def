@@ -1,10 +1,10 @@
 unit std.time;
 
-data TimeStamp {}
+data Timestamp {}
 
 module Time {
-    func getNowTime() -> TimeStamp {
+    func get_now_time() -> Timestamp {
         @return now
-        @spawn now: TimeStamp
+        @spawn now: Timestamp
     }
 }
