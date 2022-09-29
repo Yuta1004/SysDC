@@ -2,7 +2,7 @@ unit logger;
 
 from std import String;
 from std.io import IO;
-from std.time import TimeStamp, Time;
+from std.time import Time, Timestamp;
 
 module Logger {
     proc info(msg: String) {
@@ -12,8 +12,8 @@ module Logger {
             use timestamp;
         }
 
-        @spawn timestamp: TimeStamp {
-            let now = Time.getNowTime();
+        @spawn timestamp: Timestamp {
+            let now = Time.get_now_time();
             return now;
         }
     }
@@ -25,8 +25,8 @@ module Logger {
             use timestamp;
         }
 
-        @spawn timestamp: TimeStamp {
-            let now = Time.getNowTime();
+        @spawn timestamp: Timestamp {
+            let now = Time.get_now_time();
             return now;
         }
     }
