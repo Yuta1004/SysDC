@@ -20,7 +20,8 @@ pub struct Parser {
 impl Parser {
     pub fn parse(&mut self, filename: String, program: &str) -> anyhow::Result<()> {
         let tokenizer = Tokenizer::new(filename, program);
-        self.units.push(UnitParser::parse(tokenizer)?);
+        let system = UnitParser::parse(tokenizer)?;
+        self.units.push(system);
         Ok(())
     }
 
