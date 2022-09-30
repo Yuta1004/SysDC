@@ -47,8 +47,6 @@ $ ./sysdc parse example/box/*.def
 Load: box.def
 1 units loaded!
 
-$ ./sysdc exec debug
-
 $ ./sysdc exec json
 
 $ ./sysdc exec view
@@ -92,6 +90,16 @@ $ ./sysdc exec view
 #### オプション
 
 - -i / --input : 内部表現が保存されたファイル名 (省略した場合 `out.sysdc`)
+
+### tool list
+
+使用可能ツールの一覧を表示する
+
+#### 実行例
+
+```
+./sysdc tool list
+```
 
 ## 構成
 
