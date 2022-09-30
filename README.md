@@ -1,7 +1,7 @@
 # SysDC
 
 [![check](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml/badge.svg?branch=master)](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml)
-![VERSILN-Badge](https://img.shields.io/github/v/release/Yuta1004/SysDC?style=flat)
+![VERSION-Badge](https://img.shields.io/github/v/release/Yuta1004/SysDC?style=flat)
 
 ## 概要
 
