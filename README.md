@@ -63,11 +63,9 @@ $ ./sysdc exec view
 
 ```
 ./sysdc parse example/logger/**/*.def -o logger.sysdc
+
+./sysdc parse example/logger/logger.def example/logger/std.def example/logger/std/*.def -o logger.sysdc
 ```
-
-#### 引数
-
-- INPUT: ファイル名
 
 #### オプション
 
@@ -83,23 +81,11 @@ $ ./sysdc exec view
 ./sysdc exec json -i logger.sysdc
 ```
 
-#### 引数
-
-- TOOL: 実行するツール名
-
 #### オプション
 
 - -i / --input : 内部表現が保存されたファイル名 (省略した場合 `out.sysdc`)
 
-### tool list
-
-使用可能ツールの一覧を表示する
-
-#### 実行例
-
-```
-./sysdc tool list
-```
+**※ 詳細: [SysDC - 使用方法](https://sysdc.nakagamiyuta.dev/tutorial)**
 
 ## 構成
 

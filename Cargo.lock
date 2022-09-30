@@ -2681,7 +2681,7 @@ dependencies = [
 
 [[package]]
 name = "sysdc"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -2698,7 +2698,7 @@ dependencies = [
 
 [[package]]
 name = "sysdc_parser"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "rmp-serde",
@@ -2708,7 +2708,7 @@ dependencies = [
 
 [[package]]
 name = "sysdc_tool_debug"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "sysdc_parser",
@@ -2716,7 +2716,7 @@ dependencies = [
 
 [[package]]
 name = "sysdc_tool_json"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "serde_json",
