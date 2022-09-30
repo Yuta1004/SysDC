@@ -1,7 +1,7 @@
 # SysDC
 
 [![check](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml/badge.svg?branch=master)](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml)
-![VERSILN-Badge](https://img.shields.io/github/v/release/Yuta1004/SysDC?style=flat)
+![VERSION-Badge](https://img.shields.io/github/v/release/Yuta1004/SysDC?style=flat)
 
 ## 概要
 
@@ -47,8 +47,6 @@ $ ./sysdc parse example/box/*.def
 Load: box.def
 1 units loaded!
 
-$ ./sysdc exec debug
-
 $ ./sysdc exec json
 
 $ ./sysdc exec view
@@ -65,11 +63,9 @@ $ ./sysdc exec view
 
 ```
 ./sysdc parse example/logger/**/*.def -o logger.sysdc
+
+./sysdc parse example/logger/logger.def example/logger/std.def example/logger/std/*.def -o logger.sysdc
 ```
-
-#### 引数
-
-- INPUT: ファイル名
 
 #### オプション
 
@@ -85,13 +81,11 @@ $ ./sysdc exec view
 ./sysdc exec json -i logger.sysdc
 ```
 
-#### 引数
-
-- TOOL: 実行するツール名
-
 #### オプション
 
 - -i / --input : 内部表現が保存されたファイル名 (省略した場合 `out.sysdc`)
+
+**※ 詳細: [SysDC - 使用方法](https://sysdc.nakagamiyuta.dev/tutorial)**
 
 ## 構成
 

@@ -1,6 +1,6 @@
 use sysdc_parser::structure::SysDCSystem;
 
-pub fn exec(system: &SysDCSystem) -> anyhow::Result<()> {
+pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
     println!("{:?}", system);
     Ok(())
 }

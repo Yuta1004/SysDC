@@ -12,7 +12,6 @@ enum ExecError {
 }
 
 #[derive(Parser)]
-#[clap(name = "subcommand")]
 pub struct ExecCmd {
     #[clap(required = true)]
     tool: String,
@@ -25,8 +24,8 @@ impl ExecCmd {
     pub fn run(&self) -> anyhow::Result<()> {
         let system = self.load_system()?;
         match self.tool.as_str() {
-            "debug" => sysdc_tool_debug::exec(&system)?,
-            "json" => sysdc_tool_json::exec(&system)?,
+            "debug" => sysdc_tool_debug::exec(system)?,
+            "json" => sysdc_tool_json::exec(system)?,
             "view" => sysdc_tool_view::exec(system)?,
             t => return Err(ExecError::ToolNotFound(t.to_string()).into()),
         }

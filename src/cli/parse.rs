@@ -10,7 +10,6 @@ use sysdc_parser::structure::SysDCSystem;
 use sysdc_parser::Parser as SParser;
 
 #[derive(Parser)]
-#[clap(name = "subcommand")]
 pub struct ParseCmd {
     #[clap(required = true)]
     input: Vec<String>,

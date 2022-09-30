@@ -22,7 +22,7 @@ module BoxModule {
         }
     }
 
-    proc changeSize(box: Box, w: i32, h: i32) {
+    proc change_size(box: Box, w: i32, h: i32) {
         @modify box {
             use w, h;
         }
