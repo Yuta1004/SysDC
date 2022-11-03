@@ -7,13 +7,17 @@ mod name;
 mod types;
 mod structure;
 
-use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::JsValue;
+#[cfg(wasm)]
+use {
+    wasm_bindgen::prelude::wasm_bindgen,
+    wasm_bindgen::JsValue,
+};
 
 use parse::UnitParser;
 use structure::unchecked;
 use token::Tokenizer;
 
+#[cfg(wasm)]
 macro_rules! q {
     ($target:expr) => {
         match $target {
@@ -23,13 +27,13 @@ macro_rules! q {
     };
 }
 
-#[wasm_bindgen]
+#[cfg_attr(wasm, wasm_bindgen)]
 #[derive(Default)]
 pub struct Parser {
     units: Vec<unchecked::SysDCUnit>,
 }
 
-#[wasm_bindgen]
+#[cfg(wasm)]
 impl Parser {
     pub fn parse(&mut self, filename: String, program: &str) -> Result<(), String> {
         let tokenizer = Tokenizer::new(filename, program);
@@ -42,5 +46,20 @@ impl Parser {
         let system = unchecked::SysDCSystem::new(self.units);
         let system = q!(check::check(system));
         Ok(serde_wasm_bindgen::to_value(&system).unwrap())
+    }
+}
+
+#[cfg(not(wasm))]
+impl Parser {
+    pub fn parse(&mut self, filename: String, program: &str) -> anyhow::Result<()> {
+        let tokenizer = Tokenizer::new(filename, program);
+        let unit = UnitParser::parse(tokenizer)?;
+        self.units.push(unit);
+        Ok(())
+    }
+
+    pub fn check(self) -> anyhow::Result<structure::SysDCSystem> {
+        let system = unchecked::SysDCSystem::new(self.units);
+        check::check(system)
     }
 }
