@@ -22,12 +22,19 @@ static_resources:
           route_config:
             virtual_hosts:
             - name: doc_service
-              domains: ["*"]
+              domains: "*"
               routes:
               - match:
                   safe_regex: { regex: "^/doc(.)*" }
                 route:
                   cluster: doc_service
+              - match:
+                  safe_regex: { regex: "^/editor/front(.)*" }
+                route:
+                  regex_rewrite:
+                    pattern: { regex: "^/editor/front" }
+                    substitution: "/"
+                  cluster: editor_f_service
   clusters:
   - name: doc_service
     type: STRICT_DNS
@@ -38,3 +45,12 @@ static_resources:
         - endpoint:
             address:
               socket_address: { address: doc, port_value: 50000 }
+  - name: editor_f_service
+    type: STRICT_DNS
+    load_assignment:
+      cluster_name: editor_f_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: editor-front, port_value: 3000 }
