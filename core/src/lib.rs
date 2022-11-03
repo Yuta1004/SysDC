@@ -8,10 +8,7 @@ mod types;
 mod structure;
 
 #[cfg(wasm)]
-use {
-    wasm_bindgen::prelude::wasm_bindgen,
-    wasm_bindgen::JsValue,
-};
+use {wasm_bindgen::prelude::wasm_bindgen, wasm_bindgen::JsValue};
 
 use parse::UnitParser;
 use structure::unchecked;
