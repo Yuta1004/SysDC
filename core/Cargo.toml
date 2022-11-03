@@ -1,5 +1,5 @@
 [package]
-name = "sysdc_parser"
+name = "sysdc_core"
 version = "0.1.1"
 edition = "2021"
 
