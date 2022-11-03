@@ -1,0 +1,19 @@
+[package]
+name = "sysdc_core"
+version = "0.1.1"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1.0.143", features = ["derive"] }
+rmp-serde = "1.1.0"
+anyhow = { version = "1.0.64", features = ["backtrace"] }
+thiserror = "1.0.34"
+wasm-bindgen = { version = "0.2", optional = true }
+serde-wasm-bindgen = { version = "0.4", optional = true }
+
+[features]
+default = []
+wasm = ["wasm-bindgen", "serde-wasm-bindgen"]

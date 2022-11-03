@@ -127,7 +127,6 @@ impl<'de> Deserialize<'de> for TypeKind {
 
 #[cfg(test)]
 mod test {
-    use rmp_serde;
     use rmp_serde::Serializer;
     use serde::Serialize;
 
