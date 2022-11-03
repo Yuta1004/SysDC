@@ -2,3 +2,6 @@
 *.sysdc
 sysdc
 
+.env
+*.lock
+
