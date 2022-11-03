@@ -44,7 +44,7 @@ static_resources:
       - lb_endpoints:
         - endpoint:
             address:
-              socket_address: { address: doc, port_value: 50000 }
+              socket_address: { address: doc, port_value: 1313 }
   - name: editor_f_service
     type: STRICT_DNS
     load_assignment:

@@ -17,7 +17,7 @@ services:
       - editor-front
   doc:
     image: klakegg/hugo:0.101.0-ext-alpine
-    command: server --port=50000 ${SYSDC_HUGO_OPTIONS}
+    command: server --disableLiveReload --baseURL=${SYSDC_BASE_URL}/doc --appendPort=false
     volumes:
       - type: bind
         source: "./doc"

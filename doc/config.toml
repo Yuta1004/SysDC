@@ -1,4 +1,3 @@
-baseURL = "http://doc/doc"
 title = "SysDC"
 theme = "hugo-theme-learn"
 languageCode = "ja-JP"
