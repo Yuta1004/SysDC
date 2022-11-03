@@ -1,6 +1,4 @@
-/target
-*.sysdc
-sysdc
+target/
 
 .env
 *.lock
