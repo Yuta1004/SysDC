@@ -1,7 +1,20 @@
+import AceEditor from "react-ace";
+import "react-ace-builds/webpack-resolver-min";
+
 const App = () => {
     return (
         <div>
-            <p>Hello SysDC-Editor</p>
+            <AceEditor
+                mode="python"
+                theme="monokai"
+                showPrintMargin={false}
+                showGutter={true}
+                highlightActiveLine={true}
+                style={{
+                    width: "100vw",
+                    height: "100vh"
+                }} 
+            />
         </div>
     )
 };
