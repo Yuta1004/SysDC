@@ -1051,9 +1051,7 @@ mod test {
     fn check(programs: Vec<&str>) {
         let mut parser = Parser::default();
         for program in programs {
-            parser
-                .parse("check.def".to_string(), program)
-                .unwrap();
+            parser.parse("check.def".to_string(), program).unwrap();
         }
         parser.check().unwrap();
     }
