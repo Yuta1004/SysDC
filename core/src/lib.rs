@@ -7,8 +7,8 @@ mod name;
 mod types;
 mod structure;
 
-use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::JsValue;
 
 use parse::UnitParser;
 use structure::unchecked;
@@ -18,7 +18,7 @@ macro_rules! q {
     ($target:expr) => {
         match $target {
             Ok(target) => target,
-            Err(err) => return Err(err.to_string())
+            Err(err) => return Err(err.to_string()),
         }
     };
 }
