@@ -464,7 +464,7 @@ mod test {
             for token_kind in correct_token_kinds {
                 match tokenizer.expect(token_kind.clone()).unwrap() {
                     Some(_) => {}
-                    None => assert!(false, "{:?}", token_kind),
+                    None => panic!("{:?}", token_kind),
                 }
             }
         }

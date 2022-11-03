@@ -1052,7 +1052,7 @@ mod test {
         let mut parser = Parser::default();
         for program in programs {
             parser
-                .parse("check.def".to_string(), &program.to_string())
+                .parse("check.def".to_string(), program)
                 .unwrap();
         }
         parser.check().unwrap();
