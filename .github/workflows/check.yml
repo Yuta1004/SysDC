@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - "master"
-      - "develop"
+      - "develop*"
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -16,12 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/setup_libraries
     - uses: ./.github/actions/cache_cargo
-    - name: Make dist dir
-      run: mkdir -p tools/view/dist 
     - name: Build
       run: cargo build --all-targets
+      working-directory: core
 
   fmt:
     runs-on: ubuntu-latest
@@ -33,29 +31,26 @@ jobs:
       run: rustup component add rustfmt
     - name: Check format
       run: cargo fmt --all -- --check
+      working-directory: core
 
   clippy:
     runs-on: ubuntu-latest
     needs: cache
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/setup_libraries
     - uses: ./.github/actions/cache_cargo
     - name: Setup rustup
       run: rustup component add clippy
-    - name: Make dist dir
-      run: mkdir -p tools/view/dist
     - name: Check by Clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
+      working-directory: core
 
   test:
     runs-on: ubuntu-latest
     needs: cache
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/setup_libraries
     - uses: ./.github/actions/cache_cargo
-    - name: Make dist dir
-      run: mkdir -p tools/view/dist
     - name: Test
       run: cargo test --all
+      working-directory: core

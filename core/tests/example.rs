@@ -1,6 +1,6 @@
 use std::fs;
 
-use sysdc_parser::Parser;
+use sysdc_core::Parser;
 
 #[test]
 fn parse_example_box() {

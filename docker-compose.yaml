@@ -1,0 +1,25 @@
+version: "3"
+
+services:
+  proxy:
+    image: envoyproxy/envoy:v1.24.0
+    ports:
+      - ${SYSDC_PORT}:50000
+    volumes:
+      - type: bind
+        source: "./proxy/envoy.yaml"
+        target: "/etc/envoy/envoy.yaml"
+        read_only: true
+    environment:
+      TZ: Asia/Tokyo
+    depends_on:
+      - doc
+  doc:
+    image: klakegg/hugo:0.101.0-ext-alpine
+    command: server --port=50000 ${SYSDC_HUGO_OPTIONS}
+    volumes:
+      - type: bind
+        source: "./doc"
+        target: "/src"
+    environment:
+      TZ: Asia/Tokyo
