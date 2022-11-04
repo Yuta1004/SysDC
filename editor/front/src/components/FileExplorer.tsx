@@ -8,7 +8,8 @@ import MyFileSystem, { MyNode, MyLeaf } from "../filesystem/MyFileSystem";
 
 interface FileExplorerProps {
     style: React.CSSProperties | undefined,
-    fs: MyFileSystem
+    fs: MyFileSystem,
+    onSelect: (path: string) => void
 }
 
 const FileExplorer = (props: FileExplorerProps) => {
@@ -23,6 +24,7 @@ const FileExplorer = (props: FileExplorerProps) => {
                         padding: "5px 0 5px 0",
                         pl: depth*2,
                     }}
+                    onClick={() => props.onSelect(node.name) }
                 >
                     <FolderOpenIcon
                         sx={{
@@ -47,6 +49,7 @@ const FileExplorer = (props: FileExplorerProps) => {
                         padding: "5px 0 5px 0",
                         pl: depth*2,
                     }}
+                    onClick={() => props.onSelect(node.name) }
                 >
                     <TextSnippetIcon
                         sx={{

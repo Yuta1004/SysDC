@@ -32,8 +32,10 @@ export class MyFileSystem {
         return result;
     }
 
-    mkfile(dirPath: string, filename: string, body: string): boolean {
-        const [result, foundNode] = this.getNode(this.root, dirPath.split("/").slice(1).join("/"));
+    mkfile(path: string, body: string): boolean {
+        const dirPath = path.split("/").slice(1, -1).join("/");
+        const filename = path.split("/").slice(-1)[0];
+        const [result, foundNode] = this.getNode(this.root, dirPath);
         if (result) {
             foundNode.leaves.set(filename, {
                 name: dirPath + "/" + filename,
@@ -43,8 +45,10 @@ export class MyFileSystem {
         return result;
     }
 
-    read(dirPath: string, filename: string): string|undefined {
-        const [result, foundNode] = this.getNode(this.root, dirPath.split("/").slice(1).join("/"));
+    read(path: string): string|undefined {
+        const dirPath = path.split("/").slice(1, -1).join("/");
+        const filename = path.split("/").slice(-1)[0];
+        const [result, foundNode] = this.getNode(this.root, dirPath);
         if (result) {
             const leaf = foundNode.leaves.get(filename);
             return leaf ? leaf.body : undefined;
@@ -56,14 +60,15 @@ export class MyFileSystem {
         const splittedPath = path.split("/");
         const dir = parNode.nodes.get(splittedPath[0]);
         if (dir !== undefined) {
-            if (splittedPath.length === 1) {
+            if (splittedPath.length == 1) {
                 return [true, dir];
             } else {
                 return this.getNode(dir, splittedPath.slice(1).join("/"));
             }
         }
-        return [splittedPath.length === 1, parNode];
+        return [splittedPath.length == 1, parNode];
     }
 }
+
 
 export default MyFileSystem;

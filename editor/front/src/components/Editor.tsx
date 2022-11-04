@@ -1,14 +1,29 @@
+import { useEffect, useState } from "react";
+
 import AceEditor from "react-ace";
 import "brace/theme/eclipse";
 import Chip from "@mui/material/Chip";
 
 import SysDCSyntaxHighlight from "../ace_custom/SysDCSyntaxHighlight";
+import MyFileSystem from "../filesystem/MyFileSystem";
+
 
 interface EditorProps {
-    style: React.CSSProperties | undefined
+    style: React.CSSProperties | undefined,
+    fs: MyFileSystem,
+    targetFile: string
 }
 
 const Editor = (props: EditorProps) => {
+    const [code, setCode] = useState("");
+
+    useEffect(() => {
+        const result = props.fs.read(props.targetFile);
+        if (result !== undefined) {
+            setCode(result);
+        }
+    }, [props.fs, props.targetFile]);
+
     const setSyntaxHighlight = (editor: any) => {
         let session = editor.getSession();
         session.$mode.$highlightRules.$rules = SysDCSyntaxHighlight;
@@ -30,7 +45,7 @@ const Editor = (props: EditorProps) => {
                 }} 
             >
                 <Chip
-                    label="A / B / C / Test.def"
+                    label={ props.targetFile }
                     variant="outlined"
                     size="small"
                     style={{
@@ -38,6 +53,7 @@ const Editor = (props: EditorProps) => {
                     }}
                 />
                 <AceEditor
+                    value={ code }
                     theme="eclipse"
                     showGutter={true}
                     showPrintMargin={false}

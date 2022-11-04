@@ -6,10 +6,11 @@ import Editor from "./components/Editor";
 import MyFileSystem from "./filesystem/MyFileSystem";
 
 const App = () => {
-    const [fs, _setFs] = useState(new MyFileSystem())
+    const [fs, _setFs] = useState(new MyFileSystem());
+    const [targetFile, setTargetFile] = useState("/design.def");
 
     useEffect(() => {
-        fs.mkfile("/", "desgin.def", "unit design;");
+        fs.mkfile("/design.def", "unit design;");
     });
 
     return (
@@ -40,9 +41,12 @@ const App = () => {
                         padding: 0,
                         flex: 1,
                         minWidth: "10%"
-                    }} 
+                    }}
+                    onSelect={ path => setTargetFile(path) }
                 />
                 <Editor
+                    fs={ fs }
+                    targetFile={ targetFile }
                     style={{
                         width: "100%",
                         height: "100%"
