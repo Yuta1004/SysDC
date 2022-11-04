@@ -23,18 +23,18 @@ const Editor = (props: EditorProps) => {
         const result = props.fs.read(props.targetFile);
         if (result !== undefined) {
             setCode(result);
+            setStatStr(props.targetFile + " をオープン");
         }
-        setStatStr("");
     }, [props.fs, props.targetFile]);
 
     const startEditing = (newCode: string) => {
         setCode(newCode);
-        setStatStr(" を編集中…");
+        setStatStr(props.targetFile + " を編集中…");
     };
 
     const saveEditing = () => {
         props.fs.mkfile(props.targetFile, code);
-        setStatStr("");
+        setStatStr(props.targetFile + " を保存しました");
     };
 
     const setSyntaxHighlight = (editor: any) => {
@@ -63,7 +63,7 @@ const Editor = (props: EditorProps) => {
                     alignItems="center"
                 >
                     <Chip
-                        label={ props.targetFile + statStr }
+                        label={ statStr }
                         variant="outlined"
                         size="small"
                         style={{
