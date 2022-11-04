@@ -21,19 +21,34 @@ const Editor = (props: EditorProps) => {
         <div
             style={ props.style } 
         >
-            <Chip
-                label="A / B / C / Test.def"
-                variant="outlined"
-                size="small"
-            />
-            <AceEditor
-                theme="eclipse"
-                showGutter={true}
-                showPrintMargin={false}
-                highlightActiveLine={true} 
-                style={ props.style }
-                onLoad={ setSyntaxHighlight }
-            />
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    width: "100%",
+                    height: "100%"
+                }} 
+            >
+                <Chip
+                    label="A / B / C / Test.def"
+                    variant="outlined"
+                    size="small"
+                    style={{
+                        width: "fit-content"
+                    }}
+                />
+                <AceEditor
+                    theme="eclipse"
+                    showGutter={true}
+                    showPrintMargin={false}
+                    highlightActiveLine={true} 
+                    onLoad={ setSyntaxHighlight }
+                    style={{
+                        width: "100%",
+                        height: "100%"
+                    }}
+                />
+            </div>
         </div>
     );
 };
