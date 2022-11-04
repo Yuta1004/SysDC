@@ -56,13 +56,13 @@ class MyFileSystem {
         const splittedPath = path.split("/");
         const dir = parNode.nodes.get(splittedPath[0]);
         if (dir !== undefined) {
-            if (splittedPath.length == 1) {
+            if (splittedPath.length === 1) {
                 return [true, dir];
             } else {
                 return this.getNode(dir, splittedPath.slice(1).join("/"));
             }
         }
-        return [splittedPath.length == 1, parNode];
+        return [splittedPath.length === 1, parNode];
     }
 }
 
