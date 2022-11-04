@@ -1,4 +1,5 @@
 import Header from "./components/Header";
+import FileExplorer from "./components/FileExplorer";
 import Editor from "./components/Editor";
 
 const App = () => {
@@ -16,12 +17,26 @@ const App = () => {
                     flex: 1
                 }}
             />
-            <Editor
+            <div
                 style={{
+                    display: "flex",
+                    flexDirection: "row",
                     width: "100%",
                     height: "100%"
-                }} 
-            />
+                }}
+            >
+                <FileExplorer
+                    style={{
+                        minWidth: "10%"
+                    }} 
+                />
+                <Editor
+                    style={{
+                        width: "100%",
+                        height: "100%"
+                    }} 
+                />
+            </div>
         </div>
     )
 };
