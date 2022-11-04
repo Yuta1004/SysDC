@@ -11,7 +11,7 @@ const App = () => {
 
     useEffect(() => {
         fs.mkfile("/design.def", "unit design;");
-    });
+    }, []);
 
     return (
         <div
