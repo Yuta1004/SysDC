@@ -21,10 +21,13 @@ export class MyFileSystem {
     }
 
     mkdir(path: string): boolean {
-        const [result, foundNode] = this.getNode(this.root, path.split("/").slice(1).join("/"));
+        const _path = this.checkPath(path);
+        const dirPath = _path.split("/").slice(1).join("/");
+        const dirName = _path.split("/").slice(-1)[0];
+        const [result, foundNode] = this.getNode(this.root, dirPath);
         if (result) {
-            foundNode.nodes.set(path.split("/").slice(-1)[0], {
-                name: path,
+            foundNode.nodes.set(dirName, {
+                name: _path,
                 nodes: new Map(),
                 leaves: new Map()
             });
@@ -33,12 +36,13 @@ export class MyFileSystem {
     }
 
     mkfile(path: string, body: string): boolean {
-        const dirPath = path.split("/").slice(1, -1).join("/");
-        const filename = path.split("/").slice(-1)[0];
+        const _path = this.checkPath(path);
+        const dirPath = _path.split("/").slice(1, -1).join("/");
+        const filename = _path.split("/").slice(-1)[0];
         const [result, foundNode] = this.getNode(this.root, dirPath);
         if (result) {
             foundNode.leaves.set(filename, {
-                name: dirPath + "/" + filename,
+                name: _path,
                 body: body
             });
         }
@@ -56,7 +60,15 @@ export class MyFileSystem {
         return undefined;
     }
 
-    getNode(parNode: MyNode, path: string): [boolean, MyNode] {
+    private checkPath(path: string): string {
+        if (path.at(0) !== "/") {
+            return "/" + path;
+        } else {
+            return path;
+        }
+    }
+
+    private getNode(parNode: MyNode, path: string): [boolean, MyNode] {
         const splittedPath = path.split("/");
         const dir = parNode.nodes.get(splittedPath[0]);
         if (dir !== undefined) {
