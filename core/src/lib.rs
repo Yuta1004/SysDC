@@ -25,7 +25,7 @@ macro_rules! q {
 }
 
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
-#[cfg_attr(not(feature = "wasm"), derive(Default))]
+#[derive(Default)]
 pub struct Parser {
     units: Vec<unchecked::SysDCUnit>,
 }
@@ -33,6 +33,7 @@ pub struct Parser {
 #[cfg(feature = "wasm")]
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 impl Parser {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Parser {
         Parser { units: vec![] }
     }
