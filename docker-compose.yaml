@@ -14,12 +14,17 @@ services:
       TZ: Asia/Tokyo
     depends_on:
       - doc
+      - editor-front
   doc:
     image: klakegg/hugo:0.101.0-ext-alpine
-    command: server --port=50000 ${SYSDC_HUGO_OPTIONS}
+    command: server --disableLiveReload --baseURL=${SYSDC_BASE_URL}/doc --appendPort=false
     volumes:
       - type: bind
         source: "./doc"
         target: "/src"
+    environment:
+      TZ: Asia/Tokyo
+  editor-front:
+    build: ./editor/front
     environment:
       TZ: Asia/Tokyo

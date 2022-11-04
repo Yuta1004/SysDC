@@ -1,4 +1,4 @@
+export SYSDC_BASE_URL="http://localhost:50000"
 export SYSDC_PORT=50000
-export SYSDC_HUGO_OPTIONS="--disableLiveReload --appendPort=false"
 
-docker-compose up
+docker-compose up $SYSDC_UP_OPTIONS
