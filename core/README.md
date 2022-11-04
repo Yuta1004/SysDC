@@ -1,4 +1,4 @@
-# SysDC-Parser
+# SysDC-Core
 
 ## 概要
 
