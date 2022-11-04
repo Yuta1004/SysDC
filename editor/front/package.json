@@ -4,7 +4,6 @@
     "private": true,
     "homepage": "/editor/front",
     "dependencies": {
-        "@sysdc_core/sysdc_core": "0.1.1",
         "@emotion/react": "^11.10.5",
         "@emotion/styled": "^11.10.5",
         "@mui/icons-material": "^5.10.9",
@@ -22,6 +21,7 @@
         "react-ace": "^10.1.0",
         "react-dom": "^18.2.0",
         "react-scripts": "5.0.1",
+        "sysdc_core": "file:orig_modules/sysdc_core",
         "typescript": "^4.8.4",
         "web-vitals": "^2.1.4"
     },

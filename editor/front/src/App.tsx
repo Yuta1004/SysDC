@@ -6,7 +6,7 @@ import Header from "./components/Header";
 import FileExplorer from "./components/FileExplorer";
 import Editor from "./components/Editor";
 import MyFileSystem from "./filesystem/MyFileSystem";
-import init, { Parser } from "@sysdc_core/sysdc_core";
+import init, { Parser } from "sysdc_core";
 
 const App = () => {
     const [fs, _setFs] = useState(new MyFileSystem());
