@@ -1,8 +1,17 @@
+import { useEffect, useState } from "react";
+
 import Header from "./components/Header";
 import FileExplorer from "./components/FileExplorer";
 import Editor from "./components/Editor";
+import MyFileSystem from "./filesystem/MyFileSystem";
 
 const App = () => {
+    const [fs, _setFs] = useState(new MyFileSystem())
+
+    useEffect(() => {
+        fs.mkfile("/", "desgin.def", "unit design;");
+    });
+
     return (
         <div
             style={{
@@ -26,6 +35,7 @@ const App = () => {
                 }}
             >
                 <FileExplorer
+                    fs={ fs }
                     style={{
                         padding: 0,
                         flex: 1,

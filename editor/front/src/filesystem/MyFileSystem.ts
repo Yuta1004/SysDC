@@ -1,15 +1,15 @@
-type MyNode = {
+export type MyNode = {
     name: string,
     nodes: Map<string, MyNode>,
     leaves: Map<string, MyLeaf>
 }
 
-type MyLeaf = {
+export type MyLeaf = {
     name: string,
     body: string
 }
 
-class MyFileSystem {
+export class MyFileSystem {
     root: MyNode
 
     constructor() {
