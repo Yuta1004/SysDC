@@ -1,5 +1,6 @@
 import AceEditor from "react-ace";
 import "brace/theme/eclipse";
+import Chip from "@mui/material/Chip";
 
 import SysDCSyntaxHighlight from "../ace_custom/SysDCSyntaxHighlight";
 
@@ -17,14 +18,23 @@ const Editor = (props: EditorProps) => {
     };
 
     return (
-        <AceEditor
-            theme="eclipse"
-            showGutter={true}
-            showPrintMargin={false}
-            highlightActiveLine={true} 
-            style={ props.style }
-            onLoad={ setSyntaxHighlight }
-        />
+        <div
+            style={ props.style } 
+        >
+            <Chip
+                label="A / B / C / Test.def"
+                variant="outlined"
+                size="small"
+            />
+            <AceEditor
+                theme="eclipse"
+                showGutter={true}
+                showPrintMargin={false}
+                highlightActiveLine={true} 
+                style={ props.style }
+                onLoad={ setSyntaxHighlight }
+            />
+        </div>
     );
 };
 

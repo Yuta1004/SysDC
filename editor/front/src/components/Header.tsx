@@ -17,6 +17,7 @@ const Header = (props: HeaderProps) => {
         <AppBar
             position="static"
             color="default"
+            sx={{ zIndex: 9999 }}
             style={ props.style }
         >
             <Toolbar>
