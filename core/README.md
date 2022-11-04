@@ -1,8 +1,26 @@
-# SysDC-Parser
+# SysDC-Core
 
 ## 概要
 
 SysDCのパーサ
+
+## コマンド
+
+### WASMパッケージ生成
+
+ビルド用イメージが必要です
+
+```
+$ make pkg
+```
+
+### ビルド用イメージ生成
+
+```
+$ make build-image
+```
+
+## 構成
 
 ```mermaid
 flowchart TD
@@ -16,8 +34,6 @@ flowchart TD
     check--SysDCSystem-->TypeMatchChecker
     check--SysDCSystem-->Parser
 ```
-
-## 構成
 
 ### check.rs
 
