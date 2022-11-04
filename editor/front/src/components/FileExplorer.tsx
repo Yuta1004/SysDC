@@ -2,8 +2,14 @@ import { useEffect, useState } from "react";
 
 import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
+import Stack from "@mui/material/Stack";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import TextSnippetIcon from "@mui/icons-material/TextSnippet";
+import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutlined';
+import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined';
+
 import MyFileSystem, { MyNode, MyLeaf } from "../filesystem/MyFileSystem";
 
 interface FileExplorerProps {
@@ -64,16 +70,58 @@ const FileExplorer = (props: FileExplorerProps) => {
         return dirEntries.concat(fileEntries);
     };
 
+    const createDirectory = () => {
+        const path = prompt("新規作成するディレクトリのパスを入力してください");
+        if (path !== null && path !== "") {
+            props.fs.mkdir(path);
+        }
+        setEntries(createFsEntry(props.fs.root, 0));
+    };
+
+    const createFile = () => {
+        const path = prompt("新規作成するファイルのパスを入力してください");
+        if (path !== null && path !== "") {
+            props.fs.mkfile(path, "");
+        }
+        setEntries(createFsEntry(props.fs.root, 0));
+    };
+
     useEffect(() => {
         setEntries(createFsEntry(props.fs.root, 0));
     }, [props.fs]);
 
     return (
-        <List
+        <div
             style={ props.style } 
         >
-            {[ ...entries ]}
-        </List>
+            <Stack
+                direction="row"
+                justifyContent="center"
+                spacing={2}
+                style={{
+                    padding: "5px"
+                }}
+            >
+                <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={ createDirectory }
+                >
+                    <CreateNewFolderOutlinedIcon/>
+                </Button>
+                <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={ createFile }
+                >
+                    <NoteAddOutlinedIcon/>
+                </Button>
+            </Stack>
+            <Divider/>
+            <List>
+                {[ ...entries ]}
+            </List>
+        </div>
     );
 };
 
