@@ -68,6 +68,7 @@ pub mod unchecked {
     use super::Name;
     use super::Type;
 
+    #[cfg_attr(feature = "wasm", derive(Clone))]
     #[derive(Debug)]
     pub struct SysDCSystem {
         pub units: Vec<SysDCUnit>,
@@ -90,6 +91,7 @@ pub mod unchecked {
         }
     }
 
+    #[cfg_attr(feature = "wasm", derive(Clone))]
     #[derive(Debug)]
     pub struct SysDCUnit {
         pub name: Name,
@@ -137,6 +139,7 @@ pub mod unchecked {
         }
     }
 
+    #[cfg_attr(feature = "wasm", derive(Clone))]
     #[derive(Debug)]
     pub struct SysDCData {
         pub name: Name,
@@ -163,6 +166,7 @@ pub mod unchecked {
         }
     }
 
+    #[cfg_attr(feature = "wasm", derive(Clone))]
     #[derive(Debug)]
     pub struct SysDCModule {
         pub name: Name,
@@ -189,6 +193,7 @@ pub mod unchecked {
         }
     }
 
+    #[cfg_attr(feature = "wasm", derive(Clone))]
     #[derive(Debug)]
     pub struct SysDCFunction {
         pub name: Name,
