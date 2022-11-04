@@ -11,8 +11,18 @@ const FileExplorer = (props: FileExplorerProps) => {
         <List
             style={ props.style } 
         >
-            <ListItemButton sx={{ pl: 0 }}>
-                <FolderOpenIcon/>
+            <ListItemButton
+                sx={{
+                    margin: 0,
+                    padding: "5px 0 5px 0",
+                    pl: 0,
+                }}
+            >
+                <FolderOpenIcon
+                    sx={{
+                        padding: "0 5px 0 5px"
+                    }} 
+                />
                 test
             </ListItemButton>
         </List>

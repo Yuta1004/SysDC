@@ -27,6 +27,7 @@ const App = () => {
             >
                 <FileExplorer
                     style={{
+                        padding: 0,
                         flex: 1,
                         minWidth: "10%"
                     }} 
