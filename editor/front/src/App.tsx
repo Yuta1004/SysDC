@@ -40,7 +40,7 @@ const App = () => {
                     style={{
                         padding: 0,
                         flex: 1,
-                        minWidth: "10%"
+                        minWidth: "220px"
                     }}
                     onSelect={ path => setTargetFile(path) }
                 />
