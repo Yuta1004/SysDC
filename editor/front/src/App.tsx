@@ -11,8 +11,17 @@ const App = () => {
                 height: "100vh"
             }} 
         >
-            <Header/>
-            <Editor/>
+            <Header
+                style={{
+                    flex: 1
+                }}
+            />
+            <Editor
+                style={{
+                    width: "100%",
+                    height: "100%"
+                }} 
+            />
         </div>
     )
 };

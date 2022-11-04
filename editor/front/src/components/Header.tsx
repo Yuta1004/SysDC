@@ -1,3 +1,5 @@
+import React from "react";
+
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
@@ -6,14 +8,16 @@ import Button from "@mui/material/Button";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SettingsIcon from "@mui/icons-material/Settings";
 
-const Header = () => {
+interface HeaderProps {
+    style: React.CSSProperties | undefined
+}
+
+const Header = (props: HeaderProps) => {
     return (
         <AppBar
             position="static"
             color="default"
-            style={{
-                flex: 1
-            }}
+            style={ props.style }
         >
             <Toolbar>
                 <Typography

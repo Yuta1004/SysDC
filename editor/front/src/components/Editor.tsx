@@ -3,8 +3,11 @@ import "brace/theme/eclipse";
 
 import SysDCSyntaxHighlight from "../ace_custom/SysDCSyntaxHighlight";
 
+interface EditorProps {
+    style: React.CSSProperties | undefined
+}
 
-const Editor = () => {
+const Editor = (props: EditorProps) => {
     const setSyntaxHighlight = (editor: any) => {
         let session = editor.getSession();
         session.$mode.$highlightRules.$rules = SysDCSyntaxHighlight;
@@ -19,11 +22,8 @@ const Editor = () => {
             showGutter={true}
             showPrintMargin={false}
             highlightActiveLine={true} 
-            style={{
-                width: "100%",
-                height: "100%"
-            }}
-            onLoad={setSyntaxHighlight}
+            style={ props.style }
+            onLoad={ setSyntaxHighlight }
         />
     );
 };
