@@ -9,7 +9,8 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SettingsIcon from "@mui/icons-material/Settings";
 
 interface HeaderProps {
-    style: React.CSSProperties | undefined
+    style: React.CSSProperties | undefined,
+    onParseClick: () => void
 }
 
 const Header = (props: HeaderProps) => {
@@ -33,8 +34,9 @@ const Header = (props: HeaderProps) => {
                         variant="outlined"
                         color="success"
                         startIcon={ <PlayArrowIcon/> }
+                        onClick={ props.onParseClick }
                     >
-                        実行
+                        パース
                     </Button>
                     <Button
                         variant="outlined"

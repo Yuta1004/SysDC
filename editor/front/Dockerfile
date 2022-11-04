@@ -4,6 +4,7 @@ FROM node:18-alpine3.15 as builder
 WORKDIR /workdir
 
 COPY node_modules* node_modules
+COPY orig_modules* orig_modules
 COPY src src
 COPY public public
 COPY package.json tsconfig.json .

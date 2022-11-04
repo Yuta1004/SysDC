@@ -11,14 +11,20 @@
 
 `Docker` `docker-compose` が必要です
 
-### 1. run.shの編集
+### 1. 準備
+
+```
+$ make build
+```
+
+### 2. run.shの編集
 
 1，2行目の内容をそれぞれ適切な値に設定してください
 
 - SYSDC_BASE_URL : SysDCを公開するURL
 - SYSDC_PORT : SysDCを公開するポート
 
-### 2. run.sh実行
+### 3. run.sh実行
 
 ```
 $ ./run.sh
@@ -33,6 +39,10 @@ SysDCのパーサ
 ### doc
 
 Hugoを使用してドキュメントを提供するコンテナ
+
+### editor/front
+
+Webエディタを提供するコンテナ
 
 ### proxy
 

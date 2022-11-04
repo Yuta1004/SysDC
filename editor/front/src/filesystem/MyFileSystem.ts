@@ -60,6 +60,17 @@ export class MyFileSystem {
         return undefined;
     }
 
+    readAll(): MyLeaf[] {
+        const recuresiveSearch = (node: MyNode, foundLeaves: MyLeaf[]): MyLeaf[] => {
+            const leaves = Array.from(node.nodes)
+                                .map(([_, node]) => recuresiveSearch(node, foundLeaves))
+                                .flat();
+            const leaves2 = Array.from(node.leaves.values());
+            return foundLeaves.concat(leaves.concat(leaves2));
+        };
+        return recuresiveSearch(this.root, []);
+    }
+
     private checkPath(path: string): string {
         if (path.at(0) !== "/") {
             return "/" + path;
