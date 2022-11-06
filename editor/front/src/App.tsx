@@ -76,12 +76,7 @@ const App = () => {
                                 minWidth: "220px"
                             }}
                         />
-                    <Editor
-                        style={{
-                            width: "100%",
-                            height: "100%"
-                        }} 
-                    />
+                        <Editor/>
                     </TargetFileContext.Provider>
                 </FSContext.Provider>
             </Box>

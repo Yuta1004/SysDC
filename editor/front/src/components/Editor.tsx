@@ -11,24 +11,12 @@ import SaveIcon from "@mui/icons-material/Save";
 import SysDCSyntaxHighlight from "../ace_custom/SysDCSyntaxHighlight";
 import { FSContext, TargetFileContext } from "../App";
 
-interface EditorProps {
-    style: React.CSSProperties | undefined
-}
-
-const Editor = (props: EditorProps) => {
+const Editor = () => {
     const fs = useContext(FSContext);
     const [targetFile, _setTargetFile] = useContext(TargetFileContext);
 
     const [code, setCode] = useState("");
     const [statStr, setStatStr] = useState("");
-
-    useEffect(() => {
-        const result = fs.read(targetFile);
-        if (result !== undefined) {
-            setCode(result);
-            setStatStr(targetFile + " をオープン");
-        }
-    }, [fs, targetFile]);
 
     const startEditing = (newCode: string) => {
         setCode(newCode);
@@ -48,52 +36,56 @@ const Editor = (props: EditorProps) => {
         session.bgTokenizer.start(0);
     };
 
+    useEffect(() => {
+        const result = fs.read(targetFile);
+        if (result !== undefined) {
+            setCode(result);
+            setStatStr(targetFile + " をオープン");
+        }
+    }, [fs, targetFile]);
+
     return (
         <Box
-            style={ props.style } 
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                width: "100%",
+                height: "100%"
+            }} 
         >
-            <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    width: "100%",
-                    height: "100%"
-                }} 
+            <Stack
+                direction="row"
+                spacing={0}
+                alignItems="center"
             >
-                <Stack
-                    direction="row"
-                    spacing={0}
-                    alignItems="center"
-                >
-                    <Chip
-                        label={ statStr }
-                        variant="outlined"
-                        size="small"
-                        sx={{
-                            width: "fit-content"
-                        }}
-                    />
-                    <IconButton
-                        size="small"
-                        onClick={ saveEditing }
-                    >
-                        <SaveIcon />
-                    </IconButton>
-                </Stack>
-                <AceEditor
-                    value={ code }
-                    theme="eclipse"
-                    showGutter={true}
-                    showPrintMargin={false}
-                    highlightActiveLine={true} 
-                    onLoad={ setSyntaxHighlight }
-                    onChange={ startEditing }
-                    style={{
-                        width: "100%",
-                        height: "100%"
+                <Chip
+                    label={ statStr }
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                        width: "fit-content"
                     }}
                 />
-            </Box>
+                <IconButton
+                    size="small"
+                    onClick={ saveEditing }
+                >
+                    <SaveIcon />
+                </IconButton>
+            </Stack>
+            <AceEditor
+                value={ code }
+                theme="eclipse"
+                showGutter={true}
+                showPrintMargin={false}
+                highlightActiveLine={true} 
+                onLoad={ setSyntaxHighlight }
+                onChange={ startEditing }
+                style={{
+                    width: "100%",
+                    height: "100%"
+                }}
+            />
         </Box>
     );
 };
