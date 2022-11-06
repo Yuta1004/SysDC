@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import Box from "@mui/material/Box";
 import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import Stack from "@mui/material/Stack";
@@ -40,7 +41,7 @@ const FileExplorer = (props: FileExplorerProps) => {
                     { node.name.split("/").slice(-1)[0] }
                 </ListItemButton>
                 <List
-                    style={props.style}
+                    style={ props.style }
                 >
                     {[ ...createFsEntry(node, depth+1) ]}
                 </List>
@@ -91,14 +92,14 @@ const FileExplorer = (props: FileExplorerProps) => {
     }, [props.fs]);
 
     return (
-        <div
+        <Box
             style={ props.style } 
         >
             <Stack
                 direction="row"
                 justifyContent="center"
                 spacing={2}
-                style={{
+                sx={{
                     padding: "5px"
                 }}
             >
@@ -121,7 +122,7 @@ const FileExplorer = (props: FileExplorerProps) => {
             <List>
                 {[ ...entries ]}
             </List>
-        </div>
+        </Box>
     );
 };
 

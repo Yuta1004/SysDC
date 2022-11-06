@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+
 import AceEditor from "react-ace";
 import "brace/theme/eclipse";
+import Box from "@mui/material/Stack";
 import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
@@ -46,11 +48,11 @@ const Editor = (props: EditorProps) => {
     };
 
     return (
-        <div
+        <Box
             style={ props.style } 
         >
-            <div
-                style={{
+            <Box
+                sx={{
                     display: "flex",
                     flexDirection: "column",
                     width: "100%",
@@ -66,7 +68,7 @@ const Editor = (props: EditorProps) => {
                         label={ statStr }
                         variant="outlined"
                         size="small"
-                        style={{
+                        sx={{
                             width: "fit-content"
                         }}
                     />
@@ -90,8 +92,8 @@ const Editor = (props: EditorProps) => {
                         height: "100%"
                     }}
                 />
-            </div>
-        </div>
+            </Box>
+        </Box>
     );
 };
 

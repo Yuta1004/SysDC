@@ -36,15 +36,15 @@ const Header = (props: HeaderProps) => {
                         startIcon={ <PlayArrowIcon/> }
                         onClick={ props.onParseClick }
                     >
-                        パース
+                        実行
                     </Button>
-                    <Button
+                    {/* <Button
                         variant="outlined"
                         color="info"
                         startIcon={ <SettingsIcon/> }
                     >
                         設定
-                    </Button>
+                    </Button> */}
                 </Stack>
             </Toolbar>
         </AppBar>
