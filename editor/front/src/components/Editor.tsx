@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 
 import AceEditor from "react-ace";
 import "brace/theme/eclipse";
@@ -9,34 +9,35 @@ import IconButton from "@mui/material/IconButton";
 import SaveIcon from "@mui/icons-material/Save";
 
 import SysDCSyntaxHighlight from "../ace_custom/SysDCSyntaxHighlight";
-import MyFileSystem from "../filesystem/MyFileSystem";
+import { FSContext, TargetFileContext } from "../App";
 
 interface EditorProps {
-    style: React.CSSProperties | undefined,
-    fs: MyFileSystem,
-    targetFile: string
+    style: React.CSSProperties | undefined
 }
 
 const Editor = (props: EditorProps) => {
+    const fs = useContext(FSContext);
+    const [targetFile, _setTargetFile] = useContext(TargetFileContext);
+
     const [code, setCode] = useState("");
     const [statStr, setStatStr] = useState("");
 
     useEffect(() => {
-        const result = props.fs.read(props.targetFile);
+        const result = fs.read(targetFile);
         if (result !== undefined) {
             setCode(result);
-            setStatStr(props.targetFile + " をオープン");
+            setStatStr(targetFile + " をオープン");
         }
-    }, [props.fs, props.targetFile]);
+    }, [fs, targetFile]);
 
     const startEditing = (newCode: string) => {
         setCode(newCode);
-        setStatStr(props.targetFile + " を編集中…");
+        setStatStr(targetFile + " を編集中…");
     };
 
     const saveEditing = () => {
-        props.fs.mkfile(props.targetFile, code);
-        setStatStr(props.targetFile + " を保存しました");
+        fs.mkfile(targetFile, code);
+        setStatStr(targetFile + " を保存しました");
     };
 
     const setSyntaxHighlight = (editor: any) => {

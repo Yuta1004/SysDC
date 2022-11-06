@@ -10,11 +10,15 @@ import MyFileSystem from "./filesystem/MyFileSystem";
 import init, { Parser } from "sysdc_core";
 import MsgViewer from "./components/MsgViewer";
 
-type ContextType<T> = [T, React.Dispatch<React.SetStateAction<T>>];
+type SContextType<T> = [T, React.Dispatch<React.SetStateAction<T>>];
+
+// ファイルシステム用Context
+export const FSContext = createContext({} as MyFileSystem);
+export const TargetFileContext = createContext({} as SContextType<string>);
 
 // メッセージ表示用Context
-export const ShowOkContext = createContext({} as ContextType<[boolean, string]>);
-export const ShowErrContext = createContext({} as ContextType<[boolean, string]>);
+export const ShowOkContext = createContext({} as SContextType<[boolean, string]>);
+export const ShowErrContext = createContext({} as SContextType<[boolean, string]>);
 
 const App = () => {
     const [fs, _setFs] = useState(new MyFileSystem());
@@ -63,23 +67,23 @@ const App = () => {
                     height: "100%"
                 }}
             >
-                <FileExplorer
-                    fs={ fs }
-                    onSelect={ path => setTargetFile(path) }
-                    style={{
-                        padding: 0,
-                        flex: 1,
-                        minWidth: "220px"
-                    }}
-                />
-                <Editor
-                    fs={ fs }
-                    targetFile={ targetFile }
-                    style={{
-                        width: "100%",
-                        height: "100%"
-                    }} 
-                />
+                <FSContext.Provider value={ fs }>
+                    <TargetFileContext.Provider value={[ targetFile, setTargetFile ]}>
+                        <FileExplorer
+                            style={{
+                                padding: 0,
+                                flex: 1,
+                                minWidth: "220px"
+                            }}
+                        />
+                    <Editor
+                        style={{
+                            width: "100%",
+                            height: "100%"
+                        }} 
+                    />
+                    </TargetFileContext.Provider>
+                </FSContext.Provider>
             </Box>
             <ToolViewer/>
             <ShowOkContext.Provider value={[ showOk, setShowOk ]}>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 
 import Box from "@mui/material/Box";
 import List from "@mui/material/List";
@@ -11,15 +11,17 @@ import TextSnippetIcon from "@mui/icons-material/TextSnippet";
 import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutlined';
 import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined';
 
-import MyFileSystem, { MyNode, MyLeaf } from "../filesystem/MyFileSystem";
+import { MyNode } from "../filesystem/MyFileSystem";
+import { FSContext, TargetFileContext } from "../App";
 
 interface FileExplorerProps {
-    style: React.CSSProperties | undefined,
-    fs: MyFileSystem,
-    onSelect: (path: string) => void
+    style: React.CSSProperties | undefined
 }
 
 const FileExplorer = (props: FileExplorerProps) => {
+    const fs = useContext(FSContext);
+    const [_targetFile, setTargetFile] = useContext(TargetFileContext);
+
     const [entries, setEntries] = useState<JSX.Element[]>([]);
 
     const createFsEntry = (node: MyNode, depth: number): JSX.Element[] => {
@@ -31,7 +33,7 @@ const FileExplorer = (props: FileExplorerProps) => {
                         padding: "5px 0 5px 0",
                         pl: depth*2,
                     }}
-                    onClick={() => props.onSelect(node.name) }
+                    onClick={() => setTargetFile(node.name) }
                 >
                     <FolderOpenIcon
                         sx={{
@@ -56,7 +58,7 @@ const FileExplorer = (props: FileExplorerProps) => {
                         padding: "5px 0 5px 0",
                         pl: depth*2,
                     }}
-                    onClick={() => props.onSelect(node.name) }
+                    onClick={() => setTargetFile(node.name) }
                 >
                     <TextSnippetIcon
                         sx={{
@@ -74,22 +76,22 @@ const FileExplorer = (props: FileExplorerProps) => {
     const createDirectory = () => {
         const path = prompt("新規作成するディレクトリのパスを入力してください");
         if (path !== null && path !== "") {
-            props.fs.mkdir(path);
+            fs.mkdir(path);
         }
-        setEntries(createFsEntry(props.fs.root, 0));
+        setEntries(createFsEntry(fs.root, 0));
     };
 
     const createFile = () => {
         const path = prompt("新規作成するファイルのパスを入力してください");
         if (path !== null && path !== "") {
-            props.fs.mkfile(path, "");
+            fs.mkfile(path, "");
         }
-        setEntries(createFsEntry(props.fs.root, 0));
+        setEntries(createFsEntry(fs.root, 0));
     };
 
     useEffect(() => {
-        setEntries(createFsEntry(props.fs.root, 0));
-    }, [props.fs]);
+        setEntries(createFsEntry(fs.root, 0));
+    }, [fs]);
 
     return (
         <Box
