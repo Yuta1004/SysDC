@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+
+import Box from "@mui/material/Box";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 
@@ -36,7 +38,7 @@ const App = () => {
     }, []);
 
     return (
-        <div
+        <Box
             style={{
                 display: "flex",
                 flexDirection: "column",
@@ -50,7 +52,7 @@ const App = () => {
                     flex: 1
                 }}
             />
-            <div
+            <Box
                 style={{
                     display: "flex",
                     flexDirection: "row",
@@ -75,7 +77,7 @@ const App = () => {
                         height: "100%"
                     }} 
                 />
-            </div>
+            </Box>
             <ToolViewer/>
             <Snackbar
                 open={ showOk }
@@ -109,7 +111,7 @@ const App = () => {
                     { errMsg }
                 </Alert>
             </Snackbar>
-        </div>
+        </Box>
     );
 };
 

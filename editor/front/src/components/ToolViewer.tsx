@@ -63,7 +63,7 @@ const ToolViewer = () => {
             >
                 <FormControl
                     size="small"
-                    style={{
+                    sx={{
                         padding: "10px",
                         flexGrow: 1
                     }} 
