@@ -57,15 +57,6 @@ const ToolViewer = () => {
                 }
             }}
         >
-            <p
-                style={{
-                    position: "absolute",
-                    top: "30%",
-                    left: "-20%",
-                }}
-            >
-                test
-            </p>
             <Toolbar/>
             <Stack
                 direction="row"
