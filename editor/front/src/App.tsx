@@ -5,6 +5,7 @@ import Alert from "@mui/material/Alert";
 import Header from "./components/Header";
 import FileExplorer from "./components/FileExplorer";
 import Editor from "./components/Editor";
+import ToolViewer from "./components/ToolViewer";
 import MyFileSystem from "./filesystem/MyFileSystem";
 import init, { Parser } from "sysdc_core";
 
@@ -75,6 +76,7 @@ const App = () => {
                     }} 
                 />
             </div>
+            <ToolViewer/>
             <Snackbar
                 open={ showOk }
                 autoHideDuration={6000}
