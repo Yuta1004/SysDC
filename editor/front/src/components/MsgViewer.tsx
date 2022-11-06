@@ -3,39 +3,24 @@ import { useContext } from "react";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 
-import { ShowOkContext, ShowErrContext } from "../App";
+import { MsgContext } from "../App";
 
 const MsgViewer = () => {
-    const [okMsg, showOkMsg] = useContext(ShowOkContext);
-    const [errMsg, showErrMsg] = useContext(ShowErrContext);
+    const [[type, msg], showMsg] = useContext(MsgContext);
 
     return (<>
         <Snackbar
-            open={ okMsg !== "" }
+            open={ type !== "" }
             autoHideDuration={6000}
-            onClose={ () => showOkMsg("") }
+            onClose={ () => showMsg(["", ""]) }
             anchorOrigin={{ vertical: "top", horizontal: "center"}}
             sx={{ zIndex: 9999 }}
         >
             <Alert
-                onClose={ () => showOkMsg("") }
-                severity="success"
+                onClose={ () => showMsg(["", ""]) }
+                severity={ "success" === type ? type : "error" }
             >
-                { okMsg }
-            </Alert>
-        </Snackbar>
-        <Snackbar
-            open={ errMsg !== "" }
-            autoHideDuration={6000}
-            onClose={ () => showErrMsg("") }
-            anchorOrigin={{ vertical: "top", horizontal: "center"}}
-            sx={{ zIndex: 9999 }}
-        >
-            <Alert
-                onClose={ () => showErrMsg("") }
-                severity="error"
-            >
-                { errMsg }
+                { msg }
             </Alert>
         </Snackbar>
     </>);
