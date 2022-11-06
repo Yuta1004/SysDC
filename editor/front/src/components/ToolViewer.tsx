@@ -19,9 +19,7 @@ const ToolViewer = () => {
         tools.set("std@debug v0.1.0", "https://sysdc.nakagamiyuta.dev");
 
         const selector = (
-            <Select
-                defaultValue={ tools.keys().next().value }
-            >
+            <Select defaultValue={ tools.keys().next().value }>
                 {Array.from(tools).map(([name, _url]) => {
                     return (
                         <MenuItem
@@ -58,9 +56,7 @@ const ToolViewer = () => {
             }}
         >
             <Toolbar/>
-            <Stack
-                direction="row"
-            >
+            <Stack direction="row">
                 <FormControl
                     size="small"
                     sx={{

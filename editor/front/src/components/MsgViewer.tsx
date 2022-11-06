@@ -15,9 +15,7 @@ const MsgViewer = () => {
             autoHideDuration={6000}
             onClose={ () => showOkMsg("") }
             anchorOrigin={{ vertical: "top", horizontal: "center"}}
-            sx={{
-                zIndex: 9999
-            }}
+            sx={{ zIndex: 9999 }}
         >
             <Alert
                 onClose={ () => showOkMsg("") }
@@ -31,9 +29,7 @@ const MsgViewer = () => {
             autoHideDuration={6000}
             onClose={ () => showErrMsg("") }
             anchorOrigin={{ vertical: "top", horizontal: "center"}}
-            sx={{
-                zIndex: 9999
-            }}
+            sx={{ zIndex: 9999 }}
         >
             <Alert
                 onClose={ () => showErrMsg("") }

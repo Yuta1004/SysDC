@@ -35,11 +35,7 @@ const FileExplorer = (props: FileExplorerProps) => {
                     }}
                     onClick={() => setTargetFile(node.name) }
                 >
-                    <FolderOpenIcon
-                        sx={{
-                            padding: "0 5px 0 5px"
-                        }} 
-                    />
+                    <FolderOpenIcon sx={{ padding: "0 5px 0 5px" }}/>
                     { node.name.split("/").slice(-1)[0] }
                 </ListItemButton>
                 <List>
@@ -58,11 +54,7 @@ const FileExplorer = (props: FileExplorerProps) => {
                     }}
                     onClick={() => setTargetFile(node.name) }
                 >
-                    <TextSnippetIcon
-                        sx={{
-                            padding: "0 5px 0 5px"
-                        }} 
-                    />
+                    <TextSnippetIcon sx={{ padding: "0 5px 0 5px" }}/>
                     { node.name.split("/").slice(-1)[0] }
                 </ListItemButton>
             </>);
@@ -92,18 +84,12 @@ const FileExplorer = (props: FileExplorerProps) => {
     }, [fs]);
 
     return (
-        <Box
-            sx={{
-                width: props.width
-            }} 
-        >
+        <Box sx={{ width: props.width }}>
             <Stack
                 direction="row"
                 justifyContent="center"
                 spacing={2}
-                sx={{
-                    padding: "5px"
-                }}
+                sx={{ padding: "5px" }}
             >
                 <Button
                     variant="outlined"

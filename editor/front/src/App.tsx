@@ -53,9 +53,7 @@ const App = () => {
                 height: "100vh"
             }} 
         >
-            <Header
-                onParseClick={ parse }
-            />
+            <Header onParseClick={ parse }/>
             <Box
                 sx={{
                     display: "flex",
@@ -66,9 +64,7 @@ const App = () => {
             >
                 <FSContext.Provider value={ fs }>
                     <TargetFileContext.Provider value={[ targetFile, setTargetFile ]}>
-                        <FileExplorer
-                            width="220px"
-                        />
+                        <FileExplorer width="220px"/>
                         <Editor/>
                     </TargetFileContext.Provider>
                 </FSContext.Provider>

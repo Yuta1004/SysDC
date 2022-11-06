@@ -27,7 +27,10 @@ const Header = (props: HeaderProps) => {
                 >
                     SysDC
                 </Typography>
-                <Stack direction="row" spacing={2}>
+                <Stack
+                    direction="row"
+                    spacing={2}
+                >
                     <Button
                         variant="outlined"
                         color="success"
