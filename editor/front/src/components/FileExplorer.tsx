@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 
 import Box from "@mui/material/Box";
 import List from "@mui/material/List";
@@ -11,15 +11,17 @@ import TextSnippetIcon from "@mui/icons-material/TextSnippet";
 import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutlined';
 import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined';
 
-import MyFileSystem, { MyNode, MyLeaf } from "../filesystem/MyFileSystem";
+import { MyNode } from "../filesystem/MyFileSystem";
+import { FSContext, TargetFileContext } from "../App";
 
 interface FileExplorerProps {
-    style: React.CSSProperties | undefined,
-    fs: MyFileSystem,
-    onSelect: (path: string) => void
+    width: string
 }
 
 const FileExplorer = (props: FileExplorerProps) => {
+    const fs = useContext(FSContext);
+    const [_targetFile, setTargetFile] = useContext(TargetFileContext);
+
     const [entries, setEntries] = useState<JSX.Element[]>([]);
 
     const createFsEntry = (node: MyNode, depth: number): JSX.Element[] => {
@@ -31,18 +33,12 @@ const FileExplorer = (props: FileExplorerProps) => {
                         padding: "5px 0 5px 0",
                         pl: depth*2,
                     }}
-                    onClick={() => props.onSelect(node.name) }
+                    onClick={() => setTargetFile(node.name) }
                 >
-                    <FolderOpenIcon
-                        sx={{
-                            padding: "0 5px 0 5px"
-                        }} 
-                    />
+                    <FolderOpenIcon sx={{ padding: "0 5px 0 5px" }}/>
                     { node.name.split("/").slice(-1)[0] }
                 </ListItemButton>
-                <List
-                    style={ props.style }
-                >
+                <List>
                     {[ ...createFsEntry(node, depth+1) ]}
                 </List>
             </>);
@@ -56,13 +52,9 @@ const FileExplorer = (props: FileExplorerProps) => {
                         padding: "5px 0 5px 0",
                         pl: depth*2,
                     }}
-                    onClick={() => props.onSelect(node.name) }
+                    onClick={() => setTargetFile(node.name) }
                 >
-                    <TextSnippetIcon
-                        sx={{
-                            padding: "0 5px 0 5px"
-                        }} 
-                    />
+                    <TextSnippetIcon sx={{ padding: "0 5px 0 5px" }}/>
                     { node.name.split("/").slice(-1)[0] }
                 </ListItemButton>
             </>);
@@ -74,34 +66,30 @@ const FileExplorer = (props: FileExplorerProps) => {
     const createDirectory = () => {
         const path = prompt("新規作成するディレクトリのパスを入力してください");
         if (path !== null && path !== "") {
-            props.fs.mkdir(path);
+            fs.mkdir(path);
         }
-        setEntries(createFsEntry(props.fs.root, 0));
+        setEntries(createFsEntry(fs.root, 0));
     };
 
     const createFile = () => {
         const path = prompt("新規作成するファイルのパスを入力してください");
         if (path !== null && path !== "") {
-            props.fs.mkfile(path, "");
+            fs.mkfile(path, "");
         }
-        setEntries(createFsEntry(props.fs.root, 0));
+        setEntries(createFsEntry(fs.root, 0));
     };
 
     useEffect(() => {
-        setEntries(createFsEntry(props.fs.root, 0));
-    }, [props.fs]);
+        setEntries(createFsEntry(fs.root, 0));
+    }, [fs]);
 
     return (
-        <Box
-            style={ props.style } 
-        >
+        <Box sx={{ width: props.width }}>
             <Stack
                 direction="row"
                 justifyContent="center"
                 spacing={2}
-                sx={{
-                    padding: "5px"
-                }}
+                sx={{ padding: "5px" }}
             >
                 <Button
                     variant="outlined"

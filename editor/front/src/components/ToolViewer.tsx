@@ -7,7 +7,11 @@ import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 
-const ToolViewer = () => {
+interface ToolViewerProps {
+    width: string
+}
+
+const ToolViewer = (props: ToolViewerProps) => {
     const [viewingTool, setViewingTool] = useState("");
     const [tools, setTools] = useState<Map<string, string>>();
     const [selector, setSelector] = useState<JSX.Element>();
@@ -19,9 +23,7 @@ const ToolViewer = () => {
         tools.set("std@debug v0.1.0", "https://sysdc.nakagamiyuta.dev");
 
         const selector = (
-            <Select
-                defaultValue={ tools.keys().next().value }
-            >
+            <Select defaultValue={ tools.keys().next().value }>
                 {Array.from(tools).map(([name, _url]) => {
                     return (
                         <MenuItem
@@ -50,17 +52,10 @@ const ToolViewer = () => {
             anchor="right"
             open={true}
             hideBackdrop={true}
-            sx={{
-                [`& .MuiDrawer-paper`]: {
-                    width: "40%",
-                    minWidth: "300px"
-                }
-            }}
+            sx={{ [`& .MuiDrawer-paper`]: { minWidth: props.width } }}
         >
             <Toolbar/>
-            <Stack
-                direction="row"
-            >
+            <Stack direction="row">
                 <FormControl
                     size="small"
                     sx={{
