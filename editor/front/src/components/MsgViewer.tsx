@@ -6,44 +6,43 @@ import Alert from "@mui/material/Alert";
 import { ShowOkContext, ShowErrContext } from "../App";
 
 const MsgViewer = () => {
-    const [showOk, setShowOk] = useContext(ShowOkContext);
-    const [showErr, setShowErr] = useContext(ShowErrContext);
+    const [okMsg, showOkMsg] = useContext(ShowOkContext);
+    const [errMsg, showErrMsg] = useContext(ShowErrContext);
 
     return (<>
         <Snackbar
-            open={ showOk[0] }
+            open={ okMsg !== "" }
             autoHideDuration={6000}
-            onClose={ () => setShowOk([false, ""]) }
+            onClose={ () => showOkMsg("") }
             anchorOrigin={{ vertical: "top", horizontal: "center"}}
             style={{
                 zIndex: 9999
             }}
         >
             <Alert
-                onClose={ () => setShowOk([false, ""]) }
+                onClose={ () => showOkMsg("") }
                 severity="success"
             >
-                { showOk[1] }
+                { okMsg }
             </Alert>
         </Snackbar>
         <Snackbar
-            open={ showErr[0] }
+            open={ errMsg !== "" }
             autoHideDuration={6000}
-            onClose={ () => setShowErr([false, ""]) }
+            onClose={ () => showErrMsg("") }
             anchorOrigin={{ vertical: "top", horizontal: "center"}}
             style={{
                 zIndex: 9999
             }}
         >
             <Alert
-                onClose={ () => setShowErr([false, ""]) }
+                onClose={ () => showErrMsg("") }
                 severity="error"
             >
-                { showErr[1] }
+                { errMsg }
             </Alert>
         </Snackbar>
     </>);
 };
 
 export default MsgViewer;
-

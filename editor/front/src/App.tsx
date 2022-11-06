@@ -17,15 +17,15 @@ export const FSContext = createContext({} as MyFileSystem);
 export const TargetFileContext = createContext({} as SContextType<string>);
 
 // メッセージ表示用Context
-export const ShowOkContext = createContext({} as SContextType<[boolean, string]>);
-export const ShowErrContext = createContext({} as SContextType<[boolean, string]>);
+export const ShowOkContext = createContext({} as SContextType<string>);
+export const ShowErrContext = createContext({} as SContextType<string>);
 
 const App = () => {
     const [fs, _setFs] = useState(new MyFileSystem());
     const [targetFile, setTargetFile] = useState("/design.def");
 
-    const [showOk, setShowOk] = useState<[boolean, string]>([false, ""]);
-    const [showErr, setShowErr] = useState<[boolean, string]>([false, ""]);
+    const [okMsg, showOkMsg] = useState("");
+    const [errMsg, showErrMsg] = useState("");
 
     const parse = () => {
         const parser = Parser.new();
@@ -33,10 +33,10 @@ const App = () => {
             fs.readAll().map(f => parser.parse(f.name, f.body) );
             parser.check();
         } catch (err) {
-            setShowErr([true, err+""]);
+            showErrMsg(err+"");
             return;
         }
-        setShowOk([true, "OK"]);
+        showOkMsg("OK");
     };
 
     useEffect(() => {
@@ -86,8 +86,8 @@ const App = () => {
                 </FSContext.Provider>
             </Box>
             <ToolViewer/>
-            <ShowOkContext.Provider value={[ showOk, setShowOk ]}>
-                <ShowErrContext.Provider value={[ showErr, setShowErr ]}>
+            <ShowOkContext.Provider value={[ okMsg, showOkMsg ]}>
+                <ShowErrContext.Provider value={[ errMsg, showErrMsg ]}>
                     <MsgViewer/>
                 </ShowErrContext.Provider>
             </ShowOkContext.Provider>
