@@ -62,12 +62,12 @@ const App = () => {
             >
                 <FSContext.Provider value={ fs }>
                     <TargetFileContext.Provider value={[ targetFile, setTargetFile ]}>
-                        <FileExplorer width="220px"/>
+                        <FileExplorer width="15vw"/>
                         <Editor/>
                     </TargetFileContext.Provider>
                 </FSContext.Provider>
             </Box>
-            <ToolViewer/>
+            <ToolViewer width="40vw"/>
             <MsgContext.Provider value={[ msg, showMsg ]}>
                 <MsgViewer/>
             </MsgContext.Provider>

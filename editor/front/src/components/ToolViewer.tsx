@@ -7,7 +7,11 @@ import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 
-const ToolViewer = () => {
+interface ToolViewerProps {
+    width: string
+}
+
+const ToolViewer = (props: ToolViewerProps) => {
     const [viewingTool, setViewingTool] = useState("");
     const [tools, setTools] = useState<Map<string, string>>();
     const [selector, setSelector] = useState<JSX.Element>();
@@ -48,12 +52,7 @@ const ToolViewer = () => {
             anchor="right"
             open={true}
             hideBackdrop={true}
-            sx={{
-                [`& .MuiDrawer-paper`]: {
-                    width: "40%",
-                    minWidth: "300px"
-                }
-            }}
+            sx={{ [`& .MuiDrawer-paper`]: { minWidth: props.width } }}
         >
             <Toolbar/>
             <Stack direction="row">
