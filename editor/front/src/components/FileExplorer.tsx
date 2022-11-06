@@ -15,7 +15,7 @@ import { MyNode } from "../filesystem/MyFileSystem";
 import { FSContext, TargetFileContext } from "../App";
 
 interface FileExplorerProps {
-    style: React.CSSProperties | undefined
+    width: string
 }
 
 const FileExplorer = (props: FileExplorerProps) => {
@@ -42,9 +42,7 @@ const FileExplorer = (props: FileExplorerProps) => {
                     />
                     { node.name.split("/").slice(-1)[0] }
                 </ListItemButton>
-                <List
-                    style={ props.style }
-                >
+                <List>
                     {[ ...createFsEntry(node, depth+1) ]}
                 </List>
             </>);
@@ -95,7 +93,9 @@ const FileExplorer = (props: FileExplorerProps) => {
 
     return (
         <Box
-            style={ props.style } 
+            style={{
+                width: props.width
+            }} 
         >
             <Stack
                 direction="row"

@@ -70,11 +70,7 @@ const App = () => {
                 <FSContext.Provider value={ fs }>
                     <TargetFileContext.Provider value={[ targetFile, setTargetFile ]}>
                         <FileExplorer
-                            style={{
-                                padding: 0,
-                                flex: 1,
-                                minWidth: "220px"
-                            }}
+                            width="220px"
                         />
                         <Editor/>
                     </TargetFileContext.Provider>
