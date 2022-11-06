@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, createContext } from "react";
 
 import Box from "@mui/material/Box";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
 
 import Header from "./components/Header";
 import FileExplorer from "./components/FileExplorer";
@@ -10,14 +8,20 @@ import Editor from "./components/Editor";
 import ToolViewer from "./components/ToolViewer";
 import MyFileSystem from "./filesystem/MyFileSystem";
 import init, { Parser } from "sysdc_core";
+import MsgViewer from "./components/MsgViewer";
+
+type ContextType<T> = [T, React.Dispatch<React.SetStateAction<T>>];
+
+// メッセージ表示用Context
+export const ShowOkContext = createContext({} as ContextType<[boolean, string]>);
+export const ShowErrContext = createContext({} as ContextType<[boolean, string]>);
 
 const App = () => {
     const [fs, _setFs] = useState(new MyFileSystem());
     const [targetFile, setTargetFile] = useState("/design.def");
 
-    const [showOk, setShowOk] = useState(false);
-    const [showErr, setShowErr] = useState(false);
-    const [errMsg, setErrMsg] = useState("");
+    const [showOk, setShowOk] = useState<[boolean, string]>([false, ""]);
+    const [showErr, setShowErr] = useState<[boolean, string]>([false, ""]);
 
     const parse = () => {
         const parser = Parser.new();
@@ -25,11 +29,10 @@ const App = () => {
             fs.readAll().map(f => parser.parse(f.name, f.body) );
             parser.check();
         } catch (err) {
-            setErrMsg(err+"");
-            setShowErr(true);
+            setShowErr([true, err+""]);
             return;
         }
-        setShowOk(true);
+        setShowOk([true, "OK"]);
     };
 
     useEffect(() => {
@@ -79,38 +82,11 @@ const App = () => {
                 />
             </Box>
             <ToolViewer/>
-            <Snackbar
-                open={ showOk }
-                autoHideDuration={6000}
-                onClose={ () => setShowOk(false) }
-                anchorOrigin={{ vertical: "top", horizontal: "center"}}
-                style={{
-                    zIndex: 9999
-                }}
-            >
-                <Alert
-                    onClose={ () => setShowOk(false) }
-                    severity="success"
-                >
-                    OK
-                </Alert>
-            </Snackbar>
-            <Snackbar
-                open={ showErr }
-                autoHideDuration={6000}
-                onClose={ () => setShowErr(false) }
-                anchorOrigin={{ vertical: "top", horizontal: "center"}}
-                style={{
-                    zIndex: 9999
-                }}
-            >
-                <Alert
-                    onClose={ () => setShowErr(false) }
-                    severity="error"
-                >
-                    { errMsg }
-                </Alert>
-            </Snackbar>
+            <ShowOkContext.Provider value={[ showOk, setShowOk ]}>
+                <ShowErrContext.Provider value={[ showErr, setShowErr ]}>
+                    <MsgViewer/>
+                </ShowErrContext.Provider>
+            </ShowOkContext.Provider>
         </Box>
     );
 };
