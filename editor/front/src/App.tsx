@@ -55,9 +55,6 @@ const App = () => {
         >
             <Header
                 onParseClick={ parse }
-                style={{
-                    flex: 1
-                }}
             />
             <Box
                 style={{

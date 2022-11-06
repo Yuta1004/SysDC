@@ -9,7 +9,6 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SettingsIcon from "@mui/icons-material/Settings";
 
 interface HeaderProps {
-    style: React.CSSProperties | undefined,
     onParseClick: () => void
 }
 
@@ -19,7 +18,6 @@ const Header = (props: HeaderProps) => {
             position="static"
             color="default"
             sx={{ zIndex: 9999 }}
-            style={ props.style }
         >
             <Toolbar>
                 <Typography
