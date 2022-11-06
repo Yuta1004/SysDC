@@ -46,7 +46,7 @@ const App = () => {
 
     return (
         <Box
-            style={{
+            sx={{
                 display: "flex",
                 flexDirection: "column",
                 width: "100vw",
@@ -57,7 +57,7 @@ const App = () => {
                 onParseClick={ parse }
             />
             <Box
-                style={{
+                sx={{
                     display: "flex",
                     flexDirection: "row",
                     width: "100%",

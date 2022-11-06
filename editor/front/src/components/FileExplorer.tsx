@@ -93,7 +93,7 @@ const FileExplorer = (props: FileExplorerProps) => {
 
     return (
         <Box
-            style={{
+            sx={{
                 width: props.width
             }} 
         >
