@@ -7,4 +7,5 @@
 ## 接続設定
 
 - `/doc` : docコンテナ
-- `/editor/front` : editor/frontコンテナ
+- `/editor` : editor/frontコンテナ
+- `/tool/delivery` : tool/deliveryコンテナ
