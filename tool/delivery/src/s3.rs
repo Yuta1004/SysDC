@@ -1,6 +1,6 @@
 use http::uri::Uri;
 
-use aws_sdk_s3::{ Client, Endpoint };
+use aws_sdk_s3::{Client, Endpoint};
 
 const ENDPOINT: &str = "http://localhost:9000";
 const BUCKET: &str = "sysdc-tools";
