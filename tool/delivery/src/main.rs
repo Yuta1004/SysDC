@@ -1,3 +1,4 @@
-fn main() {
-    println!("Hello, world!");
-}
+mod s3;
+
+#[tokio::main]
+async fn main() { }

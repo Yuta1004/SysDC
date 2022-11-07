@@ -4,3 +4,7 @@ version = "0.0.1"
 edition = "2021"
 
 [dependencies]
+http = "0.2.8"
+aws-config = "0.51.0"
+aws-sdk-s3 = "0.21.0"
+tokio = { version = "1", features = ["full"] }
