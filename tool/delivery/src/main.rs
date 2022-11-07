@@ -3,8 +3,9 @@ use actix_web::{get, App, HttpServer, Responder};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    println!("listen at -> 0.0.0.0:50000");
     HttpServer::new(|| App::new().service(root))
-        .bind(("0.0.0.0", 8080))?
+        .bind(("0.0.0.0", 50000))?
         .run()
         .await
 }

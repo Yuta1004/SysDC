@@ -2,7 +2,7 @@ use http::uri::Uri;
 
 use aws_sdk_s3::{Client, Endpoint};
 
-const ENDPOINT: &str = "http://localhost:9000";
+const ENDPOINT: &str = "http://tool-storage:9000";
 const BUCKET: &str = "sysdc-tools";
 
 async fn create_connection() -> Client {
