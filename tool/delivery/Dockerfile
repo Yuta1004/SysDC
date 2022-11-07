@@ -20,4 +20,8 @@ WORKDIR /workdir
 
 COPY --from=builder /workdir/target/release/sysdc_tool_delivery .
 
+RUN apt update && \
+    apt install -y --no-install-recommends ca-certificates && \
+    update-ca-certificates
+
 CMD /workdir/sysdc_tool_delivery

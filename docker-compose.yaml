@@ -45,6 +45,9 @@ services:
     build: ./tool/delivery
     environment:
       TZ: Asia/Tokyo
+      AWS_ACCESS_KEY_ID: root
+      AWS_SECRET_ACCESS_KEY: rootpass
+      AWS_REGION: ap-northeast-1
 
 volumes:
   tool-storage-v:
