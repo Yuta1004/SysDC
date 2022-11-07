@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import Drawer from "@mui/material/Drawer";
 import Toolbar from "@mui/material/Toolbar";
@@ -16,11 +16,11 @@ const ToolViewer = (props: ToolViewerProps) => {
     const [tools, setTools] = useState<Map<string, string>>();
     const [selector, setSelector] = useState<JSX.Element>();
 
+    const tiframe = useRef<HTMLIFrameElement>(null);
+
     const loadTools = () => {
         var tools = new Map();
-        tools.set("std@viewer v0.1.0", "https://sysdc.nakagamiyuta.dev");
-        tools.set("std@json v0.1.0", "https://sysdc.nakagamiyuta.dev");
-        tools.set("std@debug v0.1.0", "https://sysdc.nakagamiyuta.dev");
+        tools.set("test", "/tool/delivery/std/template/0.1.0");
 
         const selector = (
             <Select defaultValue={ tools.keys().next().value }>
@@ -45,6 +45,13 @@ const ToolViewer = (props: ToolViewerProps) => {
     useEffect(() => {
         loadTools();
     }, []);
+
+    useEffect(() => {
+        if (tiframe.current !== null && tiframe.current.contentWindow !== null) {
+            const iwindow = tiframe.current.contentWindow;
+            tiframe.current.onload = () => iwindow.postMessage("hello??");
+        }
+    }, [viewingTool]);
 
     return (
         <Drawer
@@ -74,6 +81,7 @@ const ToolViewer = (props: ToolViewerProps) => {
                 {/* </IconButton> */}
             </Stack>
             <iframe
+                ref={ tiframe }
                 width="100%"
                 height="100%"
                 key={ viewingTool }
