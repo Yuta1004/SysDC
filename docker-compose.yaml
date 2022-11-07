@@ -15,6 +15,8 @@ services:
     depends_on:
       - doc
       - editor-front
+      - tool-storage
+      - tool-delivery
   doc:
     image: klakegg/hugo:0.101.0-ext-alpine
     command: server --disableLiveReload --baseURL=${SYSDC_BASE_URL}/doc --appendPort=false
