@@ -8,7 +8,8 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 
 interface ToolViewerProps {
-    width: string
+    width: string,
+    system: string
 }
 
 const ToolViewer = (props: ToolViewerProps) => {
@@ -49,9 +50,10 @@ const ToolViewer = (props: ToolViewerProps) => {
     useEffect(() => {
         if (tiframe.current !== null && tiframe.current.contentWindow !== null) {
             const iwindow = tiframe.current.contentWindow;
-            tiframe.current.onload = () => iwindow.postMessage("hello??");
+            tiframe.current.onload = () => iwindow.postMessage(props.system);
+            iwindow.postMessage(props.system);
         }
-    }, [viewingTool]);
+    }, [viewingTool, props.system]);
 
     return (
         <Drawer

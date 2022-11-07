@@ -25,11 +25,13 @@ const App = () => {
 
     const [msg, showMsg] = useState<[string, string]>(["", ""]);
 
+    const [system, setSystem] = useState("");
+
     const parse = () => {
         const parser = Parser.new();
         try {
             fs.readAll().map(f => parser.parse(f.name, f.body) );
-            parser.check();
+            setSystem(JSON.stringify(parser.check()));
         } catch (err) {
             showMsg(["error", err+""]);
             return;
@@ -67,7 +69,10 @@ const App = () => {
                     </TargetFileContext.Provider>
                 </FSContext.Provider>
             </Box>
-            <ToolViewer width="40vw"/>
+            <ToolViewer
+                width="40vw"
+                system={ system }
+            />
             <MsgContext.Provider value={[ msg, showMsg ]}>
                 <MsgViewer/>
             </MsgContext.Provider>
