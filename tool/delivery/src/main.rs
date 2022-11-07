@@ -35,7 +35,7 @@ async fn get_tool(req: HttpRequest) -> impl Responder {
     create_f_response(&path).await
 }
 
-#[get("/{author}/{tool}/{version}/{file}")]
+#[get("/{author}/{tool}/{version}/{file:.*}")]
 async fn get_tool_files(req: HttpRequest) -> impl Responder {
     create_f_response(req.uri().path()).await
 }
