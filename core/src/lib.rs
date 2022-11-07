@@ -3,9 +3,9 @@ mod token;
 mod check;
 mod error;
 mod location;
-mod name;
-mod types;
-mod structure;
+pub mod name;
+pub mod types;
+pub mod structure;
 
 #[cfg(feature = "wasm")]
 use {wasm_bindgen::prelude::wasm_bindgen, wasm_bindgen::JsValue};
