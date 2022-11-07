@@ -20,8 +20,8 @@ export const TargetFileContext = createContext({} as SContextType<string>);
 export const MsgContext = createContext({} as SContextType<[string, string]>);
 
 const App = () => {
-    const [fs, _setFs] = useState(new MyFileSystem());
-    const [targetFile, setTargetFile] = useState("/design.def");
+    const [fs, setFs] = useState(new MyFileSystem());
+    const [targetFile, setTargetFile] = useState("");
 
     const [msg, showMsg] = useState<[string, string]>(["", ""]);
 
@@ -41,7 +41,11 @@ const App = () => {
 
     useEffect(() => {
         init();
-        fs.mkfile("/design.def", "unit design;");
+
+        const _fs = new MyFileSystem();
+        _fs.mkfile("/design.def", "unit design;");
+        setFs(_fs);
+        setTargetFile("/design.def");
     }, []);
 
     return (
