@@ -39,6 +39,10 @@ services:
       - type: volume
         source: tool-storage-v
         target: "/data"
+  tool-delivery:
+    build: ./tool/delivery
+    environment:
+      TZ: Asia/Tokyo
 
 volumes:
   tool-storage-v:
