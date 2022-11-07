@@ -32,7 +32,9 @@ services:
       TZ: Asia/Tokyo
   tool-storage:
     image: minio/minio:RELEASE.2022-10-29T06-21-33Z.fips
-    command: server /data
+    command: server --console-address ":9001" /data
+    ports:
+        - 9001:9001
     environment:
       TZ: Asia/Tokyo
       MINIO_ROOT_USER: root
