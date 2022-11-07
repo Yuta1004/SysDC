@@ -15,6 +15,8 @@ services:
     depends_on:
       - doc
       - editor-front
+      - tool-storage
+      - tool-delivery
   doc:
     image: klakegg/hugo:0.101.0-ext-alpine
     command: server --disableLiveReload --baseURL=${SYSDC_BASE_URL}/doc --appendPort=false
@@ -30,7 +32,9 @@ services:
       TZ: Asia/Tokyo
   tool-storage:
     image: minio/minio:RELEASE.2022-10-29T06-21-33Z.fips
-    command: server /data
+    command: server --console-address ":9001" /data
+    ports:
+        - 9001:9001
     environment:
       TZ: Asia/Tokyo
       MINIO_ROOT_USER: root
@@ -39,6 +43,14 @@ services:
       - type: volume
         source: tool-storage-v
         target: "/data"
+  tool-delivery:
+    build: ./tool/delivery
+    environment:
+      TZ: Asia/Tokyo
+      RUST_LOG: info
+      AWS_ACCESS_KEY_ID: root
+      AWS_SECRET_ACCESS_KEY: rootpass
+      AWS_REGION: ap-northeast-1
 
 volumes:
   tool-storage-v:
