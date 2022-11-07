@@ -32,14 +32,14 @@ static_resources:
                   safe_regex: { regex: "^/editor/front(.)*" }
                 route:
                   regex_rewrite:
-                    pattern: { regex: "^/editor/front" }
+                    pattern: { regex: "^/editor/front/*" }
                     substitution: "/"
                   cluster: editor_f_service
               - match:
                   safe_regex: { regex: "^/tool/delivery(.)*" }
                 route:
                   regex_rewrite:
-                    pattern: { regex: "^/tool/delivery" }
+                    pattern: { regex: "^/tool/delivery/*" }
                     substitution: "/"
                   cluster: tool_d_service
   clusters:
@@ -64,7 +64,7 @@ static_resources:
   - name: tool_d_service
     type: STRICT_DNS
     load_assignment:
-      cluster_name: tool_f_service
+      cluster_name: tool_d_service
       endpoints:
       - lb_endpoints:
         - endpoint:
