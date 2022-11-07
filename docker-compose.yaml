@@ -45,6 +45,7 @@ services:
     build: ./tool/delivery
     environment:
       TZ: Asia/Tokyo
+      RUST_LOG: info
       AWS_ACCESS_KEY_ID: root
       AWS_SECRET_ACCESS_KEY: rootpass
       AWS_REGION: ap-northeast-1
