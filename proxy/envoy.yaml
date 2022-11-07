@@ -29,10 +29,10 @@ static_resources:
                 route:
                   cluster: doc_service
               - match:
-                  safe_regex: { regex: "^/editor/front(.)*" }
+                  safe_regex: { regex: "^/editor(.)*" }
                 route:
                   regex_rewrite:
-                    pattern: { regex: "^/editor/front/*" }
+                    pattern: { regex: "^/editor*" }
                     substitution: "/"
                   cluster: editor_f_service
               - match:
