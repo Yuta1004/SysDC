@@ -28,3 +28,18 @@ services:
     build: ./editor/front
     environment:
       TZ: Asia/Tokyo
+  tool-storage:
+    image: minio/minio:RELEASE.2022-10-29T06-21-33Z.fips
+    command: server /data
+    environment:
+      TZ: Asia/Tokyo
+      MINIO_ROOT_USER: root
+      MINIO_ROOT_PASSWORD: rootpass
+    volumes:
+      - type: volume
+        source: tool-storage-v
+        target: "/data"
+
+volumes:
+  tool-storage-v:
+    driver: local
