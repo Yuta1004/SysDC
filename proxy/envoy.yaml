@@ -42,7 +42,20 @@ static_resources:
                     pattern: { regex: "^/tool/delivery/*" }
                     substitution: "/"
                   cluster: tool_d_service
+              - match:
+                  prefix: "/"
+                route:
+                  cluster: top_service
   clusters:
+  - name: top_service
+    type: STRICT_DNS
+    load_assignment:
+      cluster_name: top_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: top, port_value: 80 }
   - name: doc_service
     type: STRICT_DNS
     load_assignment:

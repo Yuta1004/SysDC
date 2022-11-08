@@ -4,45 +4,64 @@ services:
   proxy:
     image: envoyproxy/envoy:v1.24.0
     ports:
-      - ${SYSDC_PORT}:50000
+    - ${SYSDC_PORT}:50000
     volumes:
-      - type: bind
-        source: "./proxy/envoy.yaml"
-        target: "/etc/envoy/envoy.yaml"
-        read_only: true
+    - type: bind
+      source: "./proxy/envoy.yaml"
+      target: "/etc/envoy/envoy.yaml"
+      read_only: true
     environment:
       TZ: Asia/Tokyo
     depends_on:
+      - top
       - doc
       - editor-front
       - tool-storage
       - tool-delivery
+
+  top:
+    image: nginx:1.19.1-alpine
+    volumes:
+    - type: bind
+      source: "./top/nginx.conf"
+      target: "/etc/nginx/nginx.conf"
+      read_only: true
+    - type: bind
+      source: "./top/static"
+      target: "/usr/share/nginx/html"
+      read_only: true
+    environment:
+      TZ: Asia/Tokyo
+
   doc:
     image: klakegg/hugo:0.101.0-ext-alpine
     command: server --disableLiveReload --baseURL=${SYSDC_BASE_URL}/doc --appendPort=false
     volumes:
-      - type: bind
-        source: "./doc"
-        target: "/src"
+    - type: bind
+      source: "./doc"
+      target: "/src"
     environment:
       TZ: Asia/Tokyo
+
   editor-front:
     build: ./editor/front
     environment:
       TZ: Asia/Tokyo
+
   tool-storage:
     image: minio/minio:RELEASE.2022-10-29T06-21-33Z.fips
     command: server --console-address ":9001" /data
     ports:
-        - 9001:9001
+    - 9001:9001
     environment:
       TZ: Asia/Tokyo
       MINIO_ROOT_USER: root
       MINIO_ROOT_PASSWORD: rootpass
     volumes:
-      - type: volume
-        source: tool-storage-v
-        target: "/data"
+    - type: volume
+      source: tool-storage-v
+      target: "/data"
+
   tool-delivery:
     build: ./tool/delivery
     environment:
