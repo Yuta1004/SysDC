@@ -1,12 +1,12 @@
 +++
 title = "言語仕様"
 date = 2022-09-23T08:41:43Z
-weight = 3
+weight = 2
 chapter = true
-pre = "<b>3. </b>"
+pre = "<b>2. </b>"
 +++
 
-### Chapter 3
+### Chapter 2
 
 # 言語仕様
 
