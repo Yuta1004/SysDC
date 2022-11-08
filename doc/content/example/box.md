@@ -4,12 +4,6 @@ date: 2022-09-23T15:02:47Z
 weight: 1
 ---
 
-### コマンド
-
-```text
-./sysdc parse box.def
-```
-
 ### box.def
 
 ```text

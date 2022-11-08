@@ -4,12 +4,6 @@ date: 2022-09-23T15:05:28Z
 weight: 2
 ---
 
-### コマンド
-
-```text
-./sysdc parse logger.def string.def io.def time.def
-```
-
 ### logger.def
 
 ```text
