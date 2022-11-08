@@ -6,6 +6,8 @@ import Stack from "@mui/material/Stack";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
+import IconButton from "@mui/material/IconButton";
+import RefleshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 
 interface ToolViewerProps {
     width: string,
@@ -14,38 +16,9 @@ interface ToolViewerProps {
 
 const ToolViewer = (props: ToolViewerProps) => {
     const [viewingTool, setViewingTool] = useState("");
-    const [tools, setTools] = useState<Map<string, string>>();
-    const [selector, setSelector] = useState<JSX.Element>();
+    const [tools, setTools] = useState<Map<string, string>>(new Map());
 
     const tiframe = useRef<HTMLIFrameElement>(null);
-
-    const loadTools = () => {
-        var tools = new Map();
-        tools.set("test", "/tool/delivery/std/template/0.1.0");
-
-        const selector = (
-            <Select defaultValue={ tools.keys().next().value }>
-                {Array.from(tools).map(([name, _url]) => {
-                    return (
-                        <MenuItem
-                            value={name}
-                            onClick={ () => setViewingTool(name) }
-                        >
-                            {name}
-                        </MenuItem>
-                    );
-                })}
-            </Select>
-        );
-
-        setViewingTool( tools.keys().next().value );
-        setTools(tools);
-        setSelector(selector);
-    };
-
-    useEffect(() => {
-        loadTools();
-    }, []);
 
     useEffect(() => {
         if (tiframe.current !== null && tiframe.current.contentWindow !== null) {
@@ -72,15 +45,27 @@ const ToolViewer = (props: ToolViewerProps) => {
                         flexGrow: 1
                     }} 
                 >
-                    { selector }
+                <Select defaultValue="default">
+                    <MenuItem
+                        disabled
+                        value="default">
+                        <em>ツールを選択してください</em>
+                    </MenuItem>
+                    {Array.from(tools).map(([name, _url]) => {
+                        return (
+                            <MenuItem
+                                value={ name }
+                                onClick={ () => setViewingTool(name) }
+                            >
+                                { name }
+                            </MenuItem>
+                        );
+                    })}
+                </Select>
                 </FormControl>
-                {/* <IconButton
-                    style={{
-                        padding: "10px"
-                    }} 
-                >
-                    <RefleshOutlinedIcon/> */}
-                {/* </IconButton> */}
+                <IconButton onClick={ () => tiframe.current?.contentWindow?.location.reload() }>
+                    <RefleshOutlinedIcon/>
+                </IconButton>
             </Stack>
             <iframe
                 ref={ tiframe }
