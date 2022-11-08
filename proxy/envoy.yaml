@@ -25,24 +25,37 @@ static_resources:
               domains: "*"
               routes:
               - match:
-                  safe_regex: { regex: "^/doc(.)*" }
+                  prefix: "/doc"
                 route:
                   cluster: doc_service
               - match:
-                  safe_regex: { regex: "^/editor(.)*" }
+                  prefix: "/editor"
                 route:
                   regex_rewrite:
                     pattern: { regex: "^/editor*" }
                     substitution: "/"
                   cluster: editor_f_service
               - match:
-                  safe_regex: { regex: "^/tool/delivery(.)*" }
+                  prefix: "/tool/delivery"
                 route:
                   regex_rewrite:
                     pattern: { regex: "^/tool/delivery/*" }
                     substitution: "/"
                   cluster: tool_d_service
+              - match:
+                  prefix: "/"
+                route:
+                  cluster: top_service
   clusters:
+  - name: top_service
+    type: STRICT_DNS
+    load_assignment:
+      cluster_name: top_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: top, port_value: 80 }
   - name: doc_service
     type: STRICT_DNS
     load_assignment:
