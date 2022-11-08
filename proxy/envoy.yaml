@@ -25,18 +25,18 @@ static_resources:
               domains: "*"
               routes:
               - match:
-                  safe_regex: { regex: "^/doc(.)*" }
+                  prefix: "/doc"
                 route:
                   cluster: doc_service
               - match:
-                  safe_regex: { regex: "^/editor(.)*" }
+                  prefix: "/editor"
                 route:
                   regex_rewrite:
                     pattern: { regex: "^/editor*" }
                     substitution: "/"
                   cluster: editor_f_service
               - match:
-                  safe_regex: { regex: "^/tool/delivery(.)*" }
+                  prefix: "/tool/delivery"
                 route:
                   regex_rewrite:
                     pattern: { regex: "^/tool/delivery/*" }
