@@ -1,12 +1,12 @@
 +++
 title = "サンプルプログラム"
 date = 2022-09-23T15:02:29Z
-weight = 4
+weight = 3
 chapter = true
-pre = "<b>4. </b>"
+pre = "<b>3. </b>"
 +++
 
-### Chapter 4 
+### Chapter 3
 
 # サンプルプログラム
 

@@ -1,4 +1,4 @@
-title = "SysDC"
+title = "SysDC Document"
 theme = "hugo-theme-learn"
 languageCode = "ja-JP"
 defaultContentLanguage = "ja"
@@ -25,13 +25,7 @@ url = "https://github.com/Yuta1004/SysDC"
 weight = 1
 
 [[Languages.ja.menu.shortcuts]]
-name = "<i class='fab fa-fw fa-github'></i> SysDC-Web (this site)"
-identifier = "github-sysdc-web"
-url = "https://github.com/Yuta1004/SysDC-Web"
-weight = 2
-
-[[Languages.ja.menu.shortcuts]]
 name = "<i class='fa-sharp fa-solid fa-laptop-code'></i> SecHack365"
 identifier = "sechack365"
 url = "https://sechack365.nict.go.jp/"
-weight = 3
+weight = 2
