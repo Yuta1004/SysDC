@@ -3,7 +3,7 @@ title: "トップページ"
 date: 2022-09-23T06:33:39Z
 ---
 
-# SysDC
+# SysDC Document
 
 ![VERSION-Badge](https://img.shields.io/github/v/release/Yuta1004/SysDC?style=for-the-badge)
 
