@@ -6,6 +6,8 @@ import Stack from "@mui/material/Stack";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
+import IconButton from "@mui/material/IconButton";
+import RefleshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 
 interface ToolViewerProps {
     width: string,
@@ -61,13 +63,9 @@ const ToolViewer = (props: ToolViewerProps) => {
                     })}
                 </Select>
                 </FormControl>
-                {/* <IconButton
-                    style={{
-                        padding: "10px"
-                    }} 
-                >
-                    <RefleshOutlinedIcon/> */}
-                {/* </IconButton> */}
+                <IconButton onClick={ () => tiframe.current?.contentWindow?.location.reload() }>
+                    <RefleshOutlinedIcon/>
+                </IconButton>
             </Stack>
             <iframe
                 ref={ tiframe }
