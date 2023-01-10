@@ -1,4 +1,4 @@
-IMAGE := rust:1.63.0-sysdc-wasm
+IMAGE := sysdc/core:build
 
 setup:
 	docker build -t $(IMAGE) .
