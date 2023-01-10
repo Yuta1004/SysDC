@@ -1,0 +1,10 @@
+{
+    "name": "debug",
+    "version": "1.0.0",
+    "dependencies": {
+        "typescript": "^4.8.4"
+    },
+    "scripts": {
+        "build": "tsc --build"
+    }
+}
