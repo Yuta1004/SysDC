@@ -14,7 +14,7 @@
 ### 1. ビルド
 
 ```
-$ make build
+$ make setup build
 ```
 
 ### 2. 設定ファイル作成
