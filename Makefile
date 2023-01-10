@@ -1,15 +1,13 @@
-BASE_URL := http://localhost:50000
-PORT := 50000
-OPTS :=
-
 build:
 	make -C core build-image
 	make -C server build
 
+conf:
+	echo "SYSDC_BASE_URL = \"http://localhost:50000\"" > run.conf
+	echo "SYSDC_PORT = 50000" >> run.conf
+	echo "SYSDC_OPTS =" >> run.conf
+
 run:
-	SYSDC_BASE_URL=$(BASE_URL) \
-	SYSDC_PORT=$(PORT) \
-	SYSDC_OPTS=$(OPTS) \
-		make -C server run
+	make -C server run
 
 .PHONY: build, run
