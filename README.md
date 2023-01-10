@@ -35,6 +35,8 @@ $ make conf
 
 ```
 $ make run
+または
+$ SYSDC_OPTS="..." make run     # docker-composeに渡すオプションを設定する場合
 ```
 
 ## ライセンス
