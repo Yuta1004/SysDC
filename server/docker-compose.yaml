@@ -45,6 +45,7 @@ services:
 
   editor-front:
     build: ./editor/front
+    image: sysdc/server/editor-front:run
     environment:
       TZ: Asia/Tokyo
 
@@ -64,6 +65,7 @@ services:
 
   tool-delivery:
     build: ./tool/delivery
+    image: sysdc/server/tool-delivery:run
     environment:
       TZ: Asia/Tokyo
       RUST_LOG: info
