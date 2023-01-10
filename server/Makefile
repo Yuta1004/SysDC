@@ -4,7 +4,7 @@ SYSDC_PORT := 50000
 -include ../run.conf
 
 build:
-	make -C editor/front sysdc_core_pkg
+	make -C editor/front build
 
 run:
 	SYSDC_BASE_URL=$(SYSDC_BASE_URL) \

@@ -43,7 +43,7 @@ const ToolViewer = (props: ToolViewerProps) => {
                     sx={{
                         padding: "10px",
                         flexGrow: 1
-                    }} 
+                    }}
                 >
                 <Select defaultValue="default">
                     <MenuItem
