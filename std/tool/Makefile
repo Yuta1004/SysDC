@@ -6,6 +6,6 @@ setup:
 build:
 	make -C debug build
 	make -C json build
-	make -C view setup
+	make -C view build
 
 .PHONY: build

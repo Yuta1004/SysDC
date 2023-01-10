@@ -14,7 +14,7 @@ RUN npm cache verify && \
     npm run build && \
     npm install -g serve
 
-# 2. Build container 
+# 2. Build container
 FROM node:18-alpine3.15
 
 COPY --from=builder /workdir/build /workdir
