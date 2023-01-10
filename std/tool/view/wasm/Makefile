@@ -1,4 +1,4 @@
-IMAGE := sysdc/std/tool/view:build-wasm
+IMAGE := sysdc/stdtool/view:build-wasm
 
 setup:
 	cp ../../../../core/Cargo.toml Cargo.core.toml
