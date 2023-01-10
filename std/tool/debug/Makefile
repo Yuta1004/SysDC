@@ -1,11 +1,14 @@
 IMAGE := node:18-alpine3.15
 
-dist:
-	docker run --rm -it -v $(shell pwd):/workdir $(IMAGE) /bin/sh -c "\
-		cd workdir && \
-		npm install && \
+setup:
+	docker run --rm -it -v $(shell pwd):/workdir -w /workdir $(IMAGE) /bin/sh -c "\
+		npm install \
+	"
+
+build:
+	docker run --rm -it -v $(shell pwd):/workdir -w /workdir $(IMAGE) /bin/sh -c "\
 		npm run build \
 	"
-	cp public/* dist
+	cp public/* build
 
-.PHONY: dist
+.PHONY: setup, build
