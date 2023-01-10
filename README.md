@@ -5,64 +5,48 @@
 
 ## 概要
 
-システム設計支援言語
+システム設計支援言語 ＋ 周辺環境
 
-## 実行・起動
+## 起動方法
 
 `Docker` `docker-compose` が必要です
 
-### 1. 準備
+### 1. ビルド
 
 ```
 $ make build
 ```
 
-### 2. run.shの編集
+### 2. 設定ファイル作成
+
+```
+$ make conf
+```
+
+### 3. 設定ファイル編集
 
 1，2行目の内容をそれぞれ適切な値に設定してください
 
 - SYSDC_BASE_URL : SysDCを公開するURL
 - SYSDC_PORT : SysDCを公開するポート
 
-### 3. run.sh実行
+### 4. 起動
 
 ```
-$ ./run.sh
+$ make run
 ```
-
-## 構成
-
-### core
-
-SysDCのパーサ
-
-### doc
-
-Hugoを使用してドキュメントを提供する
-
-### editor/front
-
-Webエディタ
-
-### proxy
-
-各コンテナへの接続を管理
-
-### tool/delivery
-
-ツールを配信する
 
 ## ライセンス
 
 ### SysDC
 
-Apache License 2.0  
+Apache License 2.0
 Copyright 2022 Yuta NAKAGAMI
 
 ### hugo-theme-learn
 
-Copyright (c) 2014 Grav  
-Copyright (c) 2016 MATHIEU CORNIC  
+Copyright (c) 2014 Grav
+Copyright (c) 2016 MATHIEU CORNIC
 Copyright (c) 2017 Valere JEANTET
 
 [LICENSE.md](https://github.com/matcornic/hugo-theme-learn/blob/master/LICENSE.md)

@@ -1,5 +1,5 @@
 target/
 
-.env
 *.lock
-
+.env
+run.conf
