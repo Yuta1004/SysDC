@@ -5,9 +5,9 @@
 
 ## 概要
 
-システム設計支援言語
+システム設計支援言語 ＋ 周辺環境
 
-## 実行・起動
+## 起動方法
 
 `Docker` `docker-compose` が必要です
 
@@ -35,28 +35,6 @@ $ make conf
 ```
 $ make run
 ```
-
-## 構成
-
-### core
-
-SysDCのパーサ
-
-### doc
-
-Hugoを使用してドキュメントを提供する
-
-### editor/front
-
-Webエディタ
-
-### proxy
-
-各コンテナへの接続を管理
-
-### tool/delivery
-
-ツールを配信する
 
 ## ライセンス
 
