@@ -1,8 +1,5 @@
 pub mod commands;
 
-#[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::wasm_bindgen;
-
 use serde::{ Serialize, Deserialize };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -15,12 +12,12 @@ pub enum AdviceLevel {
 pub struct Advice {
     level: AdviceLevel,
     title: String,
-    message: Vec<String>
+    messages: Vec<String>
 }
 
 
 impl Advice {
-    pub fn new(level: AdviceLevel, title: String, message: Vec<String>) -> Advice {
-        Advice { level, title, message }
+    pub fn new(level: AdviceLevel, title: String, messages: Vec<String>) -> Advice {
+        Advice { level, title, messages }
     }
 }
