@@ -7,33 +7,38 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CheckIcon from "@mui/icons-material/Check";
 
-import init from "sysdc_tool_eval";
+import init, { test } from "sysdc_tool_eval";
+
+interface Advice {
+    level: String,
+    title: String,
+    messages: String[]
+}
 
 const App = () => {
-    const [advice, setAdvice] = useState<Map<[number, String], String[]>>(new Map());
+    const [wasmOk, setWasmOk] = useState<Boolean>(false); 
+    const [system, setSystem] = useState<{}>({});
+    const [advice, setAdvice] = useState<Advice[]>([]);
 
-    const entrypoint = (event: MessageEvent) => {
-        // setSystem(event.data);
+    window.addEventListener("message", (e: MessageEvent) => setSystem(e.data));
 
-        const _advice = new Map();
-        _advice.set([1, "重複している可能性がある関数"], ["a", "b", "c", "a", "b", "c", "a", "b", "c", "a", "b", "c"]);
-        _advice.set([1, "分割できる可能性がある関数"], ["d", "e", "f"]);
-        _advice.set([0, "その他"], ["g", "h", "i"]);
-        setAdvice(_advice);
-    };
-    window.addEventListener("message", entrypoint);
-
-    const makeAdviceElems = (advice: Map<[number, String], String[]>) => {
-        const icons = [
-            <InfoOutlinedIcon
-                color="primary"
-                sx={{ "verticalAlign": "top" }}
-            />,
-            <WarningAmberIcon
-                color="warning"
-                sx={{ "verticalAlign": "top" }}
-            />
-        ];
+    const makeAdviceElems = (advice: Advice[]) => {
+        const icons: Map<String, JSX.Element> = new Map([
+            [
+                "Info",
+                <InfoOutlinedIcon
+                    color="primary"
+                    sx={{ "verticalAlign": "top" }}
+                />
+            ],
+            [
+                "Warning",
+                <WarningAmberIcon
+                    color="warning"
+                    sx={{ "verticalAlign": "top" }}
+                />
+            ]
+        ]);
 
         const makeMsgElems = (messages: String[]) => {
             return messages.map((msg) => {
@@ -46,7 +51,7 @@ const App = () => {
             });
         };
 
-        return Array.from(advice).map(([[level, title], messages]) => {
+        return advice.map((adv) => {
             return (
                 <Paper
                     elevation={3}
@@ -56,11 +61,11 @@ const App = () => {
                     }}
                 >
                     <h2 style={{ "margin": 0 }}>
-                        { icons[level] }
-                        {[ title ]}
+                        { icons.get(adv.level) }
+                        {[ adv.title ]}
                     </h2>
                     <List>
-                        { makeMsgElems(messages) }
+                        { makeMsgElems(adv.messages) }
                     </List>
                 </Paper>
             );
@@ -68,8 +73,14 @@ const App = () => {
     };
 
     useEffect(() => {
-        init()
+        init().then(() => setWasmOk(true));
     }, []);
+
+    useEffect(() => {
+        if (wasmOk) {
+            setAdvice(test()); 
+        }
+    }, [wasmOk, system]);
 
     return (
         <div
