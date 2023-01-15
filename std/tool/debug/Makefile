@@ -13,3 +13,8 @@ build: package.json $(SRCS)
 		npm run build \
 	"
 	cp public/* build
+
+clean:
+	rm -rf build node_modules
+
+.PHONY: clean

@@ -1,16 +1,11 @@
-SYSDC_OPTS :=
-
 # General
 setup:
 	make -C core setup
-	make -C std/tool setup
+	make -C std/tool setup build
 
-# Server-app
-build-server:
-	make -C std/tool build
-	make -C server build
+clean:
+	make -C core clean
+	make -C server clean
+	make -C std/tool clean
 
-run-server:
-	SYSDC_OPTS=$(SYSDC_OPTS) make -C server run
-
-.PHONY: setup, build-server, run-server
+.PHONY: setup clean

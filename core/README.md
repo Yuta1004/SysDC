@@ -1,7 +1,5 @@
 # SysDC-Core
 
-## 概要
-
 SysDCのパーサ
 
 ## コマンド
@@ -11,13 +9,13 @@ SysDCのパーサ
 ビルド用イメージが必要です
 
 ```
-$ make pkg
+$ make build
 ```
 
 ### ビルド用イメージ生成
 
 ```
-$ make build-image
+$ make setup
 ```
 
 ## 構成

@@ -5,4 +5,8 @@ setup:
 build:
 	make -C front build
 
-.PHONY: setup, build
+clean:
+	make -C wasm clean
+	make -C front clean
+
+.PHONY: setup build clean
