@@ -28,6 +28,16 @@ const ToolViewer = (props: ToolViewerProps) => {
         }
     }, [viewingTool, props.system]);
 
+    useEffect(() => {
+        const _tools = new Map();
+        _tools.set("std@debug v1.0.0", "/std/debug/1.0.0");
+        _tools.set("std@json v1.0.0",  "/std/json/1.0.0");
+        _tools.set("std@view v0.2.0",  "/std/view/0.2.0");
+        _tools.set("std@eval v0.1.0",  "/std/eval/0.1.0");
+        _tools.set("std@check v0.1.0", "/std/check/0.1.0");
+        setTools(_tools);
+    }, []);
+
     return (
         <Drawer
             variant="persistent"
@@ -72,7 +82,7 @@ const ToolViewer = (props: ToolViewerProps) => {
                 width="100%"
                 height="100%"
                 key={ viewingTool }
-                src={ tools?.get(viewingTool) }
+                src={ "/tool/delivery" + tools?.get(viewingTool) }
             />
         </Drawer>
     );
