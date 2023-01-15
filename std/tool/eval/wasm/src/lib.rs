@@ -1,14 +1,15 @@
+#[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::wasm_bindgen;
 
-#[wasm_bindgen]
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
 pub enum AdviceLevel {
     Info = 0,
     Warning = 1
 }
 
-#[wasm_bindgen]
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
 pub struct Advice {
     level: AdviceLevel,
     title: String,
