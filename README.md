@@ -7,30 +7,26 @@
 
 システム設計支援言語 ＋ 周辺環境
 
-## 起動方法 (サーバ)
+## 実行方法
 
 `Docker` `docker-compose` が必要です
 
-### 1. ビルド
+### 1. セットアップ
 
 ```
 $ make setup
-$ make build-server
 ```
 
-### 2. 設定ファイル編集
+### 2. 実行
 
-`server/run.conf` の1，2行目の内容をそれぞれ適切な値に設定してください
+#### サーバ (server)
 
-- SYSDC_BASE_URL : SysDCを公開するURL
-- SYSDC_PORT : SysDCを公開するポート
-
-### 3. 起動
+詳細は `server/README.md` を参照してください
 
 ```
-$ make run-server
-または
-$ SYSDC_OPTS="..." make run-server      # docker-composeに渡すオプションを設定する場合
+$ cd server
+$ make build
+$ make run
 ```
 
 ## ライセンス
