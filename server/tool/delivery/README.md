@@ -1,7 +1,5 @@
 # SysDC-Tool-Delivery
 
-## 概要
-
 Webエディタ向けにツールを配信する
 
 ## URL

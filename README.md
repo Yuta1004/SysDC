@@ -3,8 +3,6 @@
 [![check](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml/badge.svg?branch=master)](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml)
 ![VERSION-Badge](https://img.shields.io/github/v/release/Yuta1004/SysDC?style=flat)
 
-## 概要
-
 システム設計支援言語 ＋ 周辺環境
 
 ## 実行方法

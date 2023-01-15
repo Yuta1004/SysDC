@@ -1,7 +1,5 @@
 # SysDC-Editor-Front
 
-## 概要
-
 Webエディタ(フロント)
 
 ## コマンド
@@ -11,5 +9,5 @@ Webエディタ(フロント)
 `./orig_modules/sysdc_core` に配置されます
 
 ```
-$ make sysdc_core_pkg
+$ make build
 ```
