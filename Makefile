@@ -1,16 +1,16 @@
+SYSDC_OPTS :=
+
+# General
 setup:
 	make -C core setup
 	make -C std/tool setup
 
-build:
+# Server-app
+build-server:
 	make -C std/tool build
 	make -C server build
 
-run:
+run-server:
 	SYSDC_OPTS=$(SYSDC_OPTS) make -C server run
 
-conf:
-	echo "SYSDC_BASE_URL = \"http://localhost:50000\"" > run.conf
-	echo "SYSDC_PORT = 50000" >> run.conf
-
-.PHONY: build, run
+.PHONY: setup, build-server, run-server
