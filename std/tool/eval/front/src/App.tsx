@@ -7,7 +7,7 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CheckIcon from "@mui/icons-material/Check";
 
-import init, { test } from "sysdc_tool_eval";
+import init, { gen_advice } from "sysdc_tool_eval";
 
 interface Advice {
     level: String,
@@ -78,7 +78,7 @@ const App = () => {
 
     useEffect(() => {
         if (wasmOk) {
-            setAdvice(test()); 
+            setAdvice(gen_advice()); 
         }
     }, [wasmOk, system]);
 
