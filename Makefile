@@ -1,5 +1,3 @@
-SYSDC_OPTS :=
-
 # General
 setup:
 	make -C core setup
