@@ -12,4 +12,11 @@ build:
 	make -C eval build
 	make -C check build
 
-.PHONY: build
+clean:
+	make -C debug clean
+	make -C json clean
+	make -C view clean
+	make -C eval clean
+	make -C check clean
+
+.PHONY: setup build clean

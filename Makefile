@@ -3,4 +3,9 @@ setup:
 	make -C core setup
 	make -C std/tool setup build
 
-.PHONY: setup, build-server, run-server
+clean:
+	make -C core clean
+	make -C server clean
+	make -C std/tool clean
+
+.PHONY: setup clean

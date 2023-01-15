@@ -14,4 +14,7 @@ run:
 	SYSDC_PORT=$(SYSDC_PORT) \
 		docker-compose up $(SYSDC_OPTS)
 
-.PHONY: build, run
+clean:
+	make -C editor/front clean
+
+.PHONY: build run clean
