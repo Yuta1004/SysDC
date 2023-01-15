@@ -1,4 +1,4 @@
-IMAGE := sysdc/stdtool/eval:build-wasm
+IMAGE := sysdc/stdtool/check:build-wasm
 
 SRCS := $(shell find src/) \
 		$(shell find ../../../../core/src)
