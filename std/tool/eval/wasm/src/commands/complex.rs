@@ -15,13 +15,17 @@ pub fn eval_complex_stat(system: &SysDCSystem) -> Vec<Advice> {
         })
     });
 
-    vec![
-        Advice::new(
-            AdviceLevel::Warning,
-            "分割可能な処理".to_string(),
-            messages
-        )
-    ]
+    if messages.len() == 0 {
+        vec![]
+    } else {
+        vec![
+            Advice::new(
+                AdviceLevel::Warning,
+                "分割可能な処理".to_string(),
+                messages
+            )
+        ]
+    }
 }
 
 enum ComplexAdviceKind {
