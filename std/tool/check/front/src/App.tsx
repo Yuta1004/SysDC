@@ -1,6 +1,6 @@
 import { useEffect, useState, createContext } from "react";
 
-import init from "sysdc_tool_eval";
+import init from "sysdc_tool_check";
 
 export const WasmContext = createContext(false);
 
