@@ -5,7 +5,7 @@ use sysdc_core::name::Name;
 use sysdc_core::structure::{ SysDCSystem, SysDCModule, SysDCFunction, SysDCAnnotation };
 
 #[cfg_attr(not(feature = "wasm"), allow(dead_code))]
-pub fn eval_complex_stat(system: &SysDCSystem) -> Vec<Advice> {
+pub fn eval_complex_stat(system: &SysDCSystem) -> Option<Advice> {
     let messages = system.units.iter().fold(vec![], |messages, unit| {
         unit.modules.iter().fold(messages, |mut messages, module| {
             let advice = eval_complex_stat_module(module);
@@ -15,16 +15,16 @@ pub fn eval_complex_stat(system: &SysDCSystem) -> Vec<Advice> {
         })
     });
 
-    if messages.len() == 0 {
-        vec![]
-    } else {
-        vec![
+    match messages.len() {
+        0 => None,
+        _ => Some(
             Advice::new(
                 AdviceLevel::Warning,
                 "分割可能な処理".to_string(),
                 messages
             )
-        ]
+        )
+
     }
 }
 

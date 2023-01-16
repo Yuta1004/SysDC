@@ -2,7 +2,7 @@ use crate::{ Advice, AdviceLevel };
 use sysdc_core::structure::SysDCSystem;
 
 #[cfg_attr(not(feature = "wasm"), allow(dead_code))]
-pub fn eval_basic_stat(system: &SysDCSystem) -> Vec<Advice> {
+pub fn eval_basic_stat(system: &SysDCSystem) -> Option<Advice> {
     let mut messages = vec![];
 
     let [unit_cnt, module_cnt, func_cnt] = count_elements(system);
@@ -10,13 +10,13 @@ pub fn eval_basic_stat(system: &SysDCSystem) -> Vec<Advice> {
     messages.push(format!("モジュール : {} 定義済", module_cnt));
     messages.push(format!("関数 : {} 定義済", func_cnt));
 
-    vec![
+    Some(
         Advice::new(
             AdviceLevel::Info,
             "基本情報".to_string(),
             messages
         )
-    ]
+    )
 }
 
 fn count_elements(system: &SysDCSystem) -> [i32; 3] {

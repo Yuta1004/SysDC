@@ -34,7 +34,7 @@ pub fn gen_advice(system: JsValue) -> JsValue {
                 commands::complex::eval_complex_stat(&system),
                 commands::duplication::eval_duplication_stat(&system),
                 commands::basic::eval_basic_stat(&system)
-            ].into_iter().flatten().collect::<Vec<Advice>>()
+            ].into_iter().flat_map(|adv| adv).collect::<Vec<Advice>>()
         }
         Err(_e) => vec![]
     };
