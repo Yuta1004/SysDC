@@ -5,9 +5,6 @@ use wasm_bindgen::prelude::{ wasm_bindgen, JsValue };
 
 use serde::{ Serialize, Deserialize };
 
-#[cfg(feature = "wasm")]
-use sysdc_core::structure::SysDCSystem;
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AdviceLevel {
     Info = 0,
@@ -31,11 +28,13 @@ impl Advice {
 #[cfg(feature = "wasm")]
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 pub fn gen_advice(system: JsValue) -> JsValue {
-    let system: SysDCSystem = serde_wasm_bindgen::from_value(system).unwrap();
-
-    serde_wasm_bindgen::to_value(
-        &vec![
-            commands::test()
-        ].into_iter().flatten().collect::<Vec<Advice>>()
-    ).unwrap()
+    let advice = match serde_wasm_bindgen::from_value(system) {
+        Ok(system) => {
+            vec![
+                commands::basic::eval_basic_stat(&system)
+            ].into_iter().flatten().collect::<Vec<Advice>>()
+        }
+        Err(_e) => vec![]
+    };
+    serde_wasm_bindgen::to_value(&advice).unwrap()
 }
