@@ -31,6 +31,8 @@ pub fn gen_advice(system: JsValue) -> JsValue {
     let advice = match serde_wasm_bindgen::from_value(system) {
         Ok(system) => {
             vec![
+                commands::complex::eval_complex_stat(&system),
+                commands::duplication::eval_duplication_stat(&system),
                 commands::basic::eval_basic_stat(&system)
             ].into_iter().flatten().collect::<Vec<Advice>>()
         }
