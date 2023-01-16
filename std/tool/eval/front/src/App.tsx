@@ -20,7 +20,9 @@ const App = () => {
     const [system, setSystem] = useState<{}>({});
     const [advice, setAdvice] = useState<Advice[]>([]);
 
-    window.addEventListener("message", (e: MessageEvent) => setSystem(e.data));
+    window.addEventListener("message", (e: MessageEvent) => {
+        setSystem(JSON.parse(e.data))
+    });
 
     const makeAdviceElems = (advice: Advice[]) => {
         const icons: Map<String, JSX.Element> = new Map([
@@ -78,7 +80,7 @@ const App = () => {
 
     useEffect(() => {
         if (wasmOk) {
-            setAdvice(gen_advice()); 
+            setAdvice(gen_advice(system)); 
         }
     }, [wasmOk, system]);
 
