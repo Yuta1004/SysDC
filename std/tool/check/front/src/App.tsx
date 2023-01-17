@@ -207,7 +207,14 @@ const App = () => {
                             padding: "10px 5px 10px 5px"
                         }}
                     >
-                        <h2>{ result[0].split(".").pop() }</h2>
+                        <h2 style={{ "margin": 0 }}>
+                            <span style={{
+                                "background": "linear-gradient(transparent 75%, rgba(245, 66, 96, 30) 100%)",
+                                "lineHeight": 1
+                            }}>
+                            { result[0].split(".").pop() }
+                            </span>
+                        </h2>
                         {[ ...createTResultListSub(result) ]}
                     </Paper>
                 </ListItem>
