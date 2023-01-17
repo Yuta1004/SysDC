@@ -1,4 +1,5 @@
-import { useEffect, useState, createContext } from "react";
+import { useEffect, useState, useReducer, useRef, createRef, createContext, RefObject } from "react";
+import ReactDOMServer from "react-dom/server";
 
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
@@ -10,14 +11,15 @@ import ListItem from "@mui/material/ListItem";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
+import ButtonGroup from "@mui/material/ButtonGroup";
+import Button from "@mui/material/Button";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
 import SwitchAccessShortcutIcon from "@mui/icons-material/SwitchAccessShortcut";
 import SwitchAccessShortcutAddIcon from "@mui/icons-material/SwitchAccessShortcutAdd";
 
-
-import init, { flistup, trace } from "sysdc_tool_check";
+import init, { flistup, trace, trace_var } from "sysdc_tool_check";
 
 export const WasmContext = createContext(false);
 
@@ -25,12 +27,15 @@ type FEntry = [string, string]
 type TResult = [string, {}]
 
 const App = () => {
+    const [, forceUpdate] = useReducer(x => ++x, 0);
+
     const [wasmOk, setWasmOk] = useState(false);
     const [system, setSystem] = useState({});
 
     const [fEntries, setFEntries] = useState<FEntry[]>([]);
     const [traceTarget, setTraceTarget] = useState<string>("");
     const [traceResult, setTraceResult] = useState<TResult[]>([]);
+    const [traceResultDetail, setTraceResultDetail] = useState<Map<string, JSX.Element>>(new Map());
 
     window.addEventListener("message", (e: MessageEvent) => {
         setSystem(JSON.parse(e.data))
@@ -46,7 +51,8 @@ const App = () => {
         });
     };
 
-    const createTResultListSub = (elems: any) => {
+    const createTResultListSub = (result: any) => {
+        const [tvname, elems] = result;
         return elems.map((elem: any) => {
             var kind: string, details: any;
             if (typeof elem === "string") {
@@ -73,6 +79,7 @@ const App = () => {
                             </AccordionSummary>
                         </Accordion>
                     );
+
                 case "Affect":
                     return (
                         <Accordion>
@@ -94,7 +101,29 @@ const App = () => {
                             </AccordionDetails>
                         </Accordion>
                     );
-                case "ModifyVarL":
+
+                case "ModifyVarL": {
+                    const vars: string[] = details["vars"];
+                    const buttons: JSX.Element[] = vars.map((vname: string) => {
+                        return (
+                            <Button
+                                sx={{ "textTransform": "none" }} 
+                                onClick={() => {
+                                    traceResultDetail.set(
+                                        "amodify"+tvname, 
+                                        <>
+                                            <p><b>{ vname.split(".").pop() }</b></p>
+                                            {[ ...createTResultListSub([vname, trace_var(system, vname)]) ]}
+                                        </>
+                                    );
+                                    setTraceResultDetail(traceResultDetail);
+                                    forceUpdate();
+                                }}
+                            >
+                                { vname.split(".").pop() }
+                            </Button>
+                        );
+                    });
                     return (
                         <Accordion>
                             <AccordionSummary
@@ -111,11 +140,37 @@ const App = () => {
                                 </div>
                             </AccordionSummary>
                             <AccordionDetails>
-                                { JSON.stringify(details) }
+                                <ButtonGroup>
+                                    {[ ...buttons ]}
+                                </ButtonGroup>
+                                { traceResultDetail.get("amodify"+tvname) }
                             </AccordionDetails>
                         </Accordion>
                     );
-                case "SpawnVarL":
+                }
+
+                case "SpawnVarL": {
+                    const vars: string[] = details["vars"];
+                    const buttons: JSX.Element[] = vars.map((vname: string) => {
+                        return (
+                            <Button
+                                sx={{ "textTransform": "none" }} 
+                                onClick={() => {
+                                    traceResultDetail.set(
+                                        "aspawn"+tvname, 
+                                        <>
+                                            <p><b>{ vname.split(".").pop() }</b></p>
+                                            {[ ...createTResultListSub([vname, trace_var(system, vname)]) ]}
+                                        </>
+                                    );
+                                    setTraceResultDetail(traceResultDetail);
+                                    forceUpdate();
+                                }}
+                            >
+                                { vname.split(".").pop() }
+                            </Button>
+                        );
+                    });
                     return (
                         <Accordion>
                             <AccordionSummary
@@ -128,14 +183,18 @@ const App = () => {
                                         "alignItems": "center"
                                     }}
                                 >
-                                    他の変数の値によって作成されます
+                                    他の変数の値を使用して作成します
                                 </div>
                             </AccordionSummary>
                             <AccordionDetails>
-                                { JSON.stringify(details) }
+                                <ButtonGroup>
+                                    {[ ...buttons ]}
+                                </ButtonGroup>
+                                { traceResultDetail.get("aspawn"+tvname) }
                             </AccordionDetails>
                         </Accordion>
                     );
+                }
             }
         });
     }
@@ -151,10 +210,8 @@ const App = () => {
                             padding: "10px 5px 10px 5px"
                         }}
                     >
-                        <h2>{ result[0] }</h2>
-                        <List>
-                            {[ ...createTResultListSub(result[1]) ]}
-                        </List>
+                        <h2>{ result[0].split(".").pop() }</h2>
+                        {[ ...createTResultListSub(result) ]}
                     </Paper>
                 </ListItem>
             );
