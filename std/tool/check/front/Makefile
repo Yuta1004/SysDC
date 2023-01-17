@@ -1,7 +1,8 @@
 IMAGE := node:18-alpine3.15
 
 SRCS := $(shell find public/) \
-		$(shell find src/)
+		$(shell find src/) \
+		$(shell find ../wasm/src/)
 
 setup: package.json
 	docker run --rm -it -v $(shell pwd):/workdir -w /workdir $(IMAGE) /bin/sh -c "\

@@ -8,36 +8,27 @@ import Paper from "@mui/material/Paper";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 
-import init from "sysdc_tool_check";
+import init, { flistup } from "sysdc_tool_check";
 
 export const WasmContext = createContext(false);
 
-interface FEntry {
-    kind: string,
-    name: string
-}
+type FEntry = [string, string]
 
 const App = () => {
     const [wasmOk, setWasmOk] = useState(false);
-    const [system, setSystem] = useState("{}");
+    const [system, setSystem] = useState({});
 
     const [fEntries, setFEntries] = useState<FEntry[]>([]);
 
     window.addEventListener("message", (e: MessageEvent) => {
-        setSystem(e.data);
-
-        setFEntries([
-            { kind: "Proc", name: "aaa.aaa.bbb.ccc" },
-            { kind: "Func", name: "aaa.aaa.bbb.ddd" },
-            { kind: "Func", name: "aaa.aaa.bbb.eee" },
-        ]);
+        setSystem(JSON.parse(e.data))
     });
 
     const createFEntryList = (fEntries: FEntry[]) => {
         return fEntries.map((fEntry) => {
             return (
-                <MenuItem value={fEntry.name}>
-                    ({ fEntry.kind }) { fEntry.name }
+                <MenuItem value={fEntry[1]}>
+                    ({ fEntry[0] }) { fEntry[1] }
                 </MenuItem>
             );
         });
@@ -46,6 +37,12 @@ const App = () => {
     useEffect(() => {
         init().then(() => setWasmOk(true));
     }, []);
+
+    useEffect(() => {
+        if (wasmOk) {
+            setFEntries(flistup(system));
+        }
+    }, [wasmOk, system]);
 
     return (
         <div
