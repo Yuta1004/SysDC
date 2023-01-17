@@ -87,7 +87,7 @@ fn __trace_var(system: &SysDCSystem, var_name: String) -> Vec<TraceResult> {
             },
             SysDCAnnotation::Modify { target: (mname, _), uses} => {
                 if mname.get_full_name() == var_name {
-                    let vars = uses.iter().map(|(n, _)| n.get_full_name()).collect();
+                    let vars = uses.iter().map(|(n, _)| n.name.clone()).collect();
                     Some(TraceResult::ModifyVarL { vars })
                 } else {
                     None
@@ -97,7 +97,7 @@ fn __trace_var(system: &SysDCSystem, var_name: String) -> Vec<TraceResult> {
                 if rname.get_full_name() == var_name {
                     let vars = details.iter().filter_map(|detail| {
                         match detail {
-                            SysDCSpawnDetail::Use(n, _) => Some(n.get_full_name()),
+                            SysDCSpawnDetail::Use(n, _) => Some(n.name.clone()),
                             _ => None
                         }
                     }).collect();
