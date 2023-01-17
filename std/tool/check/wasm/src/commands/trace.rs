@@ -5,6 +5,14 @@ use wasm_bindgen::prelude::{ wasm_bindgen, JsValue };
 
 use sysdc_core::structure::{ SysDCSystem, SysDCFunction, SysDCAnnotation, SysDCSpawnDetail };
 
+#[derive(Debug, Serialize, Deserialize)]
+enum TraceResult {
+    ReturnVar,                              // 返り値として採用される
+    ModifyVarL { vars: Vec<String> },       // 他の変数によって値が更新される
+    SpawnVarL { vars: Vec<String> },        // 他の変数によって値が生成される
+    Affect { func: String, arg_to: String } // 自身の値を使用して他の関数に影響を与える
+}
+
 #[cfg(feature = "wasm")]
 #[cfg_attr(feature = "wasm", wasm_bindgen)]
 pub fn trace(system: JsValue, fname: String) -> JsValue {
@@ -23,25 +31,28 @@ pub fn trace(system: JsValue, fname: String) -> JsValue {
     } else {
         vec![(
             func.returns.0.name.clone(),
-            trace_var(&system, func.returns.0.get_full_name())
+            __trace_var(&system, func.returns.0.get_full_name())
         )]
     };
     let trace_results = func.args.iter().fold(trace_results, |mut trace_results, (n, _)| {
-        trace_results.push((n.name.clone(), trace_var(&system, n.get_full_name())));
+        trace_results.push((n.name.clone(), __trace_var(&system, n.get_full_name())));
         trace_results
     });
     serde_wasm_bindgen::to_value(&trace_results).unwrap()
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-enum TraceResult {
-    ReturnVar,                              // 返り値として採用される
-    ModifyVarL { vars: Vec<String> },       // 他の変数によって値が更新される
-    SpawnVarL { vars: Vec<String> },        // 他の変数によって値が生成される
-    Affect { func: String, arg_to: String } // 自身の値を使用して他の関数に影響を与える
+#[cfg(feature = "wasm")]
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
+pub fn trace_var(system: JsValue, var_name: String) -> JsValue {
+    let system = match serde_wasm_bindgen::from_value::<SysDCSystem>(system) {
+        Ok(system) => system,
+        Err(_) => return JsValue::default()
+    };
+    serde_wasm_bindgen::to_value(&__trace_var(&system, var_name)).unwrap()
 }
 
-fn trace_var(system: &SysDCSystem, var_name: String) -> Vec<TraceResult> {
+#[cfg_attr(not(feature = "wasm"), allow(dead_code))]
+fn __trace_var(system: &SysDCSystem, var_name: String) -> Vec<TraceResult> {
     let func = match pick_funcion(system, &var_name) {
         Some(func) => func,
         None => return vec![]
@@ -102,6 +113,7 @@ fn trace_var(system: &SysDCSystem, var_name: String) -> Vec<TraceResult> {
     trace_results
 }
 
+#[cfg_attr(not(feature = "wasm"), allow(dead_code))]
 fn pick_funcion<'a>(system: &'a SysDCSystem, fname: &String) -> Option<&'a SysDCFunction> {
     let unit = system.units.iter().find(|unit| {
         fname.starts_with(&unit.name.get_full_name())
