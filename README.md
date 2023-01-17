@@ -17,12 +17,12 @@ $ make setup
 
 ### 2. 実行
 
-#### サーバ (server)
+#### WebApp
 
-詳細は `server/README.md` を参照してください
+詳細は `webapp/README.md` を参照してください
 
 ```
-$ cd server
+$ cd webapp
 $ make build
 $ make run
 ```
