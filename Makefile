@@ -1,4 +1,3 @@
-# General
 setup:
 	make -C core setup
 	make -C std/tool setup build
