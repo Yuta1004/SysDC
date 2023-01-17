@@ -2,13 +2,13 @@ import { useEffect, useState, createContext } from "react";
 
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
-import Select from "@mui/material/Select";
+import Select, { SelectChangeEvent } from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Paper from "@mui/material/Paper";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 
-import init, { flistup } from "sysdc_tool_check";
+import init, { flistup, trace } from "sysdc_tool_check";
 
 export const WasmContext = createContext(false);
 
@@ -19,6 +19,8 @@ const App = () => {
     const [system, setSystem] = useState({});
 
     const [fEntries, setFEntries] = useState<FEntry[]>([]);
+    const [traceTarget, setTraceTarget] = useState<string>("");
+    const [traceResult, setTraceResult] = useState<{}>({});
 
     window.addEventListener("message", (e: MessageEvent) => {
         setSystem(JSON.parse(e.data))
@@ -44,6 +46,12 @@ const App = () => {
         }
     }, [wasmOk, system]);
 
+    useEffect(() => {
+        if (wasmOk) {
+            setTraceResult(trace(system, traceTarget));
+        }
+    }, [traceTarget]);
+
     return (
         <div
             className="container"
@@ -68,11 +76,13 @@ const App = () => {
                 <Select
                     labelId="func-selector"
                     label="追跡対象関数"
+                    onChange={(e: SelectChangeEvent) => { setTraceTarget(e.target.value) }}
                 >
                     {[ ...createFEntryList(fEntries) ]}
                 </Select>
             </FormControl>
-            <List>
+            { JSON.stringify(traceResult) }
+            {/* <List>
                 <ListItem>
                     <Paper
                         elevation={3}
@@ -109,7 +119,7 @@ const App = () => {
                         ああｆさｄｊｋふぁｄ；じゃｄｓ
                     </Paper>
                 </ListItem>
-            </List>
+            </List> */}
         </div>
     );
 }
