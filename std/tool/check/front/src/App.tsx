@@ -1,5 +1,4 @@
-import { useEffect, useState, useReducer, useRef, createRef, createContext, RefObject } from "react";
-import ReactDOMServer from "react-dom/server";
+import { useEffect, useState, useReducer } from "react";
 
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
@@ -20,8 +19,6 @@ import SwitchAccessShortcutIcon from "@mui/icons-material/SwitchAccessShortcut";
 import SwitchAccessShortcutAddIcon from "@mui/icons-material/SwitchAccessShortcutAdd";
 
 import init, { flistup, trace, trace_var } from "sysdc_tool_check";
-
-export const WasmContext = createContext(false);
 
 type FEntry = [string, string]
 type TResult = [string, {}]
