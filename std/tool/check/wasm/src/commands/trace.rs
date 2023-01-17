@@ -101,7 +101,7 @@ fn __trace_var(system: &SysDCSystem, var_name: String) -> Vec<TraceResult> {
                             _ => None
                         }
                     }).collect();
-                    Some(TraceResult::ModifyVarL { vars })
+                    Some(TraceResult::SpawnVarL { vars })
                 } else {
                     None
                 }
