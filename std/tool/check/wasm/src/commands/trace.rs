@@ -30,12 +30,12 @@ pub fn trace(system: JsValue, fname: String) -> JsValue {
         vec![] 
     } else {
         vec![(
-            func.returns.0.name.clone(),
+            func.returns.0.get_full_name(),
             __trace_var(&system, func.returns.0.get_full_name())
         )]
     };
     let trace_results = func.args.iter().fold(trace_results, |mut trace_results, (n, _)| {
-        trace_results.push((n.name.clone(), __trace_var(&system, n.get_full_name())));
+        trace_results.push((n.get_full_name(), __trace_var(&system, n.get_full_name())));
         trace_results
     });
     serde_wasm_bindgen::to_value(&trace_results).unwrap()
@@ -87,7 +87,7 @@ fn __trace_var(system: &SysDCSystem, var_name: String) -> Vec<TraceResult> {
             },
             SysDCAnnotation::Modify { target: (mname, _), uses} => {
                 if mname.get_full_name() == var_name {
-                    let vars = uses.iter().map(|(n, _)| n.name.clone()).collect();
+                    let vars = uses.iter().map(|(n, _)| n.get_full_name()).collect();
                     Some(TraceResult::ModifyVarL { vars })
                 } else {
                     None
@@ -97,7 +97,7 @@ fn __trace_var(system: &SysDCSystem, var_name: String) -> Vec<TraceResult> {
                 if rname.get_full_name() == var_name {
                     let vars = details.iter().filter_map(|detail| {
                         match detail {
-                            SysDCSpawnDetail::Use(n, _) => Some(n.name.clone()),
+                            SysDCSpawnDetail::Use(n, _) => Some(n.get_full_name()),
                             _ => None
                         }
                     }).collect();
