@@ -97,7 +97,7 @@ const App = () => {
                                 </div>
                             </AccordionSummary>
                             <AccordionDetails>
-                                { JSON.stringify(details) }
+                                {[ ...createTResultListSub([details["arg_to"], trace_var(system, details["arg_to"])]) ]}
                             </AccordionDetails>
                         </Accordion>
                     );
