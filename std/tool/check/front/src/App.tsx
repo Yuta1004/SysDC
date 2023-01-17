@@ -30,6 +30,8 @@ const App = () => {
     const [system, setSystem] = useState({});
 
     const [fEntries, setFEntries] = useState<FEntry[]>([]);
+    const [showingFEntry, setShowingFEntry] = useState<string>("");
+
     const [traceTarget, setTraceTarget] = useState<string>("");
     const [traceResult, setTraceResult] = useState<TResult[]>([]);
     const [traceResultDetail, setTraceResultDetail] = useState<Map<string, JSX.Element>>(new Map());
@@ -41,7 +43,7 @@ const App = () => {
     const createFEntryList = (fEntries: FEntry[]) => {
         return fEntries.map((fEntry) => {
             return (
-                <MenuItem value={fEntry[1]}>
+                <MenuItem value={ fEntry[1] }>
                     ({ fEntry[0] }) { fEntry[1] }
                 </MenuItem>
             );
@@ -228,7 +230,10 @@ const App = () => {
 
     useEffect(() => {
         if (wasmOk) {
-            setFEntries(flistup(system));
+            let fentries = flistup(system);
+            setFEntries(fentries);
+            setShowingFEntry(fentries[0][1]);
+            setTraceTarget(fentries[0][1]);
         }
     }, [wasmOk, system]);
 
@@ -262,7 +267,11 @@ const App = () => {
                 <Select
                     labelId="func-selector"
                     label="追跡対象関数"
-                    onChange={(e: SelectChangeEvent) => { setTraceTarget(e.target.value) }}
+                    value={showingFEntry}
+                    onChange={(e: SelectChangeEvent) => {
+                        setTraceTarget(e.target.value)
+                        setShowingFEntry(e.target.value);
+                    }}
                 >
                     {[ ...createFEntryList(fEntries) ]}
                 </Select>
