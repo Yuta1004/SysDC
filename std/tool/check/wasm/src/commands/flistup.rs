@@ -1,14 +1,9 @@
-#[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::{ wasm_bindgen, JsValue };
 
-#[cfg(feature = "wasm")]
-use sysdc_core::structure::SysDCSystem;
-
 use sysdc_core::types::TypeKind;
-use sysdc_core::structure::SysDCModule;
+use sysdc_core::structure::{ SysDCSystem, SysDCModule };
 
-#[cfg(feature = "wasm")]
-#[cfg_attr(feature = "wasm", wasm_bindgen)]
+#[wasm_bindgen]
 pub fn flistup(system: JsValue) -> JsValue {
     let system: SysDCSystem = match serde_wasm_bindgen::from_value(system) {
         Ok(system) => system,
@@ -25,7 +20,6 @@ pub fn flistup(system: JsValue) -> JsValue {
     serde_wasm_bindgen::to_value(&found_fs).unwrap()
 }
 
-#[cfg_attr(not(feature = "wasm"), allow(dead_code))]
 fn get_functions(module: &SysDCModule) -> Vec<(&str, String)> {
     module.functions.iter().fold(vec![], |mut found_fs, func| {
         let f = match func.returns.1.kind {

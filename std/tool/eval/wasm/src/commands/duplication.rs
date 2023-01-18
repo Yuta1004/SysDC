@@ -5,7 +5,6 @@ use crate::{ Advice, AdviceLevel };
 use sysdc_core::name::Name;
 use sysdc_core::structure::{ SysDCSystem, SysDCFunction, SysDCAnnotation };
 
-#[cfg_attr(not(feature = "wasm"), allow(dead_code))]
 pub fn eval_duplication_stat(system: &SysDCSystem) -> Option<Advice> {
     let mut fid_issuer: IdIssuer<String> = IdIssuer::new();
     let mut fabst_all = HashMap::new();

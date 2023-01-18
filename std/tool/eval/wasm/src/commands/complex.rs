@@ -4,7 +4,6 @@ use crate::{ Advice, AdviceLevel };
 use sysdc_core::name::Name;
 use sysdc_core::structure::{ SysDCSystem, SysDCModule, SysDCFunction, SysDCAnnotation };
 
-#[cfg_attr(not(feature = "wasm"), allow(dead_code))]
 pub fn eval_complex_stat(system: &SysDCSystem) -> Option<Advice> {
     let messages = system.units.iter().fold(vec![], |messages, unit| {
         unit.modules.iter().fold(messages, |mut messages, module| {

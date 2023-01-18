@@ -10,7 +10,7 @@ setup: Cargo.toml ../../../../core/Cargo.toml
 
 build: Cargo.toml $(SRCS)
 	docker run --rm -v $(shell pwd):/workdir -v $(shell pwd)/../../../../core:/workdir/core $(IMAGE) \
-		wasm-pack build --release --target web --features wasm
+		wasm-pack build --release --target web
 	sudo chown $(shell id -u):$(shell id -g) pkg pkg/*
 
 clean:

@@ -1,9 +1,8 @@
 mod commands;
 
-#[cfg(feature = "wasm")]
+use serde::{ Serialize, Deserialize };
 use wasm_bindgen::prelude::{ wasm_bindgen, JsValue };
 
-use serde::{ Serialize, Deserialize };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AdviceLevel {
@@ -25,8 +24,7 @@ impl Advice {
     }
 }
 
-#[cfg(feature = "wasm")]
-#[cfg_attr(feature = "wasm", wasm_bindgen)]
+#[wasm_bindgen]
 pub fn gen_advice(system: JsValue) -> JsValue {
     let advice = match serde_wasm_bindgen::from_value(system) {
         Ok(system) => {
