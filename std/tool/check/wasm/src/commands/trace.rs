@@ -1,6 +1,4 @@
 use serde::{ Serialize, Deserialize };
-
-#[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::{ wasm_bindgen, JsValue };
 
 use sysdc_core::structure::{ SysDCSystem, SysDCFunction, SysDCAnnotation, SysDCSpawnDetail };
@@ -13,8 +11,7 @@ enum TraceResult {
     Affect { func: String, arg_to: String } // 自身の値を使用して他の関数に影響を与える
 }
 
-#[cfg(feature = "wasm")]
-#[cfg_attr(feature = "wasm", wasm_bindgen)]
+#[wasm_bindgen]
 pub fn trace(system: JsValue, fname: String) -> JsValue {
     let system = match serde_wasm_bindgen::from_value::<SysDCSystem>(system) {
         Ok(system) => system,
@@ -41,8 +38,7 @@ pub fn trace(system: JsValue, fname: String) -> JsValue {
     serde_wasm_bindgen::to_value(&trace_results).unwrap()
 }
 
-#[cfg(feature = "wasm")]
-#[cfg_attr(feature = "wasm", wasm_bindgen)]
+#[wasm_bindgen]
 pub fn trace_var(system: JsValue, var_name: String) -> JsValue {
     let system = match serde_wasm_bindgen::from_value::<SysDCSystem>(system) {
         Ok(system) => system,
@@ -51,7 +47,6 @@ pub fn trace_var(system: JsValue, var_name: String) -> JsValue {
     serde_wasm_bindgen::to_value(&__trace_var(&system, var_name)).unwrap()
 }
 
-#[cfg_attr(not(feature = "wasm"), allow(dead_code))]
 fn __trace_var(system: &SysDCSystem, var_name: String) -> Vec<TraceResult> {
     let func = match pick_funcion(system, &var_name) {
         Some(func) => func,
@@ -113,7 +108,6 @@ fn __trace_var(system: &SysDCSystem, var_name: String) -> Vec<TraceResult> {
     trace_results
 }
 
-#[cfg_attr(not(feature = "wasm"), allow(dead_code))]
 fn pick_funcion<'a>(system: &'a SysDCSystem, fname: &String) -> Option<&'a SysDCFunction> {
     let unit = system.units.iter().find(|unit| {
         fname.starts_with(&unit.name.get_full_name())
