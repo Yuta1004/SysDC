@@ -24,7 +24,7 @@ services:
     command: server --disableLiveReload --baseURL=${SYSDC_BASE_URL} --appendPort=false
     volumes:
     - type: bind
-      source: "./_top"
+      source: "./top"
       target: "/src"
     environment:
       TZ: Asia/Tokyo
