@@ -1,3 +1,6 @@
 [submodule "server/doc/themes/hugo-theme-learn"]
 	path = server/doc/themes/hugo-theme-learn
 	url = https://github.com/matcornic/hugo-theme-learn.git
+[submodule "webapp/_top/themes/lynx"]
+	path = webapp/top/themes/lynx
+	url = https://github.com/jpanther/lynx.git

@@ -55,7 +55,7 @@ static_resources:
       - lb_endpoints:
         - endpoint:
             address:
-              socket_address: { address: top, port_value: 80 }
+              socket_address: { address: top, port_value: 1313 }
   - name: doc_service
     type: STRICT_DNS
     load_assignment:
