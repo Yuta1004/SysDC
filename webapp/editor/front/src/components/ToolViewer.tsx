@@ -35,7 +35,7 @@ const ToolViewer = (props: ToolViewerProps) => {
             tiframe.current.onload = () => iwindow.postMessage(props.system);
             iwindow.postMessage(props.system);
         }
-    }, [viewingTool, props.system]);
+    }, [tiframe.current, viewingTool, props.system]);
 
     useEffect(() => {
         const _tools = new Map();
