@@ -13,8 +13,8 @@ disableKinds = ["taxonomy", "term"]
     headline = "SysDCはソフトウェア設計の支援を目的とする言語です"
     image = "icon.png"
     links = [
-        { link = { href = "/editor", text = "オンラインエディタ", icon = "github" } },
-        { link = { href = "/doc", text = "ドキュメント", icon = "github" } },
-        { github = "https://github.com/Yuta1004/SysDC" },
-        { link = { href = "https://sechack365.nict.go.jp/", text = "SecHack365", icon = "github" } },
+        { web-editor = { href = "/editor", text = "オンラインエディタ", icon = "web-editor" } },
+        { doc = { href = "/doc", text = "ドキュメント", icon = "doc" } },
+        { github = { href = "https://github.com/Yuta1004/SysDC", text = "Github" } },
+        { sechack365 = { href = "https://sechack365.nict.go.jp/", text = "SecHack365", icon = "sechack365" } }
     ]
