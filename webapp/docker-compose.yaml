@@ -20,16 +20,12 @@ services:
       - tool-delivery
 
   top:
-    image: nginx:1.19.1-alpine
+    image: klakegg/hugo:0.101.0-ext-alpine
+    command: server --disableLiveReload --baseURL=${SYSDC_BASE_URL} --appendPort=false
     volumes:
     - type: bind
-      source: "./top/nginx.conf"
-      target: "/etc/nginx/nginx.conf"
-      read_only: true
-    - type: bind
-      source: "./top/static"
-      target: "/usr/share/nginx/html"
-      read_only: true
+      source: "./_top"
+      target: "/src"
     environment:
       TZ: Asia/Tokyo
 
