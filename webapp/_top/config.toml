@@ -1,0 +1,20 @@
+title = "SysDC"
+theme = "lynx"
+copyright = "©2022 Yuta NAKAGAMI"
+
+languageCode = "ja-JP"
+defaultContentLanguage = "ja"
+
+enableEmoji = true
+disableKinds = ["taxonomy", "term"]
+
+[author]
+    name = "SysDC"
+    headline = "SysDCはソフトウェア設計の支援を目的とする言語です"
+    image = "icon.png"
+    links = [
+        { link = { href = "/editor", text = "オンラインエディタ", icon = "github" } },
+        { link = { href = "/doc", text = "ドキュメント", icon = "github" } },
+        { github = "https://github.com/Yuta1004/SysDC" },
+        { link = { href = "https://sechack365.nict.go.jp/", text = "SecHack365", icon = "github" } },
+    ]
