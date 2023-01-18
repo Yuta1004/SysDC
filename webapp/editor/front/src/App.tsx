@@ -74,7 +74,7 @@ const App = () => {
                 </FSContext.Provider>
             </Box>
             <ToolViewer
-                width="40vw"
+                width={ window.innerWidth * 0.4 }
                 system={ system }
             />
             <MsgContext.Provider value={[ msg, showMsg ]}>

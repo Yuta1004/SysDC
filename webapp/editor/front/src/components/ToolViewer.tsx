@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, SyntheticEvent } from "react";
 
 import Drawer from "@mui/material/Drawer";
 import Toolbar from "@mui/material/Toolbar";
@@ -8,9 +8,10 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import IconButton from "@mui/material/IconButton";
 import RefleshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
+import DragHandleIcon from "@mui/icons-material/DragHandle";
 
 interface ToolViewerProps {
-    width: string,
+    width: number,
     system: string
 }
 
@@ -19,6 +20,14 @@ const ToolViewer = (props: ToolViewerProps) => {
     const [tools, setTools] = useState<Map<string, string>>(new Map());
 
     const tiframe = useRef<HTMLIFrameElement>(null);
+
+    const [drawerWidth, setDrawerWidth] = useState(props.width);
+    const [mouseOnDrawer, setMouseOnDrawer] = useState(false);
+    const [drawerDragging, setDrawerDragging] = useState(false);
+    const drawerDraggingR = useRef(false);
+    drawerDraggingR.current = drawerDragging;
+
+    window.addEventListener("mouseup", () => setDrawerDragging(false));
 
     useEffect(() => {
         if (tiframe.current !== null && tiframe.current.contentWindow !== null) {
@@ -40,14 +49,29 @@ const ToolViewer = (props: ToolViewerProps) => {
 
     return (
         <Drawer
+            id="test"
             variant="persistent"
             anchor="right"
             open={true}
             hideBackdrop={true}
-            sx={{ [`& .MuiDrawer-paper`]: { minWidth: props.width } }}
+            sx={{ [`& .MuiDrawer-paper`]: { minWidth: drawerWidth } }}
+            onMouseMove={(e: SyntheticEvent<HTMLDivElement, MouseEvent>) => {
+                if (drawerDraggingR.current) {
+                    setDrawerWidth((prev) => prev - e.nativeEvent.movementX);
+                }
+            }}
         >
             <Toolbar/>
             <Stack direction="row">
+                <DragHandleIcon
+                    sx={{
+                        margin: "auto",
+                        paddingLeft: "10px"
+                    }}
+                    onMouseOver={ () => setMouseOnDrawer(true) }
+                    onMouseOut={ () => setMouseOnDrawer(false) }
+                    onMouseDown={ () => setDrawerDragging(mouseOnDrawer && true) }
+                />
                 <FormControl
                     size="small"
                     sx={{
@@ -55,23 +79,23 @@ const ToolViewer = (props: ToolViewerProps) => {
                         flexGrow: 1
                     }}
                 >
-                <Select defaultValue="default">
-                    <MenuItem
-                        disabled
-                        value="default">
-                        <em>ツールを選択してください</em>
-                    </MenuItem>
-                    {Array.from(tools).map(([name, _url]) => {
-                        return (
-                            <MenuItem
-                                value={ name }
-                                onClick={ () => setViewingTool(name) }
-                            >
-                                { name }
-                            </MenuItem>
-                        );
-                    })}
-                </Select>
+                    <Select defaultValue="default">
+                        <MenuItem
+                            disabled
+                            value="default">
+                            <em>ツールを選択してください</em>
+                        </MenuItem>
+                        {Array.from(tools).map(([name, _url]) => {
+                            return (
+                                <MenuItem
+                                    value={ name }
+                                    onClick={ () => setViewingTool(name) }
+                                >
+                                    { name }
+                                </MenuItem>
+                            );
+                        })}
+                    </Select>
                 </FormControl>
                 <IconButton onClick={ () => tiframe.current?.contentWindow?.location.reload() }>
                     <RefleshOutlinedIcon/>
