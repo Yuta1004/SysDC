@@ -1,11 +1,14 @@
 BUILD_OPTIONS :=
 
-build:
-	make -C tool_runner
-	cargo build $(BUILD_OPTIONS)
-	cp ./target/debug/sysdc_cli .
+setup:
+	make -C tool_runner setup
 
-build-release:
-	make -C tool_runner
+build:
+	make -C tool_runner build
 	cargo build --release $(BUILD_OPTIONS)
 	cp ./target/release/sysdc_cli .
+
+clean:
+	make -C tool_runner clean
+
+.PHONY: setup build clean
