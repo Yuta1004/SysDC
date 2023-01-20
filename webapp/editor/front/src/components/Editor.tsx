@@ -41,6 +41,13 @@ const Editor = (props: EditorProps) => {
         session.bgTokenizer.start(0);
     };
 
+    window.addEventListener("keydown", (event: KeyboardEvent) => {
+        if (event.key === "s" && event.ctrlKey) {
+            event.preventDefault();
+            saveEditing();
+        }
+    });
+
     useEffect(() => {
         const result = fs.read(targetFile);
         if (result !== undefined) {
