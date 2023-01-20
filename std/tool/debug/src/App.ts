@@ -1,6 +1,6 @@
-window.onmessage = (event) => app(event.data);
+window.onmessage = (event) => App(event.data);
 
-const app = (system: string) => {
+const App = (system: string) => {
     const view = document.getElementById("view");
     if (view !== null) {
         view.innerText = JSON.stringify(system);
