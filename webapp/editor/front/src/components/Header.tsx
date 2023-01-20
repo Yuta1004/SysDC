@@ -37,7 +37,7 @@ const Header = (props: HeaderProps) => {
                         startIcon={ <PlayArrowIcon/> }
                         onClick={ props.onParseClick }
                     >
-                        実行
+                        解析
                     </Button>
                     {/* <Button
                         variant="outlined"
