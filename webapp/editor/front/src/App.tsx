@@ -25,7 +25,7 @@ const App = () => {
 
     const [msg, showMsg] = useState<[string, string]>(["", ""]);
 
-    const [system, setSystem] = useState({});
+    const [system, setSystem] = useState({ units: [] });
 
     const parse = () => {
         const parser = Parser.new();
