@@ -11,8 +11,8 @@ use super::super::react_flow::{
 };
 
 #[wasm_bindgen]
-pub fn gen_flow(system: &str) -> Result<JsValue, String> {
-    match serde_json::from_str::<SysDCSystem>(system) {
+pub fn gen_flow(system: JsValue) -> Result<JsValue, String> {
+    match serde_wasm_bindgen::from_value::<SysDCSystem>(system) {
         Ok(system) => {
             let design = system.units.iter().map(gen_unit_flow).fold(
                 (vec![], vec![]),

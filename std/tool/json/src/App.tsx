@@ -6,7 +6,7 @@ const App = () => {
     const [system, setSystem] = useState<JSON>();
 
     const entrypoint = (event: MessageEvent) => {
-        setSystem(JSON.parse(event.data));
+        setSystem(event.data);
     };
     window.addEventListener("message", entrypoint);
 

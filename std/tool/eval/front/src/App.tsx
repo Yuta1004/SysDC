@@ -21,7 +21,7 @@ const App = () => {
     const [advice, setAdvice] = useState<Advice[]>([]);
 
     window.addEventListener("message", (e: MessageEvent) => {
-        setSystem(JSON.parse(e.data))
+        setSystem(e.data)
     });
 
     const makeAdviceElems = (advice: Advice[]) => {

@@ -25,20 +25,20 @@ const App = () => {
 
     const [msg, showMsg] = useState<[string, string]>(["", ""]);
 
-    const [system, setSystem] = useState("{}");
+    const [system, setSystem] = useState({ units: [] });
 
     const parse = () => {
         const parser = Parser.new();
         try {
             fs.readAll().map(f => parser.parse(f.name, f.body) );
-            setSystem(JSON.stringify(parser.check()));
+            setSystem(parser.check());
         } catch (err) {
             showMsg(["error", err+""]);
             return;
         }
         showMsg(["success", "OK"]);
     };
-
+ 
     useEffect(() => {
         init();
 
@@ -69,7 +69,7 @@ const App = () => {
                 <FSContext.Provider value={ fs }>
                     <TargetFileContext.Provider value={[ targetFile, setTargetFile ]}>
                         <FileExplorer width="15vw"/>
-                        <Editor/>
+                        <Editor onSave={ parse }/>
                     </TargetFileContext.Provider>
                 </FSContext.Provider>
             </Box>

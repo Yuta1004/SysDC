@@ -37,7 +37,7 @@ const App = () => {
     const [traceResultDetail, setTraceResultDetail] = useState<Map<string, JSX.Element>>(new Map());
 
     window.addEventListener("message", (e: MessageEvent) => {
-        setSystem(JSON.parse(e.data))
+        setSystem(e.data)
     });
 
     const createFEntryList = (fEntries: FEntry[]) => {
@@ -232,16 +232,18 @@ const App = () => {
         if (wasmOk) {
             let fentries = flistup(system);
             setFEntries(fentries);
-            setShowingFEntry(fentries[0][1]);
-            setTraceTarget(fentries[0][1]);
+            if (fentries.length > 0) {
+                setShowingFEntry(fentries[0][1]);
+                setTraceTarget(fentries[0][1]);
+            }
         }
     }, [wasmOk, system]);
 
     useEffect(() => {
-        if (wasmOk) {
+        if (wasmOk && traceTarget !== undefined) {
             setTraceResult(trace(system, traceTarget));
         }
-    }, [traceTarget]);
+    }, [wasmOk, system, traceTarget]);
 
     return (
         <div

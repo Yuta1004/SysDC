@@ -13,7 +13,7 @@ import CUSTOM_NODE_TYPES from "./flow/custom";
 import { gen_flow } from "sysdc_tool_view";
 
 interface FlowProps {
-    system: string
+    system: {}
 }
 
 export const Flow = (props: FlowProps) => {
@@ -26,10 +26,12 @@ export const Flow = (props: FlowProps) => {
         if (wasmOk) {
             const [nodes, edges] = gen_flow(props.system);
             layout(nodes, edges);
-            Array.isArray(nodes) && setNodes(nodes);
-            Array.isArray(edges) && setEdges(edges);
+            if (Array.isArray(nodes) && Array.isArray(edges)) {
+                setNodes(nodes);
+                setEdges(edges);
+            }
         }
-    }, [props.system]);
+    }, [wasmOk, props.system]);
  
     return (
         <ReactFlow

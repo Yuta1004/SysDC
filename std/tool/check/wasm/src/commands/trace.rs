@@ -15,12 +15,12 @@ enum TraceResult {
 pub fn trace(system: JsValue, fname: String) -> JsValue {
     let system = match serde_wasm_bindgen::from_value::<SysDCSystem>(system) {
         Ok(system) => system,
-        Err(_) => return JsValue::default()
+        Err(_) => return serde_wasm_bindgen::to_value::<Vec<()>>(&vec![]).unwrap()
     };
 
     let func = match pick_funcion(&system, &fname) {
         Some(func) => func,
-        None => return JsValue::default()
+        None => return serde_wasm_bindgen::to_value::<Vec<()>>(&vec![]).unwrap()
     };
 
     let trace_results = if func.returns.0.name == "0" {

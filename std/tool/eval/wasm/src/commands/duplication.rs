@@ -34,13 +34,16 @@ pub fn eval_duplication_stat(system: &SysDCSystem) -> Option<Advice> {
         }
     }
 
-    Some(
-        Advice::new(
-            AdviceLevel::Warning,
-            "統合可能な処理".to_string(),
-            messages
+    match messages.len() {
+        0 => None,
+        _ => Some(
+            Advice::new(
+                AdviceLevel::Warning,
+                "統合可能な処理".to_string(),
+                messages
+            )
         )
-    )
+    }
 }
 
 type FuncAbst = (
