@@ -232,8 +232,10 @@ const App = () => {
         if (wasmOk) {
             let fentries = flistup(system);
             setFEntries(fentries);
-            setShowingFEntry(fentries[0][1]);
-            setTraceTarget(fentries[0][1]);
+            if (fEntries.length > 0) {
+                setShowingFEntry(fentries[0][1]);
+                setTraceTarget(fentries[0][1]);
+            }
         }
     }, [wasmOk, system]);
 
