@@ -25,13 +25,13 @@ const App = () => {
 
     const [msg, showMsg] = useState<[string, string]>(["", ""]);
 
-    const [system, setSystem] = useState("{}");
+    const [system, setSystem] = useState({});
 
     const parse = () => {
         const parser = Parser.new();
         try {
             fs.readAll().map(f => parser.parse(f.name, f.body) );
-            setSystem(JSON.stringify(parser.check()));
+            setSystem(parser.check());
         } catch (err) {
             showMsg(["error", err+""]);
             return;

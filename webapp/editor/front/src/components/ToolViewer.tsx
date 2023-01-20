@@ -12,7 +12,7 @@ import DragHandleIcon from "@mui/icons-material/DragHandle";
 
 interface ToolViewerProps {
     width: number,
-    system: string
+    system: {}
 }
 
 const ToolViewer = (props: ToolViewerProps) => {
