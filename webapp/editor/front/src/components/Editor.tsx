@@ -11,7 +11,11 @@ import SaveIcon from "@mui/icons-material/Save";
 import SysDCSyntaxHighlight from "../ace_custom/SysDCSyntaxHighlight";
 import { FSContext, TargetFileContext } from "../App";
 
-const Editor = () => {
+interface EditorProps {
+    onSave: () => void
+}
+
+const Editor = (props: EditorProps) => {
     const fs = useContext(FSContext);
     const [targetFile, _setTargetFile] = useContext(TargetFileContext);
 
@@ -26,6 +30,7 @@ const Editor = () => {
     const saveEditing = () => {
         fs.mkfile(targetFile, code);
         setStatStr(targetFile + " を保存しました");
+        props.onSave();
     };
 
     const setSyntaxHighlight = (editor: any) => {

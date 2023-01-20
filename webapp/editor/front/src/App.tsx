@@ -69,7 +69,7 @@ const App = () => {
                 <FSContext.Provider value={ fs }>
                     <TargetFileContext.Provider value={[ targetFile, setTargetFile ]}>
                         <FileExplorer width="15vw"/>
-                        <Editor/>
+                        <Editor onSave={ parse }/>
                     </TargetFileContext.Provider>
                 </FSContext.Provider>
             </Box>
