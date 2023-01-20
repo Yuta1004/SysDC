@@ -7,7 +7,7 @@ export const WasmContext = createContext(false);
 
 const App = () => {
     const [wasmOk, setWasmOk] = useState(false);
-    const [system, setSystem] = useState("{}");
+    const [system, setSystem] = useState({});
 
     const entrypoint = (event: MessageEvent) => {
         setSystem(event.data);

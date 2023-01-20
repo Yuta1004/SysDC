@@ -13,7 +13,7 @@ import CUSTOM_NODE_TYPES from "./flow/custom";
 import { gen_flow } from "sysdc_tool_view";
 
 interface FlowProps {
-    system: string
+    system: {}
 }
 
 export const Flow = (props: FlowProps) => {
