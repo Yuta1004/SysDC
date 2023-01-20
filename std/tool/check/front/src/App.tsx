@@ -232,7 +232,7 @@ const App = () => {
         if (wasmOk) {
             let fentries = flistup(system);
             setFEntries(fentries);
-            if (fEntries.length > 0) {
+            if (fentries.length > 0) {
                 setShowingFEntry(fentries[0][1]);
                 setTraceTarget(fentries[0][1]);
             }
@@ -240,10 +240,10 @@ const App = () => {
     }, [wasmOk, system]);
 
     useEffect(() => {
-        if (wasmOk) {
+        if (wasmOk && traceTarget !== undefined) {
             setTraceResult(trace(system, traceTarget));
         }
-    }, [traceTarget]);
+    }, [wasmOk, system, traceTarget]);
 
     return (
         <div
