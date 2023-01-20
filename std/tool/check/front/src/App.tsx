@@ -37,7 +37,7 @@ const App = () => {
     const [traceResultDetail, setTraceResultDetail] = useState<Map<string, JSX.Element>>(new Map());
 
     window.addEventListener("message", (e: MessageEvent) => {
-        setSystem(JSON.parse(e.data))
+        setSystem(e.data)
     });
 
     const createFEntryList = (fEntries: FEntry[]) => {
