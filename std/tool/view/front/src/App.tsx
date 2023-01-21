@@ -7,12 +7,11 @@ export const WasmContext = createContext(false);
 
 const App = () => {
     const [wasmOk, setWasmOk] = useState(false);
-    const [system, setSystem] = useState({});
+    const [system, setSystem] = useState({ units: [] });
 
-    const entrypoint = (event: MessageEvent) => {
-        setSystem(event.data);
-    };
-    window.addEventListener("message", entrypoint);
+    window.addEventListener("message", (e: MessageEvent) => {
+        setSystem(e.data)
+    });
 
     useEffect(() => {
         init().then(() => setWasmOk(true));
