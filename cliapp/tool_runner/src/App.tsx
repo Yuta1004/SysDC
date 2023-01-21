@@ -81,7 +81,12 @@ const App = () => {
                 key={ viewingTool }
                 width="100%"
                 height="100%"
-                src={ "/static/tools" + tools?.get(viewingTool) }
+                src={ (() => {
+                    if (viewingTool === "") {
+                        return "/static/tools/debug/index.html";
+                    }
+                    return "/static/tools" + tools?.get(viewingTool);
+                })() }
             />
         </div>
     );
