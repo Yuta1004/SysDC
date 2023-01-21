@@ -8,7 +8,6 @@ pub struct RunCmd {
 
 impl RunCmd {
     pub fn run(&self) -> anyhow::Result<()> {
-        println!("{}", self.input);
         sysdc_tool_runner::exec()
     }
 }
