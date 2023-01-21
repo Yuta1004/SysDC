@@ -4,5 +4,6 @@
 )]
 
 pub fn main() -> anyhow::Result<()> {
-    sysdc_tool_runner::exec()
+    let system = serde_json::from_str("{ units: [] }")?;
+    sysdc_tool_runner::exec(system)
 }

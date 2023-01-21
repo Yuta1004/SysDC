@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
+import { invoke } from "@tauri-apps/api";
+
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -10,8 +12,6 @@ import MenuItem from "@mui/material/MenuItem";
 const App = () => {
     const [viewingTool, setViewingTool] = useState("");
     const [tools, setTools] = useState<Map<string, string>>(new Map());
-
-    const system = { units: [] }
 
     useEffect(() => {
         const _tools = new Map();
@@ -44,8 +44,12 @@ const App = () => {
                     sx={{ margin: "10px" }}
                     startIcon={ <PlayArrowIcon/> }
                     onClick={ () => {
-                        const iwindow = document.getElementsByTagName("iframe")[0].contentWindow;
-                        iwindow.postMessage(system, "*");
+                        (async () => {
+                            const system = await invoke("get_system");
+                            console.log(system)
+                            const iwindow = document.getElementsByTagName("iframe")[0].contentWindow;
+                            iwindow.postMessage(system, "*");
+                        })();
                     }}
                 >
                     実行

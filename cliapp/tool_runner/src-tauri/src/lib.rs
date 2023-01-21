@@ -3,11 +3,16 @@
     windows_subsystem = "windows"
 )]
 
+pub mod command;
+
 use tauri::{LogicalSize, Manager, Size};
 
-pub fn exec() -> anyhow::Result<()> {
+use sysdc_core::structure::SysDCSystem;
+
+pub fn exec(system: SysDCSystem) -> anyhow::Result<()> {
     tauri::Builder::default()
         .setup(|app| {
+            app.manage(system);
             app.get_window("main")
                 .unwrap()
                 .set_size(Size::Logical(LogicalSize {
@@ -16,7 +21,9 @@ pub fn exec() -> anyhow::Result<()> {
                 }))?;
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![
+            command::get_system
+        ])
         .run(tauri::generate_context!())?;
 
     Ok(())
