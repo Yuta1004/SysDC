@@ -1,12 +1,15 @@
 # SysDC-Server
 
-Webアプリケーション
+SysDC Web-Edition
 
 ## 実行方法
+
+`Docker` `docker-compose` が必要です
 
 ### 1. ビルド
 
 ```
+$ make setup
 $ make build
 ```
 

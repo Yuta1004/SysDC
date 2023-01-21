@@ -7,24 +7,25 @@
 
 ## 実行方法
 
-`Docker` `docker-compose` が必要です
-
-### 1. セットアップ
-
-```
-$ make setup
-```
-
-### 2. 実行
-
-#### WebApp
+### WebApp
 
 詳細は `webapp/README.md` を参照してください
 
 ```
 $ cd webapp
+$ make setup
 $ make build
 $ make run
+```
+
+### CliApp
+
+詳細は `cliapp/README.md` を参照してください
+
+```
+$ cd cliapp
+$ make setup
+$ make build
 ```
 
 ## ライセンス
