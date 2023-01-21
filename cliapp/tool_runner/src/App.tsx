@@ -1,6 +1,9 @@
 const App = () => {
     return (
-        <h1>Hello Tauri</h1>
+        <>
+            <h1>Hello Tauri</h1>
+            <iframe src="/static/tools/view/index.html"/>
+        </>
     );
 }
 

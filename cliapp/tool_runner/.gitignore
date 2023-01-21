@@ -7,4 +7,5 @@ pnpm-debug.log*
 lerna-debug.log*
 node_modules
 build/
+public/tools/
 *.local
