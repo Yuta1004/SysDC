@@ -1,4 +1,4 @@
-name: core_check
+name: core/check
 
 on:
   push:
