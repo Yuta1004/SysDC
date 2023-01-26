@@ -5,12 +5,12 @@ SRCS := $(shell find public/) \
 
 setup: package.json
 	make -C ../../std/tool setup
-	docker run --rm -it -v $(shell pwd):/workdir -w /workdir $(IMAGE) /bin/sh -c "\
+	docker run --rm -v $(shell pwd):/workdir -w /workdir $(IMAGE) /bin/sh -c "\
 		npm install \
 	"
 
 build: package.json $(SRCS)
-	docker run --rm -it -v $(shell pwd):/workdir -w /workdir $(IMAGE) /bin/sh -c "\
+	docker run --rm -v $(shell pwd):/workdir -w /workdir $(IMAGE) /bin/sh -c "\
 		npm run build \
 	"
 	make -C ../../std/tool build

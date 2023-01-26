@@ -1,12 +1,17 @@
-name: check
+name: core/check
 
 on:
   push:
     branches:
-      - "master"
-      - "develop*"
+    - "master"
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+    - "core/**"
+
+defaults:
+  run:
+    working-directory: core
 
 env:
   CARGO_TERM_COLOR: always
@@ -19,7 +24,6 @@ jobs:
     - uses: ./.github/actions/cache_cargo
     - name: Build
       run: cargo build --all-targets
-      working-directory: core
 
   fmt:
     runs-on: ubuntu-latest
@@ -31,7 +35,6 @@ jobs:
       run: rustup component add rustfmt
     - name: Check format
       run: cargo fmt --all -- --check
-      working-directory: core
 
   clippy:
     runs-on: ubuntu-latest
@@ -43,7 +46,6 @@ jobs:
       run: rustup component add clippy
     - name: Check by Clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
-      working-directory: core
 
   test:
     runs-on: ubuntu-latest
@@ -53,4 +55,3 @@ jobs:
     - uses: ./.github/actions/cache_cargo
     - name: Test
       run: cargo test --all
-      working-directory: core

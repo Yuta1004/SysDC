@@ -1,6 +1,6 @@
 # SysDC
 
-[![check](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml/badge.svg?branch=master)](https://github.com/Yuta1004/SysDC/actions/workflows/check.yml)
+[![core/check](https://github.com/Yuta1004/SysDC/actions/workflows/core_check.yml/badge.svg)](https://github.com/Yuta1004/SysDC/actions/workflows/core_check.yml)
 ![VERSION-Badge](https://img.shields.io/github/v/release/Yuta1004/SysDC?style=flat)
 
 システム設計支援言語 ＋ 周辺環境
