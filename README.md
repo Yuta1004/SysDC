@@ -26,6 +26,7 @@ $ make run
 $ cd cliapp
 $ make setup
 $ make build
+$ ./sysdc_cli
 ```
 
 ### 標準ツール群
@@ -42,6 +43,10 @@ $ make build
 
 Apache License 2.0  
 Copyright 2022 Yuta NAKAGAMI
+
+### lynx
+
+Copyright (c) 2021 James Panther (https://jamespanther.com)
 
 ### hugo-theme-learn
 
