@@ -1,0 +1,15 @@
+[package]
+name = "sysdc_editor_back"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+rand = "0.8.5"
+http = "0.2.8"
+aws-config = "0.51.0"
+aws-sdk-s3 = "0.21.0"
+tokio = { version = "1", features = ["full"] }
+actix-web = "4.2.1"
+actix-multipart = "0.5.0"
+futures = "0.3.25"
+env_logger = "0.9.1"
