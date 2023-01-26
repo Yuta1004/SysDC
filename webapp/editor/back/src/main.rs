@@ -1,14 +1,18 @@
 mod s3;
 
+use rand::distributions::{Alphanumeric, DistString};
 use actix_web::middleware::Logger;
 use actix_web::http::StatusCode;
-use actix_web::{get, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_multipart::Multipart;
+use futures::{StreamExt, TryStreamExt};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
     HttpServer::new(||
             App::new()
+                .service(save_workspace)
                 .service(get_workspace_info)
                 .service(get_workspace_files)
                 .wrap(Logger::default())
@@ -16,6 +20,25 @@ async fn main() -> std::io::Result<()> {
         .bind(("0.0.0.0", 50000))?
         .run()
         .await
+}
+
+#[post("/workspace")]
+async fn save_workspace(mut payload: Multipart) -> impl Responder {
+    let workspace = Alphanumeric.sample_string(&mut rand::thread_rng(), 8);
+    while let Ok(Some(mut field)) = payload.try_next().await {
+        let mut body = web::BytesMut::new();
+        while let Some(chunk) = field.next().await {
+            body.extend_from_slice(&chunk.unwrap())
+        }
+        let filename = field.name();
+
+        s3::save_file(
+            &format!("{}/{}", workspace, filename),
+            body.to_vec()
+        ).await.unwrap();
+    }
+
+    HttpResponse::build(StatusCode::OK).body(workspace)
 }
 
 #[get("/workspace/{workspace}")]
@@ -33,7 +56,8 @@ async fn get_workspace_info(path: web::Path<(String,)>) -> impl Responder {
 
 #[get("/workspace/{workspace}/{file:.*}")]
 async fn get_workspace_files(req: HttpRequest) -> impl Responder {
-    match s3::get_file(req.uri().path()).await {
+    let path = req.uri().path().replace("/workspace", "");
+    match s3::get_file(&path).await {
         Ok((mime, body)) =>
             HttpResponse::build(StatusCode::OK)
                 .content_type(mime)

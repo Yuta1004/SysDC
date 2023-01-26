@@ -1,7 +1,7 @@
 use http::uri::Uri;
 
 use actix_web::web::Bytes;
-use aws_sdk_s3::{Client, Endpoint};
+use aws_sdk_s3::{Client, Endpoint, types::ByteStream};
 
 const ENDPOINT: &str = "http://tool-storage:9000";
 const BUCKET: &str = "sysdc-workspaces";
@@ -13,6 +13,19 @@ async fn create_connection() -> Client {
         .endpoint_resolver(ep)
         .build();
     Client::from_conf(s3_conf)
+}
+
+pub async fn save_file(path: &str, body: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
+    let body = ByteStream::from(body);
+    create_connection().await
+        .put_object()
+        .bucket(BUCKET)
+        .key(path)
+        .body(body)
+        .send()
+        .await?;
+
+    Ok(())
 }
 
 pub async fn get_file_list(path: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
