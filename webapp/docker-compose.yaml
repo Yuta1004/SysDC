@@ -45,6 +45,16 @@ services:
     environment:
       TZ: Asia/Tokyo
 
+  editor-back:
+    build: ./editor/back
+    image: sysdc/server/editor-back:run
+    environment:
+      TZ: Asia/Tokyo
+      RUST_LOG: info
+      AWS_ACCESS_KEY_ID: root
+      AWS_SECRET_ACCESS_KEY: rootpass
+      AWS_REGION: ap-northeast-1
+
   tool-storage:
     image: minio/minio:RELEASE.2022-10-29T06-21-33Z.fips
     command: server --console-address ":9001" /data

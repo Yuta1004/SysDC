@@ -29,6 +29,13 @@ static_resources:
                 route:
                   cluster: doc_service
               - match:
+                  prefix: "/editor/back"
+                route:
+                  regex_rewrite:
+                    pattern: { regex: "^/editor/back/*" }
+                    substitution: "/"
+                  cluster: editor_b_service
+              - match:
                   prefix: "/editor"
                 route:
                   regex_rewrite:
@@ -74,6 +81,15 @@ static_resources:
         - endpoint:
             address:
               socket_address: { address: editor-front, port_value: 3000 }
+  - name: editor_b_service
+    type: STRICT_DNS
+    load_assignment:
+      cluster_name: editor_b_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: editor-back, port_value: 50000 }
   - name: tool_d_service
     type: STRICT_DNS
     load_assignment:
