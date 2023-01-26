@@ -12,11 +12,21 @@ build:
 	echo "SYSDC_PORT = 50000" >> run.conf
 
 run:
-	SYSDC_BASE_URL=$(SYSDC_BASE_URL) \
-	SYSDC_PORT=$(SYSDC_PORT) \
-		docker-compose up $(SYSDC_OPTS)
+	@$(call docker-compose,up)
+
+stop:
+	@$(call docker-compose,stop)
+
+down:
+	@$(call docker-compose,down)
 
 clean:
 	make -C editor/front clean
 
-.PHONY: setup build run clean
+define docker-compose
+	SYSDC_BASE_URL=$(SYSDC_BASE_URL) \
+	SYSDC_PORT=$(SYSDC_PORT) \
+		docker-compose $1 $(SYSDC_OPTS)
+endef
+
+.PHONY: setup build run stop down clean
