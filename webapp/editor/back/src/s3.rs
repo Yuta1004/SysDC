@@ -3,8 +3,8 @@ use http::uri::Uri;
 use actix_web::web::Bytes;
 use aws_sdk_s3::{Client, Endpoint, types::ByteStream};
 
-const ENDPOINT: &str = "http://tool-storage:9000";
-const BUCKET: &str = "sysdc-workspaces";
+const ENDPOINT: &str = "http://storage:9000";
+const BUCKET: &str = "workspaces";
 
 async fn create_connection() -> Client {
     let ep = Endpoint::immutable(Uri::from_static(ENDPOINT));
