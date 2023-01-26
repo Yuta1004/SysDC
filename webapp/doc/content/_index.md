@@ -19,6 +19,10 @@ date: 2022-09-23T06:33:39Z
 Apache License 2.0  
 Copyright 2022 Yuta NAKAGAMI
 
+### lynx
+
+Copyright (c) 2021 James Panther (https://jamespanther.com)
+
 #### hugo-theme-learn
 
 Copyright (c) 2014 Grav  
