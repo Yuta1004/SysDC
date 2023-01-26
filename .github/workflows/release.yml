@@ -49,8 +49,8 @@ jobs:
         name: Windows
         path: ./SysDC_CLI-x86_64-windows.zip
 
-  build-on-macos:
-    runs-on: macos-latest
+  build-on-linux:
+    runs-on: ubuntu-latest
 
     steps:
     # Setup
@@ -62,7 +62,7 @@ jobs:
       working-directory: cliapp
 
     - name: Setup rust toolchain
-      run: rustup target add x86_64-apple-darwin
+      run: rustup target add x86_64-unknown-linux-gnu
       working-directory: cliapp
 
     # Build
@@ -71,7 +71,7 @@ jobs:
       working-directory: cliapp
 
     - name: Build sysdc_cli
-      run: cargo build --release --target=x86_64-apple-darwin
+      run: cargo build --release --target=x86_64-unknown-linux-gnu
       working-directory: cliapp
       env:
         RUSTFLAGS: -C target-feature=+crt-static
@@ -79,18 +79,18 @@ jobs:
     # Upload artifact
     - name: Make package
       run: |
-        cp cliapp/target/x86_64-apple-darwin/release/sysdc_cli .
-        zip -r SysDC_CLI-x86_64-macos sysdc_cli LICENSE example/
+        cp cliapp/target/x86_64-unknown-linux-gnu/release/sysdc_cli .
+        zip -r SysDC_CLI-x86_64-unknown-linux-gnu sysdc_cli LICENSE example/
 
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
-        name: MacOS
-        path: ./SysDC_CLI-x86_64-macos.zip
+        name: Linux
+        path: ./SysDC_CLI-x86_64-unknown-linux-gnu.zip
 
   create-release:
     runs-on: ubuntu-latest
-    needs: [build-on-windows, build-on-macos]
+    needs: [build-on-windows, build-on-linux]
 
     # Create empty release
     steps:
@@ -118,10 +118,10 @@ jobs:
         asset_name: SysDC_CLI-x86_64-windows.zip
         asset_content_type: application/zip
 
-    - name: Upload (MacOS)
+    - name: Upload (Linux)
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./MacOS/SysDC_CLI-x86_64-macos.zip
-        asset_name: SysDC_CLI-x86_64-macos.zip
+        asset_path: ./Linux/SysDC_CLI-x86_64-unknown-linux-gnu.zip
+        asset_name: SysDC_CLI-x86_64-unknown-linux-gnu.zip
         asset_content_type: application/zip
