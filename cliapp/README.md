@@ -1,6 +1,4 @@
-# SysDC-Server
-
-SysDC CLI-Edition
+# SysDC CLI-Edition
 
 ## 実行方法
 

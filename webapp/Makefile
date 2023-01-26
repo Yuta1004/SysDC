@@ -3,6 +3,9 @@ SYSDC_PORT := 50000
 
 -include run.conf
 
+setup:
+	make -C ../core setup
+
 build:
 	make -C editor/front build
 	echo "SYSDC_BASE_URL = \"http://localhost:50000\"" > run.conf
@@ -16,4 +19,4 @@ run:
 clean:
 	make -C editor/front clean
 
-.PHONY: build run clean
+.PHONY: setup build run clean

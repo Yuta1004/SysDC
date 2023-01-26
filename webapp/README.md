@@ -1,6 +1,4 @@
-# SysDC-Server
-
-SysDC Web-Edition
+# SysDC Web-Edition
 
 ## 実行方法
 
@@ -23,7 +21,7 @@ $ make build
 ### 3. 起動
 
 ```
-$ make run-server
+$ make run
 または
-$ SYSDC_OPTS="..." make run-server      # docker-composeに渡すオプションを設定する場合
+$ SYSDC_OPTS="..." make run     # docker-composeに渡すオプションを設定する場合
 ```
