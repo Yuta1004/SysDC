@@ -2,7 +2,7 @@ mod s3;
 
 use actix_web::middleware::Logger;
 use actix_web::http::StatusCode;
-use actix_web::{get, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{get, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -18,9 +18,9 @@ async fn main() -> std::io::Result<()> {
         .await
 }
 
-#[get("/{workspace}")]
-async fn get_workspace_info(req: HttpRequest) -> impl Responder {
-    let file_list = s3::get_file_list(req.path()).await.unwrap();
+#[get("/workspace/{workspace}")]
+async fn get_workspace_info(path: web::Path<(String,)>) -> impl Responder {
+    let file_list = s3::get_file_list(&path.0).await.unwrap();
     if file_list.len() > 0 {
         HttpResponse::build(StatusCode::OK)
             .content_type("application/json")
@@ -31,7 +31,7 @@ async fn get_workspace_info(req: HttpRequest) -> impl Responder {
     }
 }
 
-#[get("/{workspace}/{file:.*}")]
+#[get("/workspace/{workspace}/{file:.*}")]
 async fn get_workspace_files(req: HttpRequest) -> impl Responder {
     match s3::get_file(req.uri().path()).await {
         Ok((mime, body)) =>
