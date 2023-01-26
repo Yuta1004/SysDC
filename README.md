@@ -5,7 +5,7 @@
 
 システム設計支援言語 ＋ 周辺環境
 
-## 実行方法
+## 実行・ビルド方法
 
 ### WebApp
 
@@ -24,6 +24,14 @@ $ make run
 
 ```
 $ cd cliapp
+$ make setup
+$ make build
+```
+
+### 標準ツール群
+
+```
+$ cd std/tool
 $ make setup
 $ make build
 ```
