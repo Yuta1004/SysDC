@@ -20,9 +20,15 @@ async fn main() -> std::io::Result<()> {
 
 #[get("/{workspace}")]
 async fn get_workspace_info(req: HttpRequest) -> impl Responder {
-    HttpResponse::build(StatusCode::OK)
-        .content_type("application/json")
-        .json(vec![req.path()])
+    let file_list = s3::get_file_list(req.path()).await.unwrap();
+    if file_list.len() > 0 {
+        HttpResponse::build(StatusCode::OK)
+            .content_type("application/json")
+            .json(file_list)   
+    } else {
+        HttpResponse::build(StatusCode::NOT_FOUND)
+            .body("The specified workspace is not found.")
+    }
 }
 
 #[get("/{workspace}/{file:.*}")]
