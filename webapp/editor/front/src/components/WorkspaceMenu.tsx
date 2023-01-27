@@ -18,9 +18,9 @@ interface WorkspaceMenuProps {
 }
 
 const WorkspaceMenu = (props: WorkspaceMenuProps) => {
-    const [[stat, workspace], showWorkspaceMenu] = useContext(WorkspaceContext);
+    const [[stat, ws], showWorkspaceMenu] = useContext(WorkspaceContext);
 
-    const workspaceInput = useRef<TextFieldProps>(null);
+    const wsInput = useRef<TextFieldProps>(null);
 
     return (
         <Backdrop
@@ -36,7 +36,7 @@ const WorkspaceMenu = (props: WorkspaceMenuProps) => {
                 }}
             >
                 <IconButon
-                    onClick={ () => showWorkspaceMenu([false, workspace])}
+                    onClick={ () => showWorkspaceMenu([false, ws])}
                     sx={{
                         position: "absolute",
                         top: "10px",
@@ -57,7 +57,7 @@ const WorkspaceMenu = (props: WorkspaceMenuProps) => {
                     }}
                 >
                     <TextField
-                        inputRef={ workspaceInput }
+                        inputRef={ wsInput }
                         label="Workspace ID"
                         variant="standard"
                         InputLabelProps={{ shrink: true }}
@@ -65,8 +65,8 @@ const WorkspaceMenu = (props: WorkspaceMenuProps) => {
                     />
                     <Button
                         onClick={ () => {
-                            showWorkspaceMenu([false, workspaceInput.current?.value+""]);
-                            props.onWorkspaceOpen(workspaceInput.current?.value+"");
+                            showWorkspaceMenu([false, wsInput.current?.value+""]);
+                            props.onWorkspaceOpen(wsInput.current?.value+"");
                         }}
                     >
                         開く
@@ -87,7 +87,7 @@ const WorkspaceMenu = (props: WorkspaceMenuProps) => {
                     </Card>
                     <Button
                         onClick={ () => {
-                            showWorkspaceMenu([false, workspace]);
+                            showWorkspaceMenu([false, ws]);
                             props.onWorkSpaceCreate();
                         }}
                     >

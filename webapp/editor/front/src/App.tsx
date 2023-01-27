@@ -33,7 +33,7 @@ const App = () => {
     const [msg, showMsg] = useState<[string, string]>(["", ""]);
 
     const [wsLoading, setWSLoading] = useState(false);
-    const [workspace, showWorkSpaceMenu] = useState<[boolean, string]>([false, ""]);
+    const [ws, showWSMenu] = useState<[boolean, string]>([false, ""]);
 
     const [system, setSystem] = useState({ units: [] });
 
@@ -49,19 +49,19 @@ const App = () => {
         showMsg(["success", "解析OK"]);
     };
 
-    const loadWorkspace = (workspace: string) => {
+    const loadWorkspace = (ws: string) => {
         setWSLoading(true);
         axios
-            .get("/editor/back/workspace/"+workspace)
+            .get("/editor/back/workspace/"+ws)
             .then(response => (async () => {
                 const _fs = new MyFileSystem();
                 const files = response.data;
                 for(var idx in files) {
                     const f = await axios.get("/editor/back/workspace/"+files[idx]);
-                    _fs.mkfile(files[idx].replace(workspace, ""), f.data);
+                    _fs.mkfile(files[idx].replace(ws, ""), f.data);
                 }
                 setFs(_fs);
-                setTargetFile(files[0].replace(workspace, ""));
+                setTargetFile(files[0].replace(ws, ""));
                 setWSLoading(false);
             })())
             .catch(() => showMsg(["error", "指定されたワークスペースは存在しません"]));
@@ -87,7 +87,7 @@ const App = () => {
         >
             <Header
                 onParseClick={ parse }
-                onWorkspaceMenuOpen={ () => showWorkSpaceMenu([true, workspace[1]]) }
+                onWorkspaceMenuOpen={ () => showWSMenu([true, ws[1]]) }
             />
             <Box
                 sx={{
@@ -120,7 +120,7 @@ const App = () => {
             <MsgContext.Provider value={[ msg, showMsg ]}>
                 <MsgViewer/>
             </MsgContext.Provider>
-            <WorkspaceContext.Provider value={[ workspace, showWorkSpaceMenu ]}>
+            <WorkspaceContext.Provider value={[ ws, showWSMenu ]}>
                 <WorkspaceMenu
                     onWorkspaceOpen={ loadWorkspace }
                     onWorkSpaceCreate={ () => console.log("create") }
