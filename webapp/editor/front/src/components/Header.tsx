@@ -1,12 +1,10 @@
-import React from "react";
-
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import SettingsIcon from "@mui/icons-material/Settings";
+import PeopleIcon from "@mui/icons-material/People";
 
 interface HeaderProps {
     onParseClick: () => void,
@@ -42,8 +40,8 @@ const Header = (props: HeaderProps) => {
                     </Button>
                     <Button
                         variant="outlined"
-                        color="success"
-                        startIcon={ <PlayArrowIcon/> }
+                        color="info"
+                        startIcon={ <PeopleIcon/> }
                         onClick={ props.onWorkspaceMenuOpen }
                     >
                         ワークスペース
