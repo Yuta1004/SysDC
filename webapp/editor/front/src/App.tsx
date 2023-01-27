@@ -70,6 +70,22 @@ const App = () => {
             });
     };
 
+    const createWorkspace = () => {
+        const files = new FormData();
+        fs.readAll().forEach(file => {
+            const body = new Blob([file.body], { type: "text/plain" });
+            files.append(file.name.slice(1), new File([body], ""));
+        });
+
+        setWSLoading(true);
+        (async () => {
+            const headers = { "content-type": "multipart/form-data" };
+            const res = await axios.post("/editor/back/workspace", files, { headers });
+            setWSLoading(false);
+            showMsg(["success", "ワークスペースが作成されました : \"" + res.data + "\""]);
+        })();
+    };
+
     useEffect(() => {
         init();
 
@@ -126,7 +142,7 @@ const App = () => {
             <WorkspaceContext.Provider value={[ ws, showWSMenu ]}>
                 <WorkspaceMenu
                     onWorkspaceOpen={ loadWorkspace }
-                    onWorkSpaceCreate={ () => console.log("create") }
+                    onWorkSpaceCreate={ createWorkspace }
                 />
             </WorkspaceContext.Provider>
         </Box>
