@@ -1,0 +1,101 @@
+static_resources:
+  listeners:
+  - name: listener_0
+    address:
+      socket_address:
+        address: 0.0.0.0
+        port_value: 50000
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          access_log:
+          - name: envoy.access_loggers.stdout
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          route_config:
+            virtual_hosts:
+            - name: doc_service
+              domains: "*"
+              routes:
+              - match:
+                  prefix: "/doc"
+                route:
+                  cluster: doc_service
+              - match:
+                  prefix: "/editor/back"
+                route:
+                  regex_rewrite:
+                    pattern: { regex: "^/editor/back/*" }
+                    substitution: "/"
+                  cluster: editor_b_service
+              - match:
+                  prefix: "/editor"
+                route:
+                  regex_rewrite:
+                    pattern: { regex: "^/editor*" }
+                    substitution: "/"
+                  cluster: editor_f_service
+              - match:
+                  prefix: "/tool/delivery"
+                route:
+                  regex_rewrite:
+                    pattern: { regex: "^/tool/delivery/*" }
+                    substitution: "/"
+                  cluster: tool_d_service
+              - match:
+                  prefix: "/"
+                route:
+                  cluster: top_service
+  clusters:
+  - name: top_service
+    type: STRICT_DNS
+    load_assignment:
+      cluster_name: top_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: top, port_value: 1313 }
+  - name: doc_service
+    type: STRICT_DNS
+    load_assignment:
+      cluster_name: doc_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: doc, port_value: 1313 }
+  - name: editor_f_service
+    type: STRICT_DNS
+    load_assignment:
+      cluster_name: editor_f_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: editor-front, port_value: 3000 }
+  - name: editor_b_service
+    type: STRICT_DNS
+    load_assignment:
+      cluster_name: editor_b_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: editor-back, port_value: 50000 }
+  - name: tool_d_service
+    type: STRICT_DNS
+    load_assignment:
+      cluster_name: tool_d_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: tool-delivery, port_value: 50000 }

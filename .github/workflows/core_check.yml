@@ -1,0 +1,57 @@
+name: core/check
+
+on:
+  push:
+    branches:
+    - "master"
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+    - "core/**"
+
+defaults:
+  run:
+    working-directory: core
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  cache:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ./.github/actions/cache_cargo
+    - name: Build
+      run: cargo build --all-targets
+
+  fmt:
+    runs-on: ubuntu-latest
+    needs: cache
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ./.github/actions/cache_cargo
+    - name: Setup rustup
+      run: rustup component add rustfmt
+    - name: Check format
+      run: cargo fmt --all -- --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    needs: cache
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ./.github/actions/cache_cargo
+    - name: Setup rustup
+      run: rustup component add clippy
+    - name: Check by Clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
+  test:
+    runs-on: ubuntu-latest
+    needs: cache
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ./.github/actions/cache_cargo
+    - name: Test
+      run: cargo test --all
