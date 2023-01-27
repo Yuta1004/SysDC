@@ -29,7 +29,7 @@ pub fn eval_duplication_stat(system: &SysDCSystem) -> Option<Advice> {
 
     let mut messages = vec![];
     for (_, fnames) in grouped_f.iter() {
-        if fnames.len() > 0 {
+        if fnames.len() > 1 {
             messages.push(fnames.join(" / "))
         }
     }
