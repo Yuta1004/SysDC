@@ -39,10 +39,10 @@ const App = () => {
             fs.readAll().map(f => parser.parse(f.name, f.body) );
             setSystem(parser.check());
         } catch (err) {
-            showMsg(["error", err+""]);
+            showMsg(["error", "解析エラー : "+err+""]);
             return;
         }
-        showMsg(["success", "OK"]);
+        showMsg(["success", "解析OK"]);
     };
 
     const loadWorkspace = (workspace: string) => {
