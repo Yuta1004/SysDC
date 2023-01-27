@@ -2,6 +2,9 @@ import axios from "axios";
 import React, { useEffect, useState, createContext } from "react";
 
 import Box from "@mui/material/Box";
+import Backdrop from "@mui/material/Backdrop";
+import CircularProgress from "@mui/material/CircularProgress";
+
 import Header from "./components/Header";
 import FileExplorer from "./components/FileExplorer";
 import Editor from "./components/Editor";
@@ -29,6 +32,7 @@ const App = () => {
 
     const [msg, showMsg] = useState<[string, string]>(["", ""]);
 
+    const [wsLoading, setWSLoading] = useState(false);
     const [workspace, showWorkSpaceMenu] = useState<[boolean, string]>([false, ""]);
 
     const [system, setSystem] = useState({ units: [] });
@@ -46,6 +50,7 @@ const App = () => {
     };
 
     const loadWorkspace = (workspace: string) => {
+        setWSLoading(true);
         axios
             .get("/editor/back/workspace/"+workspace)
             .then(response => (async () => {
@@ -57,6 +62,7 @@ const App = () => {
                 }
                 setFs(_fs);
                 setTargetFile(files[0].replace(workspace, ""));
+                setWSLoading(false);
             })())
             .catch(() => showMsg(["error", "指定されたワークスペースは存在しません"]));
     };
@@ -91,6 +97,15 @@ const App = () => {
                     height: "100%"
                 }}
             >
+                <Backdrop
+                    open={ wsLoading }
+                    sx={{
+                        color: "#fff",
+                        zIndex: (theme) => theme.zIndex.drawer + 1
+                    }}
+                >
+                    <CircularProgress color="inherit" />
+                </Backdrop>
                 <FSContext.Provider value={ fs }>
                     <TargetFileContext.Provider value={[ targetFile, setTargetFile ]}>
                         <FileExplorer width="15vw"/>
