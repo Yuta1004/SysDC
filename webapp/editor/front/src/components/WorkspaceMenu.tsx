@@ -12,7 +12,12 @@ import Card from "@mui/material/Card";
 
 import { WorkspaceContext } from "../App";
 
-const WorkspaceMenu = () => {
+interface WorkspaceMenuProps {
+    onWorkspaceOpen: () => void,
+    onWorkSpaceCreate: () => void
+}
+
+const WorkspaceMenu = (props: WorkspaceMenuProps) => {
     const [[stat, workspace], showWorkspaceMenu] = useContext(WorkspaceContext);
 
     return (
@@ -55,7 +60,9 @@ const WorkspaceMenu = () => {
                         InputLabelProps={{ shrink: true }}
                         sx={{ width: "100%"}}
                     />
-                    <Button>開く</Button>
+                    <Button onClick={ props.onWorkspaceOpen }>
+                        開く
+                    </Button>
                 </Stack>
                 <Divider sx={{ margin: "25px 0px 25px 0px" }}/>
                 <h2 style={{ margin: "10px 5px 15px 0px" }}>
@@ -70,7 +77,9 @@ const WorkspaceMenu = () => {
                             ※ああああああああああああああああああ<br/>
                             ※ああああああああああああああああああ<br/>
                     </Card>
-                    <Button>規約に同意して作成</Button>
+                    <Button onClick={ props.onWorkSpaceCreate }>
+                        規約に同意して作成
+                    </Button>
                 </div>
             </Paper>
         </Backdrop>

@@ -90,7 +90,10 @@ const App = () => {
                 <MsgViewer/>
             </MsgContext.Provider>
             <WorkspaceContext.Provider value={[ workspace, showWorkSpaceMenu ]}>
-                <WorkspaceMenu/>
+                <WorkspaceMenu
+                    onWorkspaceOpen={ () => console.log("open") }
+                    onWorkSpaceCreate={ () => console.log("create") }
+                />
             </WorkspaceContext.Provider>
         </Box>
     );
