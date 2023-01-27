@@ -9,6 +9,7 @@ import ToolViewer from "./components/ToolViewer";
 import MyFileSystem from "./filesystem/MyFileSystem";
 import init, { Parser } from "sysdc_core";
 import MsgViewer from "./components/MsgViewer";
+import WorkspaceMenu from "./components/WorkspaceMenu";
 
 type SContextType<T> = [T, React.Dispatch<React.SetStateAction<T>>];
 
@@ -19,11 +20,16 @@ export const TargetFileContext = createContext({} as SContextType<string>);
 // メッセージ表示用Context
 export const MsgContext = createContext({} as SContextType<[string, string]>);
 
+// ワークスペースメニュー表示用Context
+export const WorkspaceContext = createContext({} as SContextType<[boolean, string]>);
+
 const App = () => {
     const [fs, setFs] = useState(new MyFileSystem());
     const [targetFile, setTargetFile] = useState("");
 
     const [msg, showMsg] = useState<[string, string]>(["", ""]);
+
+    const [workspace, showWorkSpaceMenu] = useState<[boolean, string]>([false, ""]);
 
     const [system, setSystem] = useState({ units: [] });
 
@@ -38,7 +44,7 @@ const App = () => {
         }
         showMsg(["success", "OK"]);
     };
- 
+
     useEffect(() => {
         init();
 
@@ -55,9 +61,12 @@ const App = () => {
                 flexDirection: "column",
                 width: "100vw",
                 height: "100vh"
-            }} 
+            }}
         >
-            <Header onParseClick={ parse }/>
+            <Header
+                onParseClick={ parse }
+                onWorkspaceMenuOpen={ () => showWorkSpaceMenu([true, workspace[1]]) }
+            />
             <Box
                 sx={{
                     display: "flex",
@@ -80,6 +89,9 @@ const App = () => {
             <MsgContext.Provider value={[ msg, showMsg ]}>
                 <MsgViewer/>
             </MsgContext.Provider>
+            <WorkspaceContext.Provider value={[ workspace, showWorkSpaceMenu ]}>
+                <WorkspaceMenu/>
+            </WorkspaceContext.Provider>
         </Box>
     );
 };

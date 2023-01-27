@@ -9,7 +9,8 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SettingsIcon from "@mui/icons-material/Settings";
 
 interface HeaderProps {
-    onParseClick: () => void
+    onParseClick: () => void,
+    onWorkspaceMenuOpen: () => void
 }
 
 const Header = (props: HeaderProps) => {
@@ -39,13 +40,14 @@ const Header = (props: HeaderProps) => {
                     >
                         解析
                     </Button>
-                    {/* <Button
+                    <Button
                         variant="outlined"
-                        color="info"
-                        startIcon={ <SettingsIcon/> }
+                        color="success"
+                        startIcon={ <PlayArrowIcon/> }
+                        onClick={ props.onWorkspaceMenuOpen }
                     >
-                        設定
-                    </Button> */}
+                        ワークスペース
+                    </Button>
                 </Stack>
             </Toolbar>
         </AppBar>
