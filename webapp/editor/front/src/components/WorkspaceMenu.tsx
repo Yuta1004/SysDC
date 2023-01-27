@@ -81,9 +81,8 @@ const WorkspaceMenu = (props: WorkspaceMenuProps) => {
                         variant="outlined"
                         sx={{ padding: "10px" }}
                     >
-                            ※ああああああああああああああああああ<br/>
-                            ※ああああああああああああああああああ<br/>
-                            ※ああああああああああああああああああ<br/>
+                            ※「作成」ボタンを押した時点での状態が保存されます<br/>
+                            ※機密事項を入力したファイルを含むワークスペースを作成しないで下さい<br/>
                     </Card>
                     <Button
                         onClick={ () => {
@@ -91,7 +90,7 @@ const WorkspaceMenu = (props: WorkspaceMenuProps) => {
                             props.onWorkSpaceCreate();
                         }}
                     >
-                        規約に同意して作成
+                        上記の内容に同意して作成
                     </Button>
                 </div>
             </Paper>
