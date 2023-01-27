@@ -1,11 +1,11 @@
-import { useContext } from "react";
+import { useContext, useRef } from "react";
 
 import Backdrop from "@mui/material/Backdrop";
 import CloseIcon from "@mui/icons-material/Close";
 import IconButon from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
+import TextField, { TextFieldProps } from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import Card from "@mui/material/Card";
@@ -19,6 +19,8 @@ interface WorkspaceMenuProps {
 
 const WorkspaceMenu = (props: WorkspaceMenuProps) => {
     const [[stat, workspace], showWorkspaceMenu] = useContext(WorkspaceContext);
+
+    const workspaceInput = useRef<TextFieldProps>(null);
 
     return (
         <Backdrop
@@ -55,12 +57,18 @@ const WorkspaceMenu = (props: WorkspaceMenuProps) => {
                     }}
                 >
                     <TextField
+                        inputRef={ workspaceInput }
                         label="Workspace ID"
                         variant="standard"
                         InputLabelProps={{ shrink: true }}
                         sx={{ width: "100%"}}
                     />
-                    <Button onClick={ props.onWorkspaceOpen }>
+                    <Button
+                        onClick={ () => {
+                            showWorkspaceMenu([false, workspaceInput.current?.value+""]);
+                            props.onWorkspaceOpen();
+                        }}
+                    >
                         開く
                     </Button>
                 </Stack>
@@ -77,7 +85,12 @@ const WorkspaceMenu = (props: WorkspaceMenuProps) => {
                             ※ああああああああああああああああああ<br/>
                             ※ああああああああああああああああああ<br/>
                     </Card>
-                    <Button onClick={ props.onWorkSpaceCreate }>
+                    <Button
+                        onClick={ () => {
+                            showWorkspaceMenu([false, workspace]);
+                            props.onWorkSpaceCreate();
+                        }}
+                    >
                         規約に同意して作成
                     </Button>
                 </div>
