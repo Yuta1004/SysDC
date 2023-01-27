@@ -42,7 +42,7 @@ $ make build
 ### SysDC
 
 Apache License 2.0  
-Copyright 2022 Yuta NAKAGAMI
+Copyright (c) 2022-2023 Yuta NAKAGAMI
 
 ### lynx
 
