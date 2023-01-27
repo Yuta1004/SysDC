@@ -64,7 +64,10 @@ const App = () => {
                 setTargetFile(files[0].replace(ws, ""));
                 setWSLoading(false);
             })())
-            .catch(() => showMsg(["error", "指定されたワークスペースは存在しません"]));
+            .catch(() => {
+                setWSLoading(false);
+                showMsg(["error", "指定されたワークスペースは存在しません"]);
+            });
     };
 
     useEffect(() => {
