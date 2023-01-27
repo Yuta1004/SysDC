@@ -1,12 +1,11 @@
-# SysDC-Tool-Delivery
+# SysDC-Editor-Back
 
-Webエディタ向けにツールを配信する
+Webエディタ(バックエンド)
 
 ## URL
 
-`/{author}/{tool}/{version}/{file}`
+`/workspace/{workspace}/{file}`
 
-- `author` : 配布者名
-- `tool` : ツール名
-- `version` : バージョン
-- `file` : ファイル名 (省略した場合 `index.html`)
+- `workspace` : ワークスペースID
+- `file` : ファイル名
+
