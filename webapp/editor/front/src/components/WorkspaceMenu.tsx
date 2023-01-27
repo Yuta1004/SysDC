@@ -13,7 +13,7 @@ import Card from "@mui/material/Card";
 import { WorkspaceContext } from "../App";
 
 interface WorkspaceMenuProps {
-    onWorkspaceOpen: () => void,
+    onWorkspaceOpen: (workspace: string) => void,
     onWorkSpaceCreate: () => void
 }
 
@@ -66,7 +66,7 @@ const WorkspaceMenu = (props: WorkspaceMenuProps) => {
                     <Button
                         onClick={ () => {
                             showWorkspaceMenu([false, workspaceInput.current?.value+""]);
-                            props.onWorkspaceOpen();
+                            props.onWorkspaceOpen(workspaceInput.current?.value+"");
                         }}
                     >
                         開く

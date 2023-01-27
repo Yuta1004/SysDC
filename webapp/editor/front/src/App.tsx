@@ -1,7 +1,7 @@
+import axios from "axios";
 import React, { useEffect, useState, createContext } from "react";
 
 import Box from "@mui/material/Box";
-
 import Header from "./components/Header";
 import FileExplorer from "./components/FileExplorer";
 import Editor from "./components/Editor";
@@ -43,6 +43,22 @@ const App = () => {
             return;
         }
         showMsg(["success", "OK"]);
+    };
+
+    const loadWorkspace = (workspace: string) => {
+        axios
+            .get("/editor/back/workspace/"+workspace)
+            .then(response => (async () => {
+                const _fs = new MyFileSystem();
+                const files = response.data;
+                for(var idx in files) {
+                    const f = await axios.get("/editor/back/workspace/"+files[idx]);
+                    _fs.mkfile(files[idx].replace(workspace, ""), f.data);
+                }
+                setFs(_fs);
+                setTargetFile(files[0].replace(workspace, ""));
+            })())
+            .catch(() => showMsg(["error", "指定されたワークスペースは存在しません"]));
     };
 
     useEffect(() => {
@@ -91,7 +107,7 @@ const App = () => {
             </MsgContext.Provider>
             <WorkspaceContext.Provider value={[ workspace, showWorkSpaceMenu ]}>
                 <WorkspaceMenu
-                    onWorkspaceOpen={ () => console.log("open") }
+                    onWorkspaceOpen={ loadWorkspace }
                     onWorkSpaceCreate={ () => console.log("create") }
                 />
             </WorkspaceContext.Provider>
