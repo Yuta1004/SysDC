@@ -21,23 +21,34 @@ export class MyFileSystem {
     }
 
     mkdir(path: string): boolean {
+        const _mkdir = (dirPath: string, dirName: string) => {
+            const [result, foundNode] = this.getNode(this.root, dirPath);
+            if (result && !foundNode.nodes.has(dirName)) {
+                foundNode.nodes.set(dirName, {
+                    name: this.checkPath(dirPath+dirName),
+                    nodes: new Map(),
+                    leaves: new Map()
+                });
+            }
+        };
+
         const _path = this.checkPath(path);
-        const dirPath = _path.split("/").slice(1).join("/");
-        const dirName = _path.split("/").slice(-1)[0];
-        const [result, foundNode] = this.getNode(this.root, dirPath);
-        if (result) {
-            foundNode.nodes.set(dirName, {
-                name: _path,
-                nodes: new Map(),
-                leaves: new Map()
-            });
-        }
-        return result;
+        var dirPath = "";
+        _path.split("/").slice(1).forEach((elem) => {
+            _mkdir(dirPath, elem+"");
+            dirPath += elem + "/";
+        });
+        return true;
     }
 
     mkfile(path: string, body: string): boolean {
         const _path = this.checkPath(path);
+
         const dirPath = _path.split("/").slice(1, -1).join("/");
+        if (dirPath !== "") {
+            this.mkdir(dirPath);
+        }
+
         const filename = _path.split("/").slice(-1)[0];
         const [result, foundNode] = this.getNode(this.root, dirPath);
         if (result) {
