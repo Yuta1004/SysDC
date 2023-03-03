@@ -10,7 +10,7 @@ home = ["HTML", "JSON"]
 [params]
 title = "SysDC"
 description = "SysDC ドキュメント"
-images = ["images/sysdc-ogp.png"]
+images = ["images/ogp.png"]
 titleSeparator = "|"
 themeVariant = "blue"
 disableLandingPageButton = true

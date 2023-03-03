@@ -11,7 +11,7 @@ disableKinds = ["taxonomy", "term"]
 [params]
 title = "SysDC"
 description = "SysDC トップページ"
-images = ["sysdc-ogp.png"]
+images = ["ogp.png"]
 
 [author]
     name = "SysDC"
