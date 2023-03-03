@@ -8,6 +8,11 @@ defaultContentLanguage = "ja"
 enableEmoji = true
 disableKinds = ["taxonomy", "term"]
 
+[params]
+title = "SysDC"
+description = "SysDC トップページ"
+images = ["ogp.png"]
+
 [author]
     name = "SysDC"
     headline = "SysDCはソフトウェア設計の支援を目的とする言語です"
